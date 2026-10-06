@@ -127,3 +127,11 @@
 @utility page-accent-disliked {
   --dc-color-accent-contextual: var(--dc-color-tag-disliked);
 }
+
+/* Gentle entrance for onboarding steps; disabled by the reduced-motion rule above. */
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
