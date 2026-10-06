@@ -17,7 +17,7 @@ export function createMockSessionProvider(storage?: Storage): SessionProvider {
       const profile = store.load()
       return profile ? { kind: 'profile', displayName: profile.displayName } : GUEST
     },
-    async createProfile(name) {
+    async createProfile(name = '') {
       const displayName = displayNameSchema.parse(name)
       store.save({ displayName })
       return { kind: 'profile', displayName }

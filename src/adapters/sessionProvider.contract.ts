@@ -19,8 +19,15 @@ export function sessionProviderContract(name: string, make: () => SessionProvide
       expect(await provider.getSession()).toEqual({ kind: 'guest' })
     })
 
-    it.each(['', '   ', 'x'.repeat(41)])('rejects the name %j', async (bad) => {
-      await expect(make().createProfile(bad)).rejects.toThrow()
+    it('creates a profile without a name (ADR-0022)', async () => {
+      const provider = make()
+      expect(await provider.createProfile()).toEqual({ kind: 'profile', displayName: '' })
+      expect(await provider.createProfile('   ')).toEqual({ kind: 'profile', displayName: '' })
+      expect(await provider.getSession()).toEqual({ kind: 'profile', displayName: '' })
+    })
+
+    it('rejects an over-long name', async () => {
+      await expect(make().createProfile('x'.repeat(41))).rejects.toThrow()
     })
   })
 }

@@ -7,7 +7,7 @@ export interface SessionValue {
   session: Session
   /** In-memory for guests, localStorage for profiles. Callers never need to know which. */
   tags: TagRepository
-  createProfile(displayName: string): Promise<void>
+  createProfile(displayName?: string): Promise<void>
   signOut(): Promise<void>
 }
 
