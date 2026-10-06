@@ -16,3 +16,8 @@ The source of truth for this repo is the files in it, not chat history.
 - Secrets never go in `VITE_*` vars.
 - Responsive, mobile-first (ADR-0021): base styles target 390px; enhance with `md:`/`lg:`; no horizontal overflow at 320px.
 - Save tokens: prefer local scripts and CLIs over LLM generation; keep output terse.
+
+## Version control
+- Commit after each major change, using Conventional Commits (`feat`, `fix`, `test`, `docs`, `design`, `chore`, `refactor`), with a body that says **what** changed and **why**, and names the ADRs involved.
+- `npm run verify` passes before every commit.
+- **No remote.** Never add a remote or push without explicit owner approval.
