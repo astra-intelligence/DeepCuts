@@ -78,6 +78,12 @@
     outline: none;
     box-shadow: none;
   }
+  /* Headings receive focus only programmatically after navigation (useRouteFocus); they are not
+     controls, so they get no ring (SC 2.4.7 covers operable components). */
+  h1[tabindex='-1']:focus {
+    outline: none;
+    box-shadow: none;
+  }
   @media (forced-colors: active) {
     :focus-visible {
       outline-color: Highlight;

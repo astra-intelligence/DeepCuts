@@ -88,15 +88,19 @@ function MovieDetail({ id }: { id: number }) {
   const watch = providers.data ? providersFor(providers.data, REGION) : []
 
   return (
-    <article className="relative min-h-svh md:grid md:grid-cols-[1.35fr_1fr]">
+    <article className="relative min-h-svh">
       <title>{`${m.title} · Deep Cuts`}</title>
-      <div className="absolute inset-0 md:relative md:h-svh md:min-h-180">
-        {backdrop && <img src={backdrop} alt="" className="size-full object-cover" />}
-        {/* Scrims keep text readable over any image (ADR-0009). */}
-        <div className="absolute inset-0 bg-linear-to-b from-surface/5 via-surface/85 via-60% to-surface to-80% md:bg-linear-to-r md:from-transparent md:from-35% md:via-surface/20 md:to-surface md:to-75%" />
+      {/* Phones: the backdrop sits at the top at a gentle 4:3 crop and fades into the page.
+          From md it fills the whole viewport at its natural shape, and an overlay darkens the
+          right side where the text sits. Scrims keep text readable over any image (ADR-0009). */}
+      <div className="relative aspect-4/3 w-full md:fixed md:inset-0 md:aspect-auto">
+        {backdrop && <img src={backdrop} alt="" className="size-full object-cover object-top" />}
+        <div className="absolute inset-0 bg-linear-to-b from-surface/70 via-transparent via-35% to-surface md:hidden" />
+        <div className="absolute inset-0 hidden bg-linear-to-r from-transparent from-25% via-surface/85 via-55% to-surface to-75% md:block" />
+        <div className="absolute inset-0 hidden bg-linear-to-b from-surface/60 via-transparent via-20% md:block" />
       </div>
 
-      <div className="relative z-1 flex min-h-svh flex-col justify-end px-5 pt-[36svh] pb-[max(1.25rem,env(safe-area-inset-bottom))] md:col-start-2 md:justify-center md:pt-24 md:pr-13 md:pb-10 md:pl-6">
+      <div className="relative z-1 -mt-12 flex flex-col px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:mt-0 md:ml-auto md:min-h-svh md:w-[min(100%,36rem)] md:justify-center md:pt-24 md:pr-13 md:pb-10 md:pl-6">
         <h1
           className={`font-display tracking-tight text-balance [overflow-wrap:anywhere] ${titleSize(m.title)}`}
         >

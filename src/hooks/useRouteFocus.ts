@@ -15,12 +15,12 @@ function focusHeading(h1: HTMLElement) {
  */
 export function useRouteFocus() {
   const { pathname, key } = useLocation()
-  const skipNext = useRef(key === 'default')
+  // Remember which page was the initial load. Comparing paths (not a one-shot flag) keeps
+  // this correct when React StrictMode runs the effect twice in development.
+  const initialPath = useRef(key === 'default' ? pathname : null)
   useEffect(() => {
-    if (skipNext.current) {
-      skipNext.current = false
-      return
-    }
+    if (pathname === initialPath.current) return
+    initialPath.current = null
     const main = document.getElementById('main')
     const existing = main?.querySelector<HTMLElement>('h1')
     if (!main || existing) {
