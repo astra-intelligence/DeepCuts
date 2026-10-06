@@ -1,7 +1,8 @@
 /// <reference types="vitest/config" />
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
+import { tmdbProxy } from './server/tmdbProxy'
 
 // Security headers (ADR-0008). CSP is applied to `vite preview` (the production build);
 // the dev server needs inline scripts for React Fast Refresh, so it gets the other headers only.
@@ -26,8 +27,9 @@ export const contentSecurityPolicy = [
   "frame-ancestors 'none'",
 ].join('; ')
 
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
+export default defineConfig(({ mode }) => ({
+  // TMDB_READ_TOKEN is read without the VITE_ prefix, so it never reaches the bundle (ADR-0013).
+  plugins: [react(), tailwindcss(), tmdbProxy(loadEnv(mode, process.cwd(), '').TMDB_READ_TOKEN)],
   server: { headers: baseHeaders },
   preview: { headers: { ...baseHeaders, 'Content-Security-Policy': contentSecurityPolicy } },
   build: { sourcemap: false },
@@ -37,9 +39,9 @@ export default defineConfig({
     css: false,
     coverage: {
       provider: 'v8',
-      include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/main.tsx', 'src/**/*.test.{ts,tsx}', 'src/test/**'],
+      include: ['src/**/*.{ts,tsx}', 'server/**/*.ts'],
+      exclude: ['src/main.tsx', 'src/**/*.test.{ts,tsx}', 'src/test/**', 'server/**/*.test.ts'],
       thresholds: { lines: 80 },
     },
   },
-})
+}))

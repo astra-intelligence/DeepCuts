@@ -1,0 +1,72 @@
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
+import { resolveTmdbRequest } from './tmdbAllowlist'
+
+const q = (s = '') => new URLSearchParams(s)
+
+describe('resolveTmdbRequest', () => {
+  it('allows search with a query and forces include_adult=false', () => {
+    const r = resolveTmdbRequest('search/movie', q('query=alien&page=2'))
+    expect(r).toEqual({
+      ok: true,
+      request: { path: 'search/movie', params: expect.any(URLSearchParams) },
+    })
+    if (r.ok) expect(r.request.params.toString()).toBe('query=alien&page=2&include_adult=false')
+  })
+
+  it('cannot be tricked into include_adult=true', () => {
+    expect(resolveTmdbRequest('search/movie', q('query=a&include_adult=true'))).toEqual({
+      ok: false,
+      status: 400,
+    })
+  })
+
+  it.each([
+    ['search/movie', ''],
+    ['search/movie', 'query='],
+    ['search/movie', `query=${'x'.repeat(101)}`],
+    ['search/movie', 'query=a&page=0'],
+    ['search/movie', 'query=a&page=501'],
+    ['search/movie', 'query=a&query=b'],
+    ['search/movie', 'query=a&api_key=leak'],
+    ['discover/movie', 'with_genres=27;DROP'],
+    ['discover/movie', 'sort_by=revenue.desc'],
+    ['movie/603', 'append_to_response=credits'],
+  ])('rejects bad params: %s?%s', (path, query) => {
+    expect(resolveTmdbRequest(path, q(query))).toEqual({ ok: false, status: 400 })
+  })
+
+  it.each([
+    'account',
+    'movie/abc',
+    'movie/603/credits',
+    'movie/603/../../account',
+    '../3/account',
+    'search/person',
+    'tv/1',
+    '',
+  ])('rejects endpoints outside the allowlist: %s', (path) => {
+    expect(resolveTmdbRequest(path, q())).toEqual({ ok: false, status: 404 })
+  })
+
+  it.each([
+    ['movie/603', 'movie/603'],
+    ['movie/603/watch/providers', 'movie/603/watch/providers'],
+    ['genre/movie/list', 'genre/movie/list'],
+  ])('allows %s', (path, expected) => {
+    const r = resolveTmdbRequest(path, q())
+    expect(r.ok && r.request.path).toBe(expected)
+  })
+
+  it('allows discover with genres and sort', () => {
+    const r = resolveTmdbRequest(
+      'discover/movie',
+      q('with_genres=27,53&sort_by=vote_average.desc&vote_count.gte=50'),
+    )
+    expect(r.ok && r.request.params.get('include_adult')).toBe('false')
+  })
+
+  it('rejects ids beyond the allowed range', () => {
+    expect(resolveTmdbRequest('movie/999999999', q())).toEqual({ ok: false, status: 400 })
+  })
+})
