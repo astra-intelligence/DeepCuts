@@ -2,7 +2,7 @@
 
 A fast, very visual, one-thumb movie tracker. Tag films (Seen, Liked, Watchlist, Hidden) in a tap or two, and it surfaces deep cuts you've never heard of.
 
-> Status: **Stage 2 (Catalog)**: search TMDB and view film details. A responsive, mobile-first website (ADR-0021).
+> Status: **Stage 3a (Tag data layer)**: search TMDB and view film details; the tag rules, repositories and session layer are built and tested, and the tag UI arrives in 3b. A responsive, mobile-first website (ADR-0021).
 
 ## Run locally
 
