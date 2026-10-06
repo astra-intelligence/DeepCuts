@@ -2,28 +2,64 @@
   "color": {
     "$type": "color",
     "surface": {
-      "base": { "$value": "{color.ink}" },
-      "raised": { "$value": "{color.neutral.900}" },
-      "overlay": { "$value": "{color.neutral.850}" },
-      "selected": { "$value": "{color.teal.900}" }
+      "base": {
+        "$value": "{color.ink}"
+      },
+      "raised": {
+        "$value": "{color.neutral.900}"
+      },
+      "overlay": {
+        "$value": "{color.neutral.850}"
+      },
+      "selected": {
+        "$value": "{color.teal.900}"
+      }
     },
     "text": {
-      "primary": { "$value": "{color.neutral.50}" },
-      "secondary": { "$value": "{color.neutral.300}" },
-      "placeholder": { "$value": "{color.neutral.400}" },
-      "on-accent": { "$value": "{color.teal.950}" },
-      "on-selected": { "$value": "{color.teal.50}" },
-      "danger": { "$value": "{color.red.300}" }
+      "primary": {
+        "$value": "{color.neutral.50}"
+      },
+      "secondary": {
+        "$value": "{color.neutral.300}"
+      },
+      "placeholder": {
+        "$value": "{color.neutral.400}"
+      },
+      "on-accent": {
+        "$value": "{color.teal.950}"
+      },
+      "on-selected": {
+        "$value": "{color.teal.50}"
+      },
+      "danger": {
+        "$value": "{color.red.300}"
+      }
     },
     "accent": {
-      "primary": { "$value": "{color.teal.400}" },
-      "secondary": { "$value": "{color.blue.300}" },
-      "danger": { "$value": "{color.red.600}" }
+      "primary": {
+        "$value": "{color.teal.400}"
+      },
+      "secondary": {
+        "$value": "{color.blue.300}"
+      },
+      "danger": {
+        "$value": "{color.red.600}"
+      },
+      "contextual": {
+        "$value": "{color.amber.400}",
+        "$description": "Swaps per context (ADR-0020): the default is amber; a tag-filtered page sets it to the tag color. Used by the CUTS outline in the wordmark."
+      }
     },
     "border": {
-      "subtle": { "$value": "{color.neutral.700}" },
-      "control": { "$value": "{color.neutral.600}" }
+      "subtle": {
+        "$value": "{color.neutral.700}"
+      },
+      "control": {
+        "$value": "{color.neutral.600}"
+      }
     },
-    "focus": { "$value": "{color.blue.300}" }
+    "focus": {
+      "$value": "{color.blue.300}"
+    }
   }
 }

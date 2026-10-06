@@ -17,5 +17,8 @@
   ["color-border-control", "color-surface-base", 3],
   ["color-border-control", "color-surface-raised", 3],
   ["color-focus", "color-surface-base", 3],
-  ["color-focus", "color-surface-raised", 3]
+  ["color-focus", "color-surface-raised", 3],
+  ["color-accent-contextual", "color-surface-base", 4.5],
+  ["color-accent-contextual", "color-surface-raised", 4.5],
+  ["color-accent-contextual", "color-surface-overlay", 4.5]
 ]

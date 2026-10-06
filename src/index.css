@@ -1,4 +1,9 @@
 @import 'tailwindcss';
+@import '@fontsource/manrope/400.css';
+@import '@fontsource/manrope/600.css';
+@import '@fontsource/manrope/700.css';
+@import '@fontsource/dm-serif-display/400.css';
+@import '@fontsource/saira/800.css';
 @import './styles/tokens.css';
 
 /* Semantic utilities only (ADR-0006). The default palette is removed so raw colors can't be used. */
@@ -15,6 +20,12 @@
   --color-danger: var(--dc-color-accent-danger);
   --color-border: var(--dc-color-border-subtle);
   --color-focus: var(--dc-color-focus);
+  --color-contextual: var(--dc-color-accent-contextual);
+
+  /* Self-hosted fonts (CSP: no third-party font hosts, ADR-0008) */
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'DM Serif Display', ui-serif, Georgia, serif;
+  --font-brand: 'Saira', ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
@@ -22,7 +33,7 @@
     color-scheme: dark;
   }
   body {
-    @apply bg-surface text-fg antialiased;
+    @apply bg-surface font-sans text-fg antialiased;
   }
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-focus;
