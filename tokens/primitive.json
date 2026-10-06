@@ -1,17 +1,25 @@
 {
-  "$description": "PLACEHOLDER palette pending Stage 0 design approval (ADR-0012). Values chosen only to pass contrast checks.",
+  "$description": "Palette from the Figma Make exploration v1 (docs/design/explorations/figma-make-v1). PROPOSED, pending owner approval (ADR-0012).",
   "color": {
     "$type": "color",
+    "ink": { "$value": "#070b0c" },
     "neutral": {
-      "950": { "$value": "#0b0f12" },
-      "900": { "$value": "#12181d" },
-      "800": { "$value": "#1c252c" },
-      "600": { "$value": "#3a4a55" },
-      "300": { "$value": "#a9b7c0" },
-      "50": { "$value": "#eef3f5" }
+      "900": { "$value": "#0d1315" },
+      "850": { "$value": "#141c1e" },
+      "700": { "$value": "#2b3739" },
+      "600": { "$value": "#5a686b" },
+      "400": { "$value": "#899795" },
+      "300": { "$value": "#aebdbc" },
+      "50": { "$value": "#f5f8f7" }
     },
-    "teal": { "400": { "$value": "#2ec4b6" } },
-    "blue": { "300": { "$value": "#8ecae6" } },
-    "red": { "500": { "$value": "#f0494c" } }
+    "teal": {
+      "950": { "$value": "#04100f" },
+      "900": { "$value": "#123c39" },
+      "700": { "$value": "#0f766e" },
+      "400": { "$value": "#2dd4bf" },
+      "50": { "$value": "#d8fffa" }
+    },
+    "blue": { "300": { "$value": "#8ed7f4" } },
+    "red": { "600": { "$value": "#c8353c" }, "300": { "$value": "#f27c81" } }
   }
 }
