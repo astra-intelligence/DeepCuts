@@ -42,11 +42,23 @@ export default defineConfig(({ mode }) => ({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}', 'server/**/*.test.ts'],
     css: false,
+    // Node 25+ ships a global localStorage that shadows jsdom's and is unusable without a file.
+    execArgv: ['--no-experimental-webstorage'],
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}', 'server/**/*.ts'],
-      exclude: ['src/main.tsx', 'src/**/*.test.{ts,tsx}', 'src/test/**', 'server/**/*.test.ts'],
-      thresholds: { lines: 80 },
+      exclude: [
+        'src/main.tsx',
+        'src/**/*.test.{ts,tsx}',
+        'src/**/*.contract.ts',
+        'src/test/**',
+        'server/**/*.test.ts',
+      ],
+      thresholds: {
+        lines: 80,
+        // Tag rules carry the product's invariants (ADR-0010, ADR-0017).
+        'src/domain/tagRules.ts': { lines: 100, branches: 100, functions: 100, statements: 100 },
+      },
     },
   },
 }))
