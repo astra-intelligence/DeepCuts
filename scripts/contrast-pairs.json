@@ -1,0 +1,14 @@
+[
+  ["color-text-primary", "color-surface-base", 4.5],
+  ["color-text-primary", "color-surface-raised", 4.5],
+  ["color-text-primary", "color-surface-overlay", 4.5],
+  ["color-text-secondary", "color-surface-base", 4.5],
+  ["color-text-secondary", "color-surface-raised", 4.5],
+  ["color-text-on-accent", "color-accent-primary", 4.5],
+  ["color-accent-primary", "color-surface-base", 4.5],
+  ["color-accent-secondary", "color-surface-base", 4.5],
+  ["color-accent-danger", "color-surface-base", 4.5],
+  ["color-accent-danger", "color-surface-raised", 4.5],
+  ["color-focus", "color-surface-base", 3],
+  ["color-focus", "color-surface-raised", 3]
+]

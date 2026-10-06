@@ -1,0 +1,7 @@
+dist
+build
+coverage
+package-lock.json
+src/styles/tokens.css
+docs
+.claude

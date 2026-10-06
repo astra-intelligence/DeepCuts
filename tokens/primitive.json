@@ -1,0 +1,17 @@
+{
+  "$description": "PLACEHOLDER palette pending Stage 0 design approval (ADR-0012). Values chosen only to pass contrast checks.",
+  "color": {
+    "$type": "color",
+    "neutral": {
+      "950": { "$value": "#0b0f12" },
+      "900": { "$value": "#12181d" },
+      "800": { "$value": "#1c252c" },
+      "600": { "$value": "#3a4a55" },
+      "300": { "$value": "#a9b7c0" },
+      "50": { "$value": "#eef3f5" }
+    },
+    "teal": { "400": { "$value": "#2ec4b6" } },
+    "blue": { "300": { "$value": "#8ecae6" } },
+    "red": { "500": { "$value": "#f0494c" } }
+  }
+}

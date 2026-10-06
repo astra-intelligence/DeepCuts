@@ -1,0 +1,40 @@
+@import 'tailwindcss';
+@import './styles/tokens.css';
+
+/* Semantic utilities only (ADR-0006). The default palette is removed so raw colors can't be used. */
+@theme inline {
+  --color-*: initial;
+  --color-surface: var(--dc-color-surface-base);
+  --color-surface-raised: var(--dc-color-surface-raised);
+  --color-surface-overlay: var(--dc-color-surface-overlay);
+  --color-fg: var(--dc-color-text-primary);
+  --color-fg-muted: var(--dc-color-text-secondary);
+  --color-on-accent: var(--dc-color-text-on-accent);
+  --color-accent: var(--dc-color-accent-primary);
+  --color-info: var(--dc-color-accent-secondary);
+  --color-danger: var(--dc-color-accent-danger);
+  --color-border: var(--dc-color-border-subtle);
+  --color-focus: var(--dc-color-focus);
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-surface text-fg antialiased;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-focus;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "name": "deep-cuts",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "prepare": "git config core.hooksPath .githooks || true",
+    "tokens": "node sd.config.mjs",
+    "predev": "npm run tokens",
+    "dev": "vite",
+    "prebuild": "npm run tokens",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "npm run tokens && tsc -b",
+    "lint": "eslint . --max-warnings=0 && node scripts/check-raw-colors.mjs && node scripts/check-env.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "pretest": "npm run tokens",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "npm run tokens && vitest run --coverage",
+    "check:contrast": "npm run tokens && node scripts/check-contrast.mjs",
+    "check:dist": "node scripts/check-dist-secrets.mjs",
+    "verify": "npm run lint && npm run typecheck && npm run check:contrast && npm run coverage && npm run build && npm run check:dist",
+    "preformat": "npm run tokens",
+    "preformat:check": "npm run tokens"
+  },
+  "dependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "@vitest/coverage-v8": "^4.1.11",
+    "eslint": "^9.39.5",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
+    "jsdom": "^29.1.1",
+    "prettier": "^3.9.9",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "style-dictionary": "5.6.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.71.1",
+    "vite": "^8.3.0",
+    "vitest": "^4.1.11"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
