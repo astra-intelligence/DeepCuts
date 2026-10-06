@@ -38,7 +38,7 @@ test('search → detail → back, keyboard only', async ({ page }) => {
 
   const heading = page.getByRole('heading', { level: 1, name: 'The Thing' })
   await expect(heading).toBeFocused()
-  await expect(page.getByText('Disney Plus')).toBeVisible()
+  await expect(page.getByRole('img', { name: 'Disney Plus' })).toBeVisible()
   await expect(page).toHaveTitle('The Thing · Deep Cuts')
 
   await page.goBack()
@@ -61,4 +61,19 @@ test('main navigation is reachable and marks the current page', async ({ page })
   await expect(nav.getByRole('link', { name: 'My Lists' })).toHaveAttribute('aria-current', 'page')
   const box = await nav.getByRole('link', { name: 'My Lists' }).boundingBox()
   expect(box?.height).toBeGreaterThanOrEqual(44)
+})
+
+test('detail tags toggle by keyboard and meet the 44px target', async ({ page }) => {
+  await page.goto('/movie/1091')
+  const tags = page.getByRole('group', { name: 'Your tags' })
+  const seen = tags.getByRole('button', { name: 'Seen it' })
+  await seen.focus()
+  await page.keyboard.press('Space')
+  await expect(seen).toHaveAttribute('aria-pressed', 'true')
+  for (const name of ['Seen it', 'Want to see', 'Like', 'Dislike']) {
+    const box = await tags.getByRole('button', { name, exact: true }).boundingBox()
+    expect(box?.height).toBeGreaterThanOrEqual(44)
+    expect(box?.width).toBeGreaterThanOrEqual(44)
+  }
+  await expectNoA11yViolations(page)
 })

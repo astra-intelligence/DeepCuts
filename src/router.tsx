@@ -23,8 +23,9 @@ export const routes: RouteObject[] = [
       { path: 'lists', element: <ListsPage /> },
       { path: 'account', element: <AccountPage /> },
       { path: 'tune', element: <TunePage /> },
-      { path: 'movie/:id', element: <MovieDetailPage /> },
       { path: '*', element: <RouteError /> },
     ],
   },
+  // Detail has its own full-bleed layout without the tab bar (design v2).
+  { path: '/movie/:id', element: <MovieDetailPage />, errorElement: <RouteError /> },
 ]

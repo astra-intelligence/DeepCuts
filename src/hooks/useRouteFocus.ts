@@ -9,14 +9,16 @@ function focusHeading(h1: HTMLElement) {
 /**
  * Moves focus to the page's <h1> after client-side navigation so screen-reader and keyboard
  * users land on the new content (WCAG 2.4.3). Waits briefly for pages that load data first.
- * Skipped on the first render.
+ * Skipped on the initial page load (the router's first history entry has the key "default").
+ * A layout that mounts after a navigation still moves focus. Only page changes count: search
+ * param updates (typing on /search) never steal focus.
  */
 export function useRouteFocus() {
-  const { pathname } = useLocation()
-  const first = useRef(true)
+  const { pathname, key } = useLocation()
+  const skipNext = useRef(key === 'default')
   useEffect(() => {
-    if (first.current) {
-      first.current = false
+    if (skipNext.current) {
+      skipNext.current = false
       return
     }
     const main = document.getElementById('main')

@@ -1,37 +1,85 @@
 import { useQuery } from '@tanstack/react-query'
-import { ToggleButton } from 'react-aria-components'
-import { Link, useParams } from 'react-router'
+import type { ReactNode } from 'react'
+import { Button } from 'react-aria-components'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { z } from 'zod'
 import { movieQueries } from '../api/queries'
-import { formatRuntime, imageUrl, providersFor, releaseYear } from '../api/tmdb'
-import { Icon, type IconName } from '../components/Icon'
+import { certification, formatRuntime, imageUrl, providersFor, releaseYear } from '../api/tmdb'
+import { Icon } from '../components/Icon'
+import { Logo } from '../components/Logo'
+import { MovieSearch } from '../components/MovieSearch'
+import { TagToggle } from '../components/TagToggle'
+import { TAGS } from '../components/tags'
+import { useRouteFocus } from '../hooks/useRouteFocus'
+import { useSetTag, useTagQueries } from '../session/tagQueries'
+import { SkipLink } from './AppLayout'
 
 const idSchema = z.coerce.number().int().positive().max(99_999_999)
 const REGION = 'US'
 
-// Tag semantics per ADR-0017; wired to the TagRepository in Stage 3.
-const TAGS: { label: string; icon: IconName }[] = [
-  { label: 'Seen it', icon: 'eye' },
-  { label: 'Want to see', icon: 'bookmark' },
-  { label: 'Like', icon: 'heart' },
-  { label: 'Dislike', icon: 'ban' },
-]
+/** Length-aware title scale from design v2 (55 and 95 character thresholds). */
+function titleSize(title: string) {
+  if (title.length > 95) return 'text-3xl md:text-5xl leading-tight'
+  if (title.length > 55) return 'text-4xl md:text-6xl leading-none'
+  return 'text-5xl md:text-7xl leading-none'
+}
 
 export function MovieDetailPage() {
   const parsed = idSchema.safeParse(useParams().id)
-  if (!parsed.success) return <NotFound />
-  return <MovieDetail id={parsed.data} />
+  return (
+    <DetailLayout>{parsed.success ? <MovieDetail id={parsed.data} /> : <NotFound />}</DetailLayout>
+  )
+}
+
+// Detail opens above the app shell (design v2): no tab bar; back, logo and search float on top.
+function DetailLayout({ children }: { children: ReactNode }) {
+  useRouteFocus()
+  const navigate = useNavigate()
+  const location = useLocation()
+  // A direct visit has no history entry to return to, so back goes to Search instead.
+  const back = () => (location.key === 'default' ? navigate('/search') : navigate(-1))
+  return (
+    <div className="relative mx-auto min-h-svh w-full max-w-360 overflow-x-clip">
+      <SkipLink />
+      <Button
+        onPress={back}
+        aria-label="Back to previous screen"
+        className="absolute top-[max(1.125rem,env(safe-area-inset-top))] left-5 z-10 grid size-12 place-items-center rounded-full border border-border-control bg-surface-raised/80 backdrop-blur-md md:fixed"
+      >
+        <Icon name="back" className="size-6" />
+      </Button>
+      <Link
+        to="/discover"
+        aria-label="Deep Cuts, go to Discover"
+        className="absolute top-[max(1.5rem,env(safe-area-inset-top))] right-5 z-10 inline-flex min-h-11 items-center md:fixed md:right-8"
+      >
+        <Logo className="h-7 w-auto" />
+      </Link>
+      <div className="absolute top-[max(5rem,calc(env(safe-area-inset-top)+4rem))] right-5 left-5 z-10 md:fixed md:top-[max(1.125rem,env(safe-area-inset-top))] md:right-auto md:left-1/2 md:w-[min(42vw,32.5rem)] md:-translate-x-1/2">
+        <MovieSearch />
+      </div>
+      <main id="main">{children}</main>
+    </div>
+  )
 }
 
 function MovieDetail({ id }: { id: number }) {
   const movie = useQuery(movieQueries.detail(id))
   const providers = useQuery(movieQueries.providers(id))
+  const tags = useQuery(useTagQueries().forMovie(id)).data
+  const setTag = useSetTag()
 
-  if (movie.isPending) return <p role="status">Loading film…</p>
+  if (movie.isPending)
+    return (
+      <p role="status" className="px-5 pt-40">
+        Loading film…
+      </p>
+    )
   if (movie.isError) return <NotFound />
 
   const m = movie.data
   const backdrop = imageUrl(m.backdrop_path, 'w1280')
+  const rating = certification(m, REGION)
   const meta = [
     releaseYear(m.release_date),
     formatRuntime(m.runtime),
@@ -40,66 +88,75 @@ function MovieDetail({ id }: { id: number }) {
   const watch = providers.data ? providersFor(providers.data, REGION) : []
 
   return (
-    <article className="relative -mx-4 -mt-6 lg:-mx-8 lg:grid lg:grid-cols-[1.35fr_1fr]">
+    <article className="relative min-h-svh md:grid md:grid-cols-[1.35fr_1fr]">
       <title>{`${m.title} · Deep Cuts`}</title>
-      <div className="relative h-[45svh] lg:h-[calc(100svh-5rem)]">
-        {backdrop && (
-          <img src={backdrop} alt="" className="absolute inset-0 size-full object-cover" />
-        )}
-        {/* Scrim keeps overlaid text readable over any image (ADR-0009). */}
-        <div className="absolute inset-0 bg-linear-to-b from-transparent via-surface/40 to-surface lg:bg-linear-to-r lg:via-transparent" />
+      <div className="absolute inset-0 md:relative md:h-svh md:min-h-180">
+        {backdrop && <img src={backdrop} alt="" className="size-full object-cover" />}
+        {/* Scrims keep text readable over any image (ADR-0009). */}
+        <div className="absolute inset-0 bg-linear-to-b from-surface/5 via-surface/85 via-60% to-surface to-80% md:bg-linear-to-r md:from-transparent md:from-35% md:via-surface/20 md:to-surface md:to-75%" />
       </div>
-      <div className="relative -mt-24 px-4 pb-8 lg:mt-0 lg:flex lg:flex-col lg:justify-center lg:px-10">
-        <Link
-          to="/search"
-          className="mb-4 inline-flex min-h-11 items-center gap-1 text-sm text-fg-muted hover:text-fg"
-        >
-          <Icon name="back" /> Back to search
-        </Link>
-        <h1 className="font-display text-5xl leading-none lg:text-7xl">{m.title}</h1>
-        {meta.length > 0 && <p className="mt-3 text-sm text-fg-muted">{meta.join(' · ')}</p>}
-        {m.overview && <p className="mt-4 max-w-prose leading-relaxed">{m.overview}</p>}
 
-        <div role="group" aria-label="Your tags" className="mt-6 grid grid-cols-4 gap-2">
-          {TAGS.map((tag) => (
-            <ToggleButton
-              key={tag.label}
-              isDisabled
-              className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border border-border bg-surface-raised text-xs text-fg-muted disabled:opacity-60"
+      <div className="relative z-1 flex min-h-svh flex-col justify-end px-5 pt-[36svh] pb-[max(1.25rem,env(safe-area-inset-bottom))] md:col-start-2 md:justify-center md:pt-24 md:pr-13 md:pb-10 md:pl-6">
+        <h1
+          className={`font-display tracking-tight text-balance [overflow-wrap:anywhere] ${titleSize(m.title)}`}
+        >
+          {m.title}
+        </h1>
+        <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-fg-muted">
+          <span>{meta.join(' · ')}</span>
+          {rating && (
+            <span
+              className="rounded-sm border border-border-control px-1.5 py-0.5"
+              aria-label={`Rated ${rating}`}
             >
-              <Icon name={tag.icon} />
-              {tag.label}
-            </ToggleButton>
+              {rating}
+            </span>
+          )}
+        </p>
+        {m.overview && <p className="my-3.5 leading-relaxed text-fg-muted">{m.overview}</p>}
+
+        <div role="group" aria-label="Your tags" className="grid grid-cols-4 gap-1.5">
+          {TAGS.map((t) => (
+            <TagToggle
+              key={t.tag}
+              tag={t}
+              isSelected={tags?.has(t.tag) ?? false}
+              onChange={(on) => setTag.mutate({ tmdbId: m.id, tag: t.tag, on })}
+              className="min-h-17 flex-col gap-1.5 px-1 text-center"
+            />
           ))}
         </div>
-        <p className="mt-2 text-xs text-fg-muted">Tagging arrives in the next build stage.</p>
 
-        <section aria-labelledby="where-to-watch" className="mt-8">
+        <section aria-labelledby="where-to-watch" className="mt-4">
           <h2
             id="where-to-watch"
-            className="text-xs font-bold tracking-widest text-fg-muted uppercase"
+            className="mb-2.5 text-sm font-bold tracking-[0.12em] text-fg-muted uppercase"
           >
             Where to watch ({REGION})
           </h2>
           {watch.length > 0 ? (
-            <ul className="mt-3 flex flex-wrap gap-2">
+            <ul className="flex flex-wrap items-center gap-3.5">
               {watch.map((p) => {
                 const logo = imageUrl(p.logo_path, 'w92')
                 return (
-                  <li
-                    key={p.provider_id}
-                    className="flex min-h-11 items-center gap-2 rounded-lg border border-border bg-surface-raised py-1 pr-3 pl-1 text-sm"
-                  >
-                    {logo && (
-                      <img src={logo} alt="" width={32} height={32} className="rounded-md" />
+                  <li key={p.provider_id} title={p.provider_name}>
+                    {logo ? (
+                      <img
+                        src={logo}
+                        alt={p.provider_name}
+                        width={32}
+                        height={32}
+                        className="rounded-md"
+                      />
+                    ) : (
+                      <span className="text-sm">{p.provider_name}</span>
                     )}
-                    {p.provider_name}
                   </li>
                 )
               })}
             </ul>
           ) : (
-            <p className="mt-3 text-sm text-fg-muted">
+            <p className="text-sm text-fg-muted">
               {providers.isPending
                 ? 'Checking providers…'
                 : 'Not streaming in your region right now.'}
@@ -114,7 +171,7 @@ function MovieDetail({ id }: { id: number }) {
 
 function NotFound() {
   return (
-    <>
+    <div className="px-5 pt-40">
       <title>Film not found · Deep Cuts</title>
       <h1 className="font-display text-4xl">Film not found</h1>
       <p className="mt-2 text-fg-muted">
@@ -123,6 +180,6 @@ function NotFound() {
           Search instead
         </Link>
       </p>
-    </>
+    </div>
   )
 }

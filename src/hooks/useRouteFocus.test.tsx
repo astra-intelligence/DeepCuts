@@ -22,4 +22,10 @@ describe('useRouteFocus', () => {
       expect(screen.getByRole('heading', { level: 1, name: 'The Thing' })).toHaveFocus(),
     )
   })
+
+  it('does not move focus when only search params change (typing on /search)', async () => {
+    const { router } = renderRoute('/search')
+    await act(() => router.navigate('/search?q=alien', { replace: true }))
+    expect(screen.getByRole('heading', { level: 1 })).not.toHaveFocus()
+  })
 })
