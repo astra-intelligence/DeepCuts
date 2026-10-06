@@ -1,9 +1,10 @@
 import { Navigate, type RouteObject } from 'react-router'
 import { AccountPage } from './routes/AccountPage'
 import { AppLayout } from './routes/AppLayout'
+import { DiscoverPage } from './routes/DiscoverPage'
 import { MovieDetailPage } from './routes/MovieDetailPage'
 import { ListsPage } from './routes/ListsPage'
-import { DiscoverPage, RouteError, TunePage } from './routes/PlaceholderPages'
+import { RouteError, TunePage } from './routes/PlaceholderPages'
 import { SearchPage } from './routes/SearchPage'
 
 // Search is the landing page; onboarding (/tune) is optional (ADR-0019 amendment).

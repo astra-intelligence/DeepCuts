@@ -9,6 +9,9 @@ export const test = base.extend<{ page: Page }>({
     await page.route('**/api/tmdb/search/movie**', (route) =>
       route.fulfill({ json: searchFixture }),
     )
+    await page.route('**/api/tmdb/discover/movie**', (route) =>
+      route.fulfill({ json: searchFixture }),
+    )
     await page.route('**/api/tmdb/movie/*/watch/providers', (route) =>
       route.fulfill({ json: providersFixture }),
     )

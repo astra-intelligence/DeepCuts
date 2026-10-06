@@ -7,6 +7,7 @@ export const handlers = [
     const results = searchFixture.results.filter((m) => m.title.toLowerCase().includes(q))
     return HttpResponse.json({ ...searchFixture, results, total_results: results.length })
   }),
+  http.get('/api/tmdb/discover/movie', () => HttpResponse.json(searchFixture)),
   http.get('/api/tmdb/movie/:id/watch/providers', () => HttpResponse.json(providersFixture)),
   http.get('/api/tmdb/movie/:id', ({ params }) =>
     params.id === String(movieFixture.id)

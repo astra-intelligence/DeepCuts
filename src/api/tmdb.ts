@@ -96,6 +96,18 @@ export const tmdb = {
     get('search/movie', searchResultsSchema, { query, page: String(page) }, signal),
   movie: (id: number, signal?: AbortSignal) =>
     get(`movie/${id}`, movieDetailSchema, { append_to_response: 'release_dates' }, signal),
+  /** Popular, well-voted films, optionally in any of `genres` (OR). */
+  discover: (genres: readonly number[], signal?: AbortSignal) =>
+    get(
+      'discover/movie',
+      searchResultsSchema,
+      {
+        sort_by: 'popularity.desc',
+        'vote_count.gte': '200',
+        ...(genres.length > 0 && { with_genres: genres.slice(0, 10).join('|') }),
+      },
+      signal,
+    ),
   watchProviders: (id: number, signal?: AbortSignal) =>
     get(`movie/${id}/watch/providers`, watchProvidersSchema, undefined, signal),
 }

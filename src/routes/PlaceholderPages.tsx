@@ -1,21 +1,5 @@
 import { Link } from 'react-router'
 
-export function DiscoverPage() {
-  return (
-    <>
-      <title>Discover · Deep Cuts</title>
-      <h1 className="font-display text-4xl">Found for you</h1>
-      <p className="mt-2 text-fg-muted">
-        Recommendations arrive in a later stage. For now,{' '}
-        <Link to="/search" className="text-info underline">
-          search for a film
-        </Link>
-        .
-      </p>
-    </>
-  )
-}
-
 export function TunePage() {
   return (
     <>

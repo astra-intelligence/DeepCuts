@@ -88,3 +88,20 @@ describe('certification', () => {
     expect(certification(movie, 'US')).toBe('')
   })
 })
+
+describe('discover', () => {
+  it('asks the allowlisted endpoint for popular films in any of the genres', async () => {
+    let url: URL | undefined
+    server.use(
+      http.get('/api/tmdb/discover/movie', ({ request }) => {
+        url = new URL(request.url)
+        return HttpResponse.json({ page: 1, total_pages: 1, total_results: 0, results: [] })
+      }),
+    )
+    await tmdb.discover([27, 53])
+    expect(url?.searchParams.get('with_genres')).toBe('27|53')
+    expect(url?.searchParams.get('sort_by')).toBe('popularity.desc')
+    await tmdb.discover([])
+    expect(url?.searchParams.has('with_genres')).toBe(false)
+  })
+})

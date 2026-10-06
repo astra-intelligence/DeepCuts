@@ -12,6 +12,12 @@ export const movieQueries = {
       enabled: query.trim().length >= 2,
       staleTime: HOUR,
     }),
+  discover: (genres: readonly number[] = []) =>
+    queryOptions({
+      queryKey: ['tmdb', 'discover', [...genres].sort((a, b) => a - b)],
+      queryFn: ({ signal }) => tmdb.discover(genres, signal),
+      staleTime: HOUR,
+    }),
   detail: (id: number) =>
     queryOptions({
       queryKey: ['tmdb', 'movie', id],
