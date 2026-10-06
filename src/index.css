@@ -12,13 +12,18 @@
   --color-surface: var(--dc-color-surface-base);
   --color-surface-raised: var(--dc-color-surface-raised);
   --color-surface-overlay: var(--dc-color-surface-overlay);
+  --color-surface-selected: var(--dc-color-surface-selected);
   --color-fg: var(--dc-color-text-primary);
   --color-fg-muted: var(--dc-color-text-secondary);
+  --color-fg-placeholder: var(--dc-color-text-placeholder);
+  --color-on-selected: var(--dc-color-text-on-selected);
+  --color-danger-text: var(--dc-color-text-danger);
   --color-on-accent: var(--dc-color-text-on-accent);
   --color-accent: var(--dc-color-accent-primary);
   --color-info: var(--dc-color-accent-secondary);
   --color-danger: var(--dc-color-accent-danger);
   --color-border: var(--dc-color-border-subtle);
+  --color-border-control: var(--dc-color-border-control);
   --color-focus: var(--dc-color-focus);
   --color-contextual: var(--dc-color-accent-contextual);
 

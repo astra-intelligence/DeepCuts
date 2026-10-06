@@ -34,7 +34,7 @@ export function SearchPage() {
         <Label className="text-sm text-fg-muted">Film title</Label>
         <Input
           placeholder="Try “The Thing”"
-          className="border-border-control placeholder:text-fg-placeholder min-h-12 rounded-xl border bg-surface-raised px-4 text-fg focus:outline-2 focus:outline-focus"
+          className="min-h-12 rounded-xl border border-border-control bg-surface-raised px-4 text-fg placeholder:text-fg-placeholder focus:outline-2 focus:outline-focus"
         />
       </SearchField>
 

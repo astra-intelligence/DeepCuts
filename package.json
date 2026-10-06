@@ -19,12 +19,13 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "npm run tokens && vitest run --coverage",
-    "check:contrast": "npm run tokens && node scripts/check-contrast.mjs",
+    "check:contrast": "npm run tokens && node scripts/check-contrast.mjs && node scripts/check-theme-coverage.mjs",
     "check:dist": "node scripts/check-dist-secrets.mjs",
     "verify": "npm run lint && npm run typecheck && npm run check:contrast && npm run coverage && npm run build && npm run check:dist",
     "preformat": "npm run tokens",
     "preformat:check": "npm run tokens",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "design:starter": "npm run tokens && node scripts/design-starter.mjs"
   },
   "dependencies": {
     "@fontsource/dm-serif-display": "^5.3.0",
