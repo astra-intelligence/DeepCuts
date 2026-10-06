@@ -9,6 +9,9 @@ permissions:
   contents: read
 jobs:
   analyze:
+    # Code scanning needs a public repo on GitHub Free; skip (instead of failing) while private.
+    # It turns on automatically if the repo is made public. ADR-0024: no paid plans.
+    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-latest
     permissions:
       security-events: write
