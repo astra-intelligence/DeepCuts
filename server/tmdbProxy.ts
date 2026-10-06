@@ -2,7 +2,7 @@
 // the server; only allowlisted requests are forwarded (ADR-0008).
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Connect, Plugin } from 'vite'
-import { resolveTmdbRequest } from './tmdbAllowlist'
+import { resolveTmdbRequest } from './tmdbAllowlist.ts'
 
 const PREFIX = '/api/tmdb/'
 const UPSTREAM = 'https://api.themoviedb.org/3/'

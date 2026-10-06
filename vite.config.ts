@@ -2,7 +2,7 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
-import { tmdbProxy } from './server/tmdbProxy'
+import { tmdbProxy } from './server/tmdbProxy.ts'
 
 // Security headers (ADR-0008). CSP is applied to `vite preview` (the production build);
 // the dev server needs inline scripts for React Fast Refresh, so it gets the other headers only.
