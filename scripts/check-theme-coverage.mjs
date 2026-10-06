@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 
 const tokens = [
   ...readFileSync('src/styles/tokens.css', 'utf8').matchAll(
-    /--(dc-color-(?:surface|text|accent|border|focus)[\w-]*):/g,
+    /--(dc-color-(?:surface|text|accent|border|focus|tag|genre)[\w-]*):/g,
   ),
 ].map((m) => m[1])
 const theme = readFileSync('src/index.css', 'utf8')

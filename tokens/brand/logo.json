@@ -1,0 +1,26 @@
+{
+  "$description": "Exact colors of the owner's logo artwork (docs/design/brand/). Used ONLY by the logo and app icon (ADR-0023).",
+  "brand": {
+    "$type": "color",
+    "logo": {
+      "gradient": {
+        "start": {
+          "$value": "#71cfd2",
+          "$description": "Top of the DEEP / frame gradient"
+        },
+        "end": {
+          "$value": "#319fa9",
+          "$description": "Bottom of the DEEP / frame gradient"
+        }
+      },
+      "cuts": {
+        "$value": "#efb135",
+        "$description": "Gold of the CUTS lettering"
+      },
+      "ink": {
+        "$value": "#12121a",
+        "$description": "App-icon plate and knockouts"
+      }
+    }
+  }
+}

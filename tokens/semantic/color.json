@@ -1,0 +1,146 @@
+{
+  "color": {
+    "$type": "color",
+    "surface": {
+      "base": {
+        "$value": "{color.ink}"
+      },
+      "raised": {
+        "$value": "{color.neutral.900}"
+      },
+      "overlay": {
+        "$value": "{color.neutral.850}"
+      },
+      "selected": {
+        "$value": "{color.teal.900}"
+      }
+    },
+    "text": {
+      "primary": {
+        "$value": "{color.neutral.50}"
+      },
+      "secondary": {
+        "$value": "{color.neutral.300}"
+      },
+      "placeholder": {
+        "$value": "{color.neutral.400}"
+      },
+      "on-accent": {
+        "$value": "{color.teal.950}"
+      },
+      "on-selected": {
+        "$value": "{color.teal.50}"
+      },
+      "danger": {
+        "$value": "{color.red.300}"
+      }
+    },
+    "accent": {
+      "primary": {
+        "$value": "{color.teal.400}"
+      },
+      "secondary": {
+        "$value": "{color.blue.300}"
+      },
+      "danger": {
+        "$value": "{color.red.600}"
+      },
+      "contextual": {
+        "$value": "{color.accent.primary}",
+        "$description": "The page accent (ADR-0020). Defaults to the brand accent; a tag-filtered list sets it to that tag's color."
+      }
+    },
+    "border": {
+      "subtle": {
+        "$value": "{color.neutral.700}"
+      },
+      "control": {
+        "$value": "{color.neutral.600}"
+      }
+    },
+    "focus": {
+      "$value": "{color.blue.300}"
+    },
+    "tag": {
+      "seen": {
+        "$value": "{color.teal.400}",
+        "$description": "Seen it"
+      },
+      "watchlist": {
+        "$value": "{color.blue.300}",
+        "$description": "Want to see"
+      },
+      "liked": {
+        "$value": "{color.neutral.50}",
+        "$description": "Like"
+      },
+      "disliked": {
+        "$value": "{color.red.300}",
+        "$description": "Dislike. The only red in the UI (ADR-0020)"
+      }
+    },
+    "genre": {
+      "$description": "Card tones per TMDB genre (design v2). Decorative; always paired with the genre name as text.",
+      "default": {
+        "$value": "{color.teal.400}"
+      },
+      "action": {
+        "$value": "{color.orange.300}"
+      },
+      "adventure": {
+        "$value": "{color.lime.300}"
+      },
+      "animation": {
+        "$value": "{color.gold.300}"
+      },
+      "comedy": {
+        "$value": "{color.gold.300}"
+      },
+      "crime": {
+        "$value": "{color.indigo.300}"
+      },
+      "documentary": {
+        "$value": "{color.green.300}"
+      },
+      "drama": {
+        "$value": "{color.sky.300}"
+      },
+      "family": {
+        "$value": "{color.lime.300}"
+      },
+      "fantasy": {
+        "$value": "{color.violet.300}"
+      },
+      "history": {
+        "$value": "{color.green.300}"
+      },
+      "horror": {
+        "$value": "{color.violet.300}"
+      },
+      "music": {
+        "$value": "{color.magenta.300}"
+      },
+      "mystery": {
+        "$value": "{color.indigo.300}"
+      },
+      "romance": {
+        "$value": "{color.magenta.300}"
+      },
+      "science-fiction": {
+        "$value": "{color.cyan.300}"
+      },
+      "thriller": {
+        "$value": "{color.orange.300}"
+      },
+      "tv-movie": {
+        "$value": "{color.sky.300}"
+      },
+      "war": {
+        "$value": "{color.orange.300}"
+      },
+      "western": {
+        "$value": "{color.gold.300}"
+      }
+    }
+  }
+}

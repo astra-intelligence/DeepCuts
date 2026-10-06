@@ -1,5 +1,5 @@
 {
-  "$description": "Palette from the Figma Make exploration v1 (docs/design/explorations/figma-make-v1). PROPOSED, pending owner approval (ADR-0012).",
+  "$description": "Approved v1 palette (docs/design/approvals.md). Anchor steps only; new families are generated in hues.json (ADR-0023).",
   "color": {
     "$type": "color",
     "ink": {
@@ -56,11 +56,6 @@
       },
       "300": {
         "$value": "#f27c81"
-      }
-    },
-    "amber": {
-      "400": {
-        "$value": "#f5c518"
       }
     }
   }

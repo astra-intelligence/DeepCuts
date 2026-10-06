@@ -12,7 +12,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "npm run tokens && tsc -b",
-    "lint": "eslint . --max-warnings=0 && node scripts/check-raw-colors.mjs && node scripts/check-env.mjs",
+    "lint": "eslint . --max-warnings=0 && node scripts/check-raw-colors.mjs && node scripts/check-token-tiers.mjs && node scripts/check-env.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "pretest": "npm run tokens",
@@ -25,7 +25,9 @@
     "preformat": "npm run tokens",
     "preformat:check": "npm run tokens",
     "e2e": "playwright test",
-    "design:starter": "npm run tokens && node scripts/design-starter.mjs"
+    "design:starter": "npm run tokens && node scripts/design-starter.mjs",
+    "tokens:ramps": "node scripts/generate-ramps.mjs && npm run tokens",
+    "tokens:review": "npm run tokens && node scripts/token-review.mjs"
   },
   "dependencies": {
     "@fontsource/dm-serif-display": "^5.3.0",

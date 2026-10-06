@@ -26,6 +26,31 @@
   --color-border-control: var(--dc-color-border-control);
   --color-focus: var(--dc-color-focus);
   --color-contextual: var(--dc-color-accent-contextual);
+  /* Tag and genre colors (ADR-0020, ADR-0023). Tags always pair color with an icon + label. */
+  --color-tag-seen: var(--dc-color-tag-seen);
+  --color-tag-watchlist: var(--dc-color-tag-watchlist);
+  --color-tag-liked: var(--dc-color-tag-liked);
+  --color-tag-disliked: var(--dc-color-tag-disliked);
+  --color-genre-default: var(--dc-color-genre-default);
+  --color-genre-action: var(--dc-color-genre-action);
+  --color-genre-adventure: var(--dc-color-genre-adventure);
+  --color-genre-animation: var(--dc-color-genre-animation);
+  --color-genre-comedy: var(--dc-color-genre-comedy);
+  --color-genre-crime: var(--dc-color-genre-crime);
+  --color-genre-documentary: var(--dc-color-genre-documentary);
+  --color-genre-drama: var(--dc-color-genre-drama);
+  --color-genre-family: var(--dc-color-genre-family);
+  --color-genre-fantasy: var(--dc-color-genre-fantasy);
+  --color-genre-history: var(--dc-color-genre-history);
+  --color-genre-horror: var(--dc-color-genre-horror);
+  --color-genre-music: var(--dc-color-genre-music);
+  --color-genre-mystery: var(--dc-color-genre-mystery);
+  --color-genre-romance: var(--dc-color-genre-romance);
+  --color-genre-science-fiction: var(--dc-color-genre-science-fiction);
+  --color-genre-thriller: var(--dc-color-genre-thriller);
+  --color-genre-tv-movie: var(--dc-color-genre-tv-movie);
+  --color-genre-war: var(--dc-color-genre-war);
+  --color-genre-western: var(--dc-color-genre-western);
 
   /* Self-hosted fonts (CSP: no third-party font hosts, ADR-0008) */
   --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;

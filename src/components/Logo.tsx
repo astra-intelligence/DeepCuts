@@ -10,7 +10,8 @@ type LogoProps = { className?: string }
 
 /**
  * Deep Cuts wordmark, rebuilt as code from the owner's artwork (docs/design/brand/).
- * DEEP uses the brand gradient; the CUTS outline follows --color-contextual (ADR-0020).
+ * Colors come from the brand token tier, the artwork's exact values (ADR-0023): the frame and
+ * DEEP use the teal gradient, CUTS the gold. The logo never changes color with the page accent.
  */
 export function Logo({ className }: LogoProps) {
   const gradientId = useId()
@@ -18,11 +19,11 @@ export function Logo({ className }: LogoProps) {
     <svg viewBox="0 0 520 100" role="img" aria-label="Deep Cuts" className={className}>
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" style={{ stopColor: 'var(--color-info)' }} />
-          <stop offset="100%" style={{ stopColor: 'var(--color-accent)' }} />
+          <stop offset="0%" style={{ stopColor: 'var(--dc-brand-logo-gradient-start)' }} />
+          <stop offset="100%" style={{ stopColor: 'var(--dc-brand-logo-gradient-end)' }} />
         </linearGradient>
       </defs>
-      <path d={FRAME} fillRule="evenodd" className="fill-accent" />
+      <path d={FRAME} fillRule="evenodd" fill={`url(#${gradientId})`} />
       <text
         x="260"
         y="80"
@@ -32,7 +33,7 @@ export function Logo({ className }: LogoProps) {
         className="font-brand"
       >
         <tspan fill={`url(#${gradientId})`}>DEEP</tspan>
-        <tspan dx="6" strokeWidth="3" className="fill-none stroke-contextual">
+        <tspan dx="6" strokeWidth="3" fill="none" style={{ stroke: 'var(--dc-brand-logo-cuts)' }}>
           CUTS
         </tspan>
       </text>
