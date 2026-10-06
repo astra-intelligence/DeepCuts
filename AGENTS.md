@@ -14,4 +14,5 @@ The source of truth for this repo is the files in it, not chat history.
 - Semantic token utilities only (`bg-surface`, `text-fg`, `text-accent`…). Raw colors fail lint.
 - Browser storage only in `src/adapters/local/`. No `dangerouslySetInnerHTML`. Validate external data with Zod.
 - Secrets never go in `VITE_*` vars.
+- Responsive, mobile-first (ADR-0021): base styles target 390px; enhance with `md:`/`lg:`; no horizontal overflow at 320px.
 - Save tokens: prefer local scripts and CLIs over LLM generation; keep output terse.
