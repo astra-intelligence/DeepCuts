@@ -98,3 +98,26 @@ test('a disliked film appears only on the Disliked list, with the tag accent', a
   await lists.getByRole('link', { name: /Seen it/ }).click()
   await expect(page.getByText(/will appear here/)).toBeVisible()
 })
+
+test('Save my picks survives a reload; guest picks do not (ADR-0011, ADR-0022)', async ({
+  page,
+}) => {
+  await page.goto('/search?q=thing')
+  await page.getByRole('button', { name: 'Want to see The Thing' }).click()
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Want to see The Thing' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
+
+  await page.getByRole('button', { name: 'Want to see The Thing' }).click()
+  await page.getByRole('link', { name: 'Sign in or open account options' }).click()
+  await page.getByRole('button', { name: 'Save my picks' }).click()
+  await expect(page.getByText('Saved on this device', { exact: true })).toBeVisible()
+  await expectNoA11yViolations(page)
+  await page.goto('/search?q=thing')
+  await expect(page.getByRole('button', { name: 'Want to see The Thing' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+})

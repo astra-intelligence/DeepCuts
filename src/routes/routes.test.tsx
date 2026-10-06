@@ -214,3 +214,23 @@ describe('my lists', () => {
     )
   })
 })
+
+describe('account (ADR-0022)', () => {
+  it('Save my picks keeps guest picks on this device', async () => {
+    const user = userEvent.setup()
+    const { router } = renderRoute('/search?q=thing')
+    await user.click(await screen.findByRole('button', { name: 'Want to see The Thing' }))
+    await act(() => router.navigate('/account'))
+    expect(screen.getByText(/not saved yet/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Save my picks' }))
+    expect(await screen.findByText('Saved on this device')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('saved on this device')
+    expect(screen.getByRole('button', { name: 'Coming soon' })).toBeDisabled()
+
+    await act(() => router.navigate('/lists'))
+    const lists = screen.getByRole('navigation', { name: 'Lists' })
+    expect(
+      await within(lists).findByRole('link', { name: /Want to see.*1 film/ }),
+    ).toBeInTheDocument()
+  })
+})

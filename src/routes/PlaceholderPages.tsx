@@ -16,15 +16,6 @@ export function DiscoverPage() {
   )
 }
 
-export function AccountPage() {
-  return (
-    <>
-      <title>Account · Deep Cuts</title>
-      <h1 className="font-display text-4xl">Your account</h1>
-    </>
-  )
-}
-
 export function TunePage() {
   return (
     <>
