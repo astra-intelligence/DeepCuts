@@ -21,4 +21,4 @@ The source of truth for this repo is the files in it, not chat history.
 
 - Commit after each major change, using Conventional Commits (`feat`, `fix`, `test`, `docs`, `design`, `chore`, `refactor`), with a body that says **what** changed and **why**, and names the ADRs involved.
 - `npm run verify` passes before every commit.
-- **No remote.** Never add a remote or push without explicit owner approval.
+- Remote: `origin` = `git@github.com:mcurts/DeepCuts.git` (**private**). Never push without explicit owner approval, and never change the repo's visibility.
