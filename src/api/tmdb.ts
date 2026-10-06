@@ -34,6 +34,18 @@ export const movieDetailSchema = z.object({
   poster_path: imagePath,
   backdrop_path: imagePath,
   genres: z.array(z.object({ id: z.number().int(), name: z.string() })).default([]),
+  // Appended to the same call for the content rating (ADR-0024).
+  release_dates: z
+    .object({
+      results: z.array(
+        z.object({
+          iso_3166_1: z.string(),
+          release_dates: z.array(z.object({ certification: z.string().max(10).default('') })),
+        }),
+      ),
+    })
+    .optional()
+    .catch(undefined),
 })
 
 const provider = z.object({
@@ -83,7 +95,7 @@ export const tmdb = {
   search: (query: string, page = 1, signal?: AbortSignal) =>
     get('search/movie', searchResultsSchema, { query, page: String(page) }, signal),
   movie: (id: number, signal?: AbortSignal) =>
-    get(`movie/${id}`, movieDetailSchema, undefined, signal),
+    get(`movie/${id}`, movieDetailSchema, { append_to_response: 'release_dates' }, signal),
   watchProviders: (id: number, signal?: AbortSignal) =>
     get(`movie/${id}/watch/providers`, watchProvidersSchema, undefined, signal),
 }
@@ -114,4 +126,10 @@ export function providersFor(data: WatchProviders, region: string): Provider[] {
   return [...(r.flatrate ?? []), ...(r.rent ?? []), ...(r.buy ?? [])].filter((p) =>
     seen.has(p.provider_id) ? false : (seen.add(p.provider_id), true),
   )
+}
+
+/** The first non-empty certification for a region (e.g. "R"), or ''. */
+export function certification(movie: MovieDetail, region: string): string {
+  const r = movie.release_dates?.results.find((x) => x.iso_3166_1 === region)
+  return r?.release_dates.find((d) => d.certification)?.certification ?? ''
 }

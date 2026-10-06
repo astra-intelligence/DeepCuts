@@ -39,7 +39,8 @@ const ROUTES: Route[] = [
   },
   {
     pattern: /^movie\/(\d+)$/,
-    params: z.strictObject({}),
+    // Only release dates may be appended: the content rating, in the same call (ADR-0024).
+    params: z.strictObject({ append_to_response: z.literal('release_dates').optional() }),
     path: (m) => `movie/${id.parse(m[1])}`,
   },
   {

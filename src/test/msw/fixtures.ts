@@ -39,6 +39,12 @@ export const movieFixture = {
     { id: 27, name: 'Horror' },
     { id: 878, name: 'Science Fiction' },
   ],
+  release_dates: {
+    results: [
+      { iso_3166_1: 'GB', release_dates: [{ certification: '18' }] },
+      { iso_3166_1: 'US', release_dates: [{ certification: '' }, { certification: 'R' }] },
+    ],
+  },
 }
 
 export const providersFixture = {

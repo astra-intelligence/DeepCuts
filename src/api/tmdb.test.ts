@@ -1,9 +1,12 @@
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
+import { movieFixture } from '../test/msw/fixtures'
 import { server } from '../test/msw/server'
 import {
+  certification,
   formatRuntime,
   imageUrl,
+  movieDetailSchema,
   providersFor,
   releaseYear,
   tmdb,
@@ -70,5 +73,18 @@ describe('helpers', () => {
       'Apple TV',
     ])
     expect(providersFor(data, 'GB')).toEqual([])
+  })
+})
+
+describe('certification', () => {
+  it('picks the first non-empty rating for the region', () => {
+    const movie = movieDetailSchema.parse(movieFixture)
+    expect(certification(movie, 'US')).toBe('R')
+    expect(certification(movie, 'FR')).toBe('')
+  })
+
+  it('tolerates a malformed release_dates block', () => {
+    const movie = movieDetailSchema.parse({ ...movieFixture, release_dates: { results: 'nope' } })
+    expect(certification(movie, 'US')).toBe('')
   })
 })

@@ -32,6 +32,7 @@ describe('resolveTmdbRequest', () => {
     ['discover/movie', 'with_genres=27;DROP'],
     ['discover/movie', 'sort_by=revenue.desc'],
     ['movie/603', 'append_to_response=credits'],
+    ['movie/603', 'append_to_response=release_dates,credits'],
   ])('rejects bad params: %s?%s', (path, query) => {
     expect(resolveTmdbRequest(path, q(query))).toEqual({ ok: false, status: 400 })
   })
@@ -68,5 +69,15 @@ describe('resolveTmdbRequest', () => {
 
   it('rejects ids beyond the allowed range', () => {
     expect(resolveTmdbRequest('movie/999999999', q())).toEqual({ ok: false, status: 400 })
+  })
+})
+
+describe('movie detail extras', () => {
+  it('allows only release_dates to be appended (content rating, ADR-0024)', () => {
+    const r = resolveTmdbRequest(
+      'movie/603',
+      new URLSearchParams('append_to_response=release_dates'),
+    )
+    expect(r.ok && r.request.params.get('append_to_response')).toBe('release_dates')
   })
 })
