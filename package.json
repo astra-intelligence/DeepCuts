@@ -23,7 +23,8 @@
     "check:dist": "node scripts/check-dist-secrets.mjs",
     "verify": "npm run lint && npm run typecheck && npm run check:contrast && npm run coverage && npm run build && npm run check:dist",
     "preformat": "npm run tokens",
-    "preformat:check": "npm run tokens"
+    "preformat:check": "npm run tokens",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@fontsource/dm-serif-display": "^5.3.0",
@@ -37,7 +38,9 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",

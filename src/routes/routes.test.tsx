@@ -48,6 +48,14 @@ describe('search → detail', () => {
     expect(await screen.findByRole('link', { name: /Alien.*1979/ })).toBeInTheDocument()
   })
 
+  it('keeps every keystroke when typing fast (regression)', async () => {
+    const user = userEvent.setup({ delay: null })
+    renderRoute('/search')
+    const box = screen.getByRole('searchbox', { name: 'Film title' })
+    await user.type(box, 'the thing')
+    expect(box).toHaveValue('the thing')
+  })
+
   it('ignores over-long ?q values', () => {
     renderRoute(`/search?q=${'x'.repeat(101)}`)
     expect(screen.getByRole('searchbox', { name: 'Film title' })).toHaveValue('')

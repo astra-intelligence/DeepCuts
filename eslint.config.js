@@ -42,6 +42,11 @@ export default defineConfig([
     },
   },
   {
+    // Playwright fixtures call `use()`, which is not a React hook.
+    files: ['e2e/**'],
+    rules: { 'react-hooks/rules-of-hooks': 'off' },
+  },
+  {
     files: ['src/adapters/local/**'],
     rules: { 'no-restricted-globals': 'off', 'no-restricted-properties': 'off' },
   },

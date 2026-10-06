@@ -32,3 +32,5 @@ dist-ssr
 coverage
 build
 src/styles/tokens.css
+test-results
+playwright-report

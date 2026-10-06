@@ -2,7 +2,7 @@
 
 A fast, very visual, one-thumb movie tracker. Tag films (Seen, Liked, Watchlist, Hidden) in a tap or two, and it surfaces deep cuts you've never heard of.
 
-> Status: **Stage 1 (Foundation)**. The current palette is a placeholder until design approval.
+> Status: **Stage 2 (Catalog)**: search TMDB and view film details. A responsive, mobile-first website (ADR-0021).
 
 ## Run locally
 

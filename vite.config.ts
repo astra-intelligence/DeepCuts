@@ -32,10 +32,15 @@ export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss(), tmdbProxy(loadEnv(mode, process.cwd(), '').TMDB_READ_TOKEN)],
   server: { headers: baseHeaders },
   preview: { headers: { ...baseHeaders, 'Content-Security-Policy': contentSecurityPolicy } },
-  build: { sourcemap: false },
+  // Fonts are never inlined as data: URIs, which the CSP's font-src 'self' would block.
+  build: {
+    sourcemap: false,
+    assetsInlineLimit: (file: string) => (/\.(woff2?|ttf|otf)$/.test(file) ? false : undefined),
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    include: ['src/**/*.test.{ts,tsx}', 'server/**/*.test.ts'],
     css: false,
     coverage: {
       provider: 'v8',

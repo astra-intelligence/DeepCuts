@@ -1,0 +1,36 @@
+import { expect, test } from '@playwright/test'
+
+// ADR-0008: strict CSP and security headers on the production build.
+test('serves a strict Content-Security-Policy and security headers', async ({ request }) => {
+  const res = await request.get('/')
+  const h = res.headers()
+  const csp = h['content-security-policy'] ?? ''
+  expect(csp).toContain("default-src 'self'")
+  expect(csp).toContain("script-src 'self'")
+  expect(csp).toContain("frame-ancestors 'none'")
+  expect(csp).toContain("object-src 'none'")
+  expect(csp).not.toContain('unsafe-inline')
+  expect(csp).not.toContain('unsafe-eval')
+  expect(csp).not.toMatch(/frame-src/) // ADR-0018: no embeds
+  expect(h['x-content-type-options']).toBe('nosniff')
+  expect(h['x-frame-options']).toBe('DENY')
+  expect(h['referrer-policy']).toBe('strict-origin-when-cross-origin')
+  expect(h['permissions-policy']).toContain('microphone=(self)')
+})
+
+test('the page loads with no CSP violations', async ({ page }) => {
+  const violations: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error' && /Content Security Policy/i.test(msg.text()))
+      violations.push(msg.text())
+  })
+  await page.goto('/')
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  expect(violations).toEqual([])
+})
+
+test('the TMDB proxy refuses endpoints outside the allowlist', async ({ request }) => {
+  expect((await request.get('/api/tmdb/account')).status()).toBe(404)
+  expect((await request.get('/api/tmdb/search/movie?query=a&api_key=x')).status()).toBe(400)
+  expect((await request.post('/api/tmdb/genre/movie/list')).status()).toBe(405)
+})

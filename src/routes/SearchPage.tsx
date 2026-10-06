@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
 import { Input, Label, SearchField } from 'react-aria-components'
 import { Link, useSearchParams } from 'react-router'
 import { z } from 'zod'
@@ -12,7 +13,12 @@ const searchParamsSchema = z.object({ q: z.string().max(100).catch('').default('
 export function SearchPage() {
   const [params, setParams] = useSearchParams()
   const { q } = searchParamsSchema.parse(Object.fromEntries(params))
-  const query = useDebouncedValue(q.trim(), 300)
+  // The input owns its text; the URL follows after a debounce, so fast typing never drops keys.
+  const [text, setText] = useState(q)
+  const query = useDebouncedValue(text.trim(), 300)
+  useEffect(() => {
+    if (query !== q.trim()) setParams(query ? { q: query } : {}, { replace: true })
+  }, [query, q, setParams])
   const { data, isFetching, isError } = useQuery(movieQueries.search(query))
   const results = query.length >= 2 ? data?.results : undefined
 
@@ -21,8 +27,8 @@ export function SearchPage() {
       <title>Search · Deep Cuts</title>
       <h1 className="font-display text-4xl">Search</h1>
       <SearchField
-        value={q}
-        onChange={(value) => setParams(value ? { q: value } : {}, { replace: true })}
+        value={text}
+        onChange={(value) => setText(value.slice(0, 100))}
         className="mt-4 flex max-w-2xl flex-col gap-2"
       >
         <Label className="text-sm text-fg-muted">Film title</Label>
