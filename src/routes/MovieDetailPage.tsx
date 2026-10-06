@@ -13,8 +13,8 @@ const REGION = 'US'
 const TAGS: { label: string; icon: IconName }[] = [
   { label: 'Seen it', icon: 'eye' },
   { label: 'Want to see', icon: 'bookmark' },
-  { label: 'Like', icon: 'thumbUp' },
-  { label: 'Dislike', icon: 'thumbDown' },
+  { label: 'Like', icon: 'heart' },
+  { label: 'Dislike', icon: 'ban' },
 ]
 
 export function MovieDetailPage() {

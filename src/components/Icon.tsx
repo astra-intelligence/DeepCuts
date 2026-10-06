@@ -1,14 +1,18 @@
+// Stroke icons from the v2 design. Each is one path so they stay tiny and tree-shake as data.
 const PATHS = {
   home: 'm3 10 9-7 9 7M5 9v11h14V9M9 20v-6h6v6',
   search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM20 20l-4-4',
   list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
   back: 'm15 18-6-6 6-6',
+  arrow: 'M5 12h14m-6-6 6 6-6 6',
   eye: 'M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6ZM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z',
   bookmark: 'M6 4h12v16l-6-3.5L6 20V4Z',
-  thumbUp:
-    'M7 11v9H4v-9h3Zm0 0 4-7a2 2 0 0 1 3 2l-1 4h5a2 2 0 0 1 2 2.3l-1.2 6A2 2 0 0 1 16.8 20H7',
-  thumbDown:
-    'M17 13V4h3v9h-3Zm0 0-4 7a2 2 0 0 1-3-2l1-4H6a2 2 0 0 1-2-2.3l1.2-6A2 2 0 0 1 7.2 4H17',
+  heart:
+    'M20.8 5.7a5.2 5.2 0 0 0-7.4 0L12 7.1l-1.4-1.4a5.2 5.2 0 0 0-7.4 7.4L12 21l8.8-7.9a5.2 5.2 0 0 0 0-7.4Z',
+  ban: 'M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM6.5 6.5l11 11',
+  check: 'm5 12 4 4L19 6',
+  user: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM4.5 21a7.5 7.5 0 0 1 15 0',
+  x: 'm6 6 12 12M18 6 6 18',
 } as const
 
 export type IconName = keyof typeof PATHS

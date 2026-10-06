@@ -65,8 +65,24 @@
   body {
     @apply bg-surface font-sans text-fg antialiased;
   }
+  /* Design v2: a 3px ring with a surface-colored gap, raised above neighbours so dense lists
+     never hide it (WCAG 2.4.11/2.4.13). Inputs show it on their whole field via `focus-ring-within`. */
   :focus-visible {
-    @apply outline-2 outline-offset-2 outline-focus;
+    position: relative;
+    z-index: 2;
+    outline: 3px solid var(--color-focus);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 2px var(--color-surface);
+  }
+  input:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+  @media (forced-colors: active) {
+    :focus-visible {
+      outline-color: Highlight;
+      box-shadow: none;
+    }
   }
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -76,6 +92,24 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Applies the focus ring to a field container while its input has keyboard focus. */
+@utility focus-ring-within {
+  &:has(input:focus-visible) {
+    position: relative;
+    z-index: 3;
+    border-color: var(--color-focus);
+    outline: 3px solid var(--color-focus);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 2px var(--color-surface);
+  }
+  @media (forced-colors: active) {
+    &:has(input:focus-visible) {
+      outline-color: Highlight;
+      box-shadow: none;
     }
   }
 }

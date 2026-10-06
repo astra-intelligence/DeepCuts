@@ -26,14 +26,32 @@ export function ListsPage() {
   )
 }
 
+export function AccountPage() {
+  return (
+    <>
+      <title>Account · Deep Cuts</title>
+      <h1 className="font-display text-4xl">Your account</h1>
+    </>
+  )
+}
+
+export function TunePage() {
+  return (
+    <>
+      <title>Tune my picks · Deep Cuts</title>
+      <h1 className="font-display text-4xl">What are you into?</h1>
+    </>
+  )
+}
+
 export function RouteError() {
   return (
     <main id="main" className="p-6">
       <title>Something went wrong · Deep Cuts</title>
       <h1 className="font-display text-4xl">Something went wrong</h1>
       <p className="mt-2 text-fg-muted">
-        <Link to="/" className="text-info underline">
-          Back to Discover
+        <Link to="/search" className="text-info underline">
+          Back to Search
         </Link>
       </p>
     </main>

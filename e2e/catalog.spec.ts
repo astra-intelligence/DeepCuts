@@ -1,6 +1,14 @@
 import { expect, expectNoA11yViolations, expectNoHorizontalOverflow, test } from './fixtures'
 
-for (const path of ['/', '/search', '/search?q=thing', '/movie/1091', '/lists']) {
+for (const path of [
+  '/search',
+  '/search?q=thing',
+  '/discover',
+  '/movie/1091',
+  '/lists',
+  '/account',
+  '/tune',
+]) {
   test(`${path} has no axe violations and no horizontal overflow`, async ({ page }) => {
     await page.goto(path)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
@@ -9,13 +17,23 @@ for (const path of ['/', '/search', '/search?q=thing', '/movie/1091', '/lists'])
   })
 }
 
+test('/ redirects to Search', async ({ page }) => {
+  await page.goto('/')
+  await expect(page).toHaveURL(/\/search$/)
+  await expect(page.getByRole('heading', { level: 1, name: 'Find your next film' })).toBeVisible()
+})
+
 test('search → detail → back, keyboard only', async ({ page }) => {
   await page.goto('/search')
-  await page.getByRole('searchbox', { name: 'Film title' }).focus()
+  const box = page.getByRole('combobox', { name: 'Find a movie to view and tag' })
+  await box.focus()
   await page.keyboard.type('thing')
-  const result = page.getByRole('link', { name: /The Thing/ })
-  await expect(result).toBeVisible()
-  await result.focus()
+  await expect(page.getByRole('option', { name: /The Thing/ })).toBeVisible()
+  // While the list is open, React Aria hides the rest of the page from screen readers by design.
+  // Focus can't reach it (Tab/Escape close the list first), which axe can't see, so only that
+  // rule is skipped for this scan.
+  await expectNoA11yViolations(page, ['aria-hidden-focus'])
+  await page.keyboard.press('ArrowDown')
   await page.keyboard.press('Enter')
 
   const heading = page.getByRole('heading', { level: 1, name: 'The Thing' })
@@ -23,13 +41,21 @@ test('search → detail → back, keyboard only', async ({ page }) => {
   await expect(page.getByText('Disney Plus')).toBeVisible()
   await expect(page).toHaveTitle('The Thing · Deep Cuts')
 
-  await page.getByRole('link', { name: 'Back to search' }).focus()
-  await page.keyboard.press('Enter')
-  await expect(page.getByRole('heading', { level: 1, name: 'Search' })).toBeFocused()
+  await page.goBack()
+  await expect(page.getByRole('heading', { level: 1, name: 'Results for “thing”' })).toBeVisible()
+})
+
+test('search results: open a film from the list and quick-add', async ({ page }) => {
+  await page.goto('/search?q=thing')
+  const add = page.getByRole('button', { name: 'Want to see The Thing' })
+  await add.click()
+  await expect(add).toHaveAttribute('aria-pressed', 'true')
+  const box = await add.boundingBox()
+  expect(box?.height).toBeGreaterThanOrEqual(44)
 })
 
 test('main navigation is reachable and marks the current page', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/search')
   const nav = page.getByRole('navigation', { name: 'Main' })
   await nav.getByRole('link', { name: 'My Lists' }).click()
   await expect(nav.getByRole('link', { name: 'My Lists' })).toHaveAttribute('aria-current', 'page')

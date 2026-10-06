@@ -1,19 +1,29 @@
-import type { RouteObject } from 'react-router'
+import { Navigate, type RouteObject } from 'react-router'
 import { AppLayout } from './routes/AppLayout'
 import { MovieDetailPage } from './routes/MovieDetailPage'
-import { DiscoverPage, ListsPage, RouteError } from './routes/PlaceholderPages'
+import {
+  AccountPage,
+  DiscoverPage,
+  ListsPage,
+  RouteError,
+  TunePage,
+} from './routes/PlaceholderPages'
 import { SearchPage } from './routes/SearchPage'
 
+// Search is the landing page; onboarding (/tune) is optional (ADR-0019 amendment).
 export const routes: RouteObject[] = [
   {
     path: '/',
     element: <AppLayout />,
     errorElement: <RouteError />,
     children: [
-      { index: true, element: <DiscoverPage /> },
+      { index: true, element: <Navigate to="/search" replace /> },
+      { path: 'discover', element: <DiscoverPage /> },
       { path: 'search', element: <SearchPage /> },
-      { path: 'movie/:id', element: <MovieDetailPage /> },
       { path: 'lists', element: <ListsPage /> },
+      { path: 'account', element: <AccountPage /> },
+      { path: 'tune', element: <TunePage /> },
+      { path: 'movie/:id', element: <MovieDetailPage /> },
       { path: '*', element: <RouteError /> },
     ],
   },

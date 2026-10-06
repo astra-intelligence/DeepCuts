@@ -12,7 +12,7 @@ describe('useRouteFocus', () => {
   it('focuses the new page heading after navigation', async () => {
     const { router } = renderRoute('/lists')
     await act(() => router.navigate('/search'))
-    expect(screen.getByRole('heading', { level: 1, name: 'Search' })).toHaveFocus()
+    expect(screen.getByRole('heading', { level: 1, name: 'Find your next film' })).toHaveFocus()
   })
 
   it('waits for a heading that renders after data loads', async () => {

@@ -20,9 +20,10 @@ export const test = base.extend<{ page: Page }>({
 
 export { expect }
 
-export async function expectNoA11yViolations(page: Page) {
+export async function expectNoA11yViolations(page: Page, disableRules: string[] = []) {
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    .disableRules(disableRules)
     .analyze()
   expect(
     results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(', ')}`),
