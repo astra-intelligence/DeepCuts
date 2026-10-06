@@ -16,16 +16,6 @@ export function DiscoverPage() {
   )
 }
 
-export function ListsPage() {
-  return (
-    <>
-      <title>My Lists · Deep Cuts</title>
-      <h1 className="font-display text-4xl">My Lists</h1>
-      <p className="mt-2 text-fg-muted">Your tagged films will live here.</p>
-    </>
-  )
-}
-
 export function AccountPage() {
   return (
     <>

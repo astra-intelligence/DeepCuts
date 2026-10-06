@@ -77,3 +77,24 @@ test('detail tags toggle by keyboard and meet the 44px target', async ({ page })
   }
   await expectNoA11yViolations(page)
 })
+
+test('a disliked film appears only on the Disliked list, with the tag accent', async ({ page }) => {
+  await page.goto('/movie/1091')
+  const dislike = page
+    .getByRole('group', { name: 'Your tags' })
+    .getByRole('button', { name: 'Dislike' })
+  await dislike.click()
+  await expect(dislike).toHaveAttribute('aria-pressed', 'true')
+  // Client-side navigation keeps the in-memory guest picks (ADR-0011).
+  await page.getByRole('link', { name: 'Deep Cuts, go to Discover' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main' })
+    .getByRole('link', { name: 'My Lists' })
+    .click()
+  const lists = page.getByRole('navigation', { name: 'Lists' })
+  await lists.getByRole('link', { name: /Dislike/ }).click()
+  await expect(page.getByRole('link', { name: /The Thing/ })).toBeVisible()
+  await expectNoA11yViolations(page)
+  await lists.getByRole('link', { name: /Seen it/ }).click()
+  await expect(page.getByText(/will appear here/)).toBeVisible()
+})
