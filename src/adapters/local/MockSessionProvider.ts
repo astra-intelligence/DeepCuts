@@ -15,8 +15,8 @@ import {
 import { versionedStore } from './versionedStore'
 
 const GUEST: Session = { kind: 'guest' }
-// The practice account everyone signs in as. Fictional, and labelled as a demo in the UI.
-const DEMO_ACCOUNT: Account = { id: 'demo', name: 'Alex Rivera', method: 'demo' }
+// The practice account everyone signs in as (the project owner's name), labelled as a demo in the UI.
+const DEMO_ACCOUNT: Account = { id: 'demo', name: 'Mike Curts', method: 'demo' }
 // The sign-in options shown on the sign-in page, in order.
 const METHODS: readonly SignInMethod[] = [
   {

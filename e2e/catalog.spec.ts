@@ -146,8 +146,8 @@ test('sign in with the demo account, keyboard only; survives a reload; sign out 
   await page.keyboard.press('Enter')
 
   await expect(page).toHaveURL(/\/search\?q=thing$/)
-  await expect(page.getByText('Signed in as Alex. Your 1 pick is in your account.')).toBeVisible()
-  const chip = page.getByRole('banner').getByRole('link', { name: 'Alex, open your account' })
+  await expect(page.getByText('Signed in as Mike. Your 1 pick is in your account.')).toBeVisible()
+  const chip = page.getByRole('banner').getByRole('link', { name: 'Mike, open your account' })
   await expect(chip).toBeVisible()
   expect((await chip.boundingBox())?.height).toBeGreaterThanOrEqual(44)
 
@@ -159,7 +159,7 @@ test('sign in with the demo account, keyboard only; survives a reload; sign out 
   )
 
   await chip.click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Alex Rivera' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Mike Curts' })).toBeVisible()
   await expectNoA11yViolations(page)
   await page.getByRole('button', { name: 'Sign out' }).click()
   await page.getByRole('button', { name: 'Yes, sign out' }).click()

@@ -19,7 +19,7 @@ describe('tune my picks (onboarding)', () => {
   it('step 1: choose genres, then continue with focus on the new heading', async () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/tune', { features: { onboarding: true } })
-    expect(screen.getByText('Step 1 of 3')).toBeInTheDocument()
+    expect(await screen.findByText('Step 1 of 3')).toBeInTheDocument()
     const cont = screen.getByRole('button', { name: 'Continue' })
     expect(cont).toBeDisabled()
     await user.click(screen.getByRole('button', { name: 'Horror' }))
@@ -33,7 +33,7 @@ describe('tune my picks (onboarding)', () => {
   it('step 2: a favorite picked in search survives the trip to Detail and back', async () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/tune?step=2&genres=27', { features: { onboarding: true } })
-    expect(screen.getByRole('button', { name: /Find my taste/ })).toBeDisabled()
+    expect(await screen.findByRole('button', { name: /Find my taste/ })).toBeDisabled()
     await user.type(screen.getByRole('combobox', { name: 'Find a movie to view and tag' }), 'thing')
     await user.click(await screen.findByRole('option', { name: /The Thing/ }))
     await screen.findByRole('heading', { level: 1, name: 'The Thing' })
