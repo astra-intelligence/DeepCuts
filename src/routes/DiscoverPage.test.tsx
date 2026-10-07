@@ -33,12 +33,9 @@ describe('discover', () => {
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
     await user.click(within(group).getByRole('button', { name: 'Dislike' }))
-    await waitFor(() =>
-      expect(within(group).getByRole('button', { name: 'Dislike' })).toHaveAttribute(
-        'aria-pressed',
-        'true',
-      ),
-    )
+    // Detail stages tag changes until Save.
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await screen.findByText(/^Saved\./)
     await act(() => router.navigate('/discover'))
     expect(
       await screen.findByRole('link', { name: /Today’s featured deep cut.*Alien/ }),
@@ -63,12 +60,9 @@ describe('discover with likes (ADR-0026)', () => {
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
     await user.click(within(group).getByRole('button', { name: 'Like' }))
-    await waitFor(() =>
-      expect(within(group).getByRole('button', { name: 'Like' })).toHaveAttribute(
-        'aria-pressed',
-        'true',
-      ),
-    )
+    // Detail stages tag changes until Save.
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await screen.findByText(/^Saved\./)
     await act(() => router.navigate('/discover'))
 
     expect(

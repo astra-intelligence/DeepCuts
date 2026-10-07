@@ -20,16 +20,69 @@ describe('movie detail', () => {
     renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
     const btn = (name: string) => within(group).getByRole('button', { name })
+    // The rules apply to the staged selection, before anything is saved.
     await user.click(btn('Want to see'))
-    await waitFor(() => expect(btn('Want to see')).toHaveAttribute('aria-pressed', 'true'))
+    expect(btn('Want to see')).toHaveAttribute('aria-pressed', 'true')
     await user.click(btn('Seen it'))
-    await waitFor(() => expect(btn('Seen it')).toHaveAttribute('aria-pressed', 'true'))
+    expect(btn('Seen it')).toHaveAttribute('aria-pressed', 'true')
     expect(btn('Want to see')).toHaveAttribute('aria-pressed', 'false')
     await user.click(btn('Like'))
     await user.click(btn('Dislike'))
-    await waitFor(() => expect(btn('Dislike')).toHaveAttribute('aria-pressed', 'true'))
+    expect(btn('Dislike')).toHaveAttribute('aria-pressed', 'true')
     expect(btn('Like')).toHaveAttribute('aria-pressed', 'false')
     expect(btn('Seen it')).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('stages changes behind Save and Cancel, then confirms and stays editable', async () => {
+    const user = userEvent.setup()
+    const { router } = renderRoute('/movie/1091')
+    const group = await screen.findByRole('group', { name: 'Your tags' })
+    const btn = (name: string) => within(group).getByRole('button', { name })
+    // No Save or Cancel until something changes.
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
+    await user.click(btn('Seen it'))
+    await user.click(btn('Like'))
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
+    // Undoing every change by hand hides them again: nothing differs from what's saved.
+    await user.click(btn('Seen it'))
+    await user.click(btn('Like'))
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
+
+    // Save writes both tags, announces it, and moves focus back to the tags.
+    await user.click(btn('Seen it'))
+    await user.click(btn('Like'))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    expect(await screen.findByRole('status')).toHaveTextContent('Saved. The Thing: Seen it, Like.')
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
+    expect(btn('Seen it')).toHaveFocus()
+
+    // Still editable: a new change clears the message and brings Save and Cancel back.
+    await user.click(btn('Dislike'))
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+    expect(btn('Like')).toHaveAttribute('aria-pressed', 'false')
+    // Cancel puts the saved tags back.
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(btn('Like')).toHaveAttribute('aria-pressed', 'true')
+    expect(btn('Dislike')).toHaveAttribute('aria-pressed', 'false')
+    expect(btn('Seen it')).toHaveFocus()
+
+    // What was saved is really saved: My Lists has it.
+    await act(() => router.navigate('/lists?tag=liked'))
+    expect(await screen.findByRole('link', { name: /The Thing/ })).toBeInTheDocument()
+  })
+
+  it('a cancelled change saves nothing', async () => {
+    const user = userEvent.setup()
+    const { router } = renderRoute('/movie/1091')
+    const group = await screen.findByRole('group', { name: 'Your tags' })
+    await user.click(within(group).getByRole('button', { name: 'Want to see' }))
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(within(group).getByRole('button', { name: 'Want to see' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    await act(() => router.navigate('/lists?tag=watchlist'))
+    expect(await screen.findByText(/will appear here/)).toBeInTheDocument()
   })
 
   it('a disliked film stays in Search with a marker (ADR-0017 amendment)', async () => {
@@ -37,12 +90,9 @@ describe('movie detail', () => {
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
     await user.click(within(group).getByRole('button', { name: 'Dislike' }))
-    await waitFor(() =>
-      expect(within(group).getByRole('button', { name: 'Dislike' })).toHaveAttribute(
-        'aria-pressed',
-        'true',
-      ),
-    )
+    // Detail stages tag changes until Save.
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await screen.findByText(/^Saved\./)
     await act(() => router.navigate('/search?q=thing'))
     const row = await screen.findByRole('link', { name: /The Thing/ })
     expect(within(row).getByText('Disliked')).toBeInTheDocument()

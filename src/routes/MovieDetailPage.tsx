@@ -12,12 +12,9 @@ import { certification, formatRuntime, imageUrl, providersFor, releaseYear } fro
 import { Icon } from '../components/Icon'
 import { Logo } from '../components/Logo'
 import { MovieSearch } from '../components/MovieSearch'
-import { TagSaveError } from '../components/TagSaveError'
-import { TagToggle } from '../components/TagToggle'
-import { TAGS } from '../components/tags'
 import { useRouteFocus } from '../hooks/useRouteFocus'
-import { useSetTag, useTagQueries } from '../session/tagQueries'
 import { SkipLink } from './AppLayout'
+import { DetailTags } from './DetailTags'
 
 // The :id in the URL is untrusted: it must be a positive whole number of sensible size.
 const idSchema = z.coerce.number().int().positive().max(99_999_999)
@@ -82,8 +79,6 @@ function DetailLayout({ children }: { children: ReactNode }) {
 function MovieDetail({ id }: { id: number }) {
   const movie = useQuery(movieQueries.detail(id))
   const providers = useQuery(movieQueries.providers(id))
-  const tags = useQuery(useTagQueries().forMovie(id)).data
-  const setTag = useSetTag()
   const back = useBack()
 
   if (movie.isPending)
@@ -137,19 +132,8 @@ function MovieDetail({ id }: { id: number }) {
         </p>
         {m.overview && <p className="my-3.5 leading-relaxed text-fg-muted">{m.overview}</p>}
 
-        {/* The four tag toggles. Changes save at once (and follow the tag rules, ADR-0017). */}
-        <div role="group" aria-label="Your tags" className="grid grid-cols-4 gap-1.5">
-          {TAGS.map((t) => (
-            <TagToggle
-              key={t.tag}
-              tag={t}
-              isSelected={tags?.has(t.tag) ?? false}
-              onChange={(on) => setTag.mutate({ tmdbId: m.id, tag: t.tag, on })}
-              className="min-h-17 flex-col gap-1.5 px-1 text-center"
-            />
-          ))}
-        </div>
-        {setTag.isError && <TagSaveError className="mt-2" />}
+        {/* The four tag toggles, with Save and Cancel once anything changes (ADR-0017 rules). */}
+        <DetailTags movieId={m.id} title={m.title} />
 
         <section aria-labelledby="where-to-watch" className="mt-4">
           <h2

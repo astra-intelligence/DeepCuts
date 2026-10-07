@@ -72,18 +72,35 @@ test('main navigation is reachable and marks the current page', async ({ page })
   expect(box?.height).toBeGreaterThanOrEqual(44)
 })
 
-test('detail tags toggle by keyboard and meet the 44px target', async ({ page }) => {
+test('detail tags toggle and save by keyboard, all at 44px or more', async ({ page }) => {
   await page.goto('/movie/1091')
   const tags = page.getByRole('group', { name: 'Your tags' })
   const seen = tags.getByRole('button', { name: 'Seen it' })
   await seen.focus()
   await page.keyboard.press('Space')
   await expect(seen).toHaveAttribute('aria-pressed', 'true')
-  for (const name of ['Seen it', 'Want to see', 'Like', 'Dislike']) {
-    const box = await tags.getByRole('button', { name, exact: true }).boundingBox()
+  const save = page.getByRole('button', { name: 'Save' })
+  const cancel = page.getByRole('button', { name: 'Cancel' })
+  for (const target of [
+    ...['Seen it', 'Want to see', 'Like', 'Dislike'].map((name) =>
+      tags.getByRole('button', { name, exact: true }),
+    ),
+    save,
+    cancel,
+  ]) {
+    const box = await target.boundingBox()
     expect(box?.height).toBeGreaterThanOrEqual(44)
     expect(box?.width).toBeGreaterThanOrEqual(44)
   }
+  await expectNoA11yViolations(page)
+  await expectNoHorizontalOverflow(page)
+  // Save follows the tags in Tab order (Want to see, Like and Dislike come first).
+  for (let i = 0; i < 4; i++) await page.keyboard.press('Tab')
+  await expect(save).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('status')).toHaveText('Saved. The Thing: Seen it.')
+  await expect(seen).toBeFocused()
+  await expect(save).toHaveCount(0)
   await expectNoA11yViolations(page)
 })
 
@@ -94,6 +111,9 @@ test('a disliked film appears only on the Disliked list, with the tag accent', a
     .getByRole('button', { name: 'Dislike' })
   await dislike.click()
   await expect(dislike).toHaveAttribute('aria-pressed', 'true')
+  // Detail stages tag changes until Save.
+  await page.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByRole('status')).toContainText('Saved.')
   // Client-side navigation keeps the in-memory guest picks (ADR-0011).
   await page.getByRole('link', { name: 'Deep Cuts, go to Discover' }).click()
   await page
@@ -206,6 +226,9 @@ test('liking a film tunes Discover, with a match and the reason (ADR-0026)', asy
     .getByRole('button', { name: 'Like', exact: true })
   await like.click()
   await expect(like).toHaveAttribute('aria-pressed', 'true')
+  // Detail stages tag changes until Save.
+  await page.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByRole('status')).toContainText('Saved.')
   // Client-side navigation keeps the in-memory guest picks (ADR-0011).
   await page.getByRole('link', { name: 'Deep Cuts, go to Discover' }).click()
   await expect(page.getByText('Picked from the films you liked, beyond the obvious.')).toBeVisible()

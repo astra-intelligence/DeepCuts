@@ -1,0 +1,144 @@
+// The tag panel on the Detail page: the four tag toggles, then Save and Cancel.
+//
+// Changes are staged: tapping a tag only changes what's shown (following the ADR-0017 rules
+// through `applyTag`), and Save and Cancel appear as soon as anything differs from what's saved.
+// Save writes the changes and confirms them in a message ("Saved. The Thing: Seen it, Like."),
+// announced to screen readers; Cancel puts the saved tags back. The tags stay editable after a
+// save. Search keeps one-tap tagging that saves at once (owner's choice, 2026-10-07).
+import { useQuery } from '@tanstack/react-query'
+import { useRef, useState } from 'react'
+import { Button } from 'react-aria-components'
+import { Icon } from '../components/Icon'
+import { TagSaveError } from '../components/TagSaveError'
+import { TagToggle } from '../components/TagToggle'
+import { TAGS } from '../components/tags'
+import { applyTag, SYSTEM_TAGS, type SystemTag, type TagSet } from '../domain/tagRules'
+import { useSetTag, useTagQueries } from '../session/tagQueries'
+
+const NO_TAGS: TagSet = new Set()
+
+// Whether two tag sets hold the same tags.
+const sameTags = (a: TagSet, b: TagSet) => a.size === b.size && [...a].every((t) => b.has(t))
+
+/** "Saved. The Thing: Seen it, Like." in display order, or a note that the tags were cleared. */
+function savedMessage(title: string, tags: TagSet): string {
+  const labels = TAGS.filter((t) => tags.has(t.tag)).map((t) => t.label)
+  return labels.length
+    ? `Saved. ${title}: ${labels.join(', ')}.`
+    : `Saved. ${title} has no tags now.`
+}
+
+/**
+ * The film's tag toggles with staged Save and Cancel.
+ * @param movieId - The TMDB id the tags belong to.
+ * @param title - The film's title, used in the saved message.
+ */
+export function DetailTags({ movieId, title }: { movieId: number; title: string }) {
+  const saved = useQuery(useTagQueries().forMovie(movieId)).data ?? NO_TAGS
+  const setTag = useSetTag()
+  // The unsaved selection, or null when the toggles simply show what's saved.
+  const [draft, setDraft] = useState<TagSet | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [failed, setFailed] = useState(false)
+  // The confirmation after a save. Cleared by the next change, so it never describes old tags.
+  const [message, setMessage] = useState('')
+  const groupRef = useRef<HTMLDivElement>(null)
+
+  const shown = draft ?? saved
+  const dirty = draft !== null && !sameTags(draft, saved)
+
+  // Save and Cancel disappear once used. Focus would fall back to the page, so it moves to the
+  // first tag toggle instead: next to the message, and where the person was working.
+  const focusTags = () => groupRef.current?.querySelector('button')?.focus()
+
+  function toggle(tag: SystemTag, on: boolean) {
+    if (saving) return
+    setDraft(applyTag(shown, tag, on))
+    setMessage('')
+    setFailed(false)
+  }
+
+  async function save() {
+    if (!draft || saving) return
+    setSaving(true)
+    setFailed(false)
+    try {
+      // The repository changes one tag at a time. Removals go first, then additions, which lands
+      // exactly on the draft: the draft already follows the rules, so an addition never clears a
+      // tag the person wants to keep. Each change is diffed against what's saved now, so after a
+      // failed save, Save again only sends what's still missing.
+      for (const tag of SYSTEM_TAGS) {
+        if (saved.has(tag) && !draft.has(tag))
+          await setTag.mutateAsync({ tmdbId: movieId, tag, on: false })
+      }
+      for (const tag of SYSTEM_TAGS) {
+        if (!saved.has(tag) && draft.has(tag))
+          await setTag.mutateAsync({ tmdbId: movieId, tag, on: true })
+      }
+      setDraft(null)
+      setMessage(savedMessage(title, draft))
+      focusTags()
+    } catch {
+      // The draft stays selected, so nothing the person picked is lost; the alert says to retry.
+      setFailed(true)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function cancel() {
+    setDraft(null)
+    setFailed(false)
+    focusTags()
+  }
+
+  return (
+    <>
+      <div ref={groupRef} role="group" aria-label="Your tags" className="grid grid-cols-4 gap-1.5">
+        {TAGS.map((t) => (
+          <TagToggle
+            key={t.tag}
+            tag={t}
+            isSelected={shown.has(t.tag)}
+            onChange={(on) => toggle(t.tag, on)}
+            className="min-h-17 flex-col gap-1.5 px-1 text-center"
+          />
+        ))}
+      </div>
+      {/* Right after the toggles, so the next Tab from a tag reaches Save. */}
+      {dirty && (
+        <div className="mt-3 flex gap-2">
+          <Button
+            onPress={save}
+            // Not `isPending` or `isDisabled`: React Aria's pending announcer leaves an unlabelled
+            // element that fails axe, and disabling the button would drop keyboard focus. A second
+            // press while saving is ignored in `save` instead.
+            aria-disabled={saving}
+            className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-button bg-button-primary-bg px-4 text-sm font-semibold text-button-primary-fg hover:bg-button-primary-bg/85 aria-disabled:opacity-70 md:flex-none"
+          >
+            {saving ? 'Saving…' : 'Save'}
+          </Button>
+          <Button
+            onPress={cancel}
+            isDisabled={saving}
+            className="flex min-h-11 flex-1 items-center justify-center rounded-button border border-button-secondary-border bg-button-secondary-bg px-4 text-sm font-semibold text-button-secondary-fg hover:border-accent md:flex-none"
+          >
+            Cancel
+          </Button>
+        </div>
+      )}
+      {failed && <TagSaveError staged className="mt-2" />}
+      {/* Always in the page, and never display:none (empty until a save takes no space), so
+          screen readers announce the message when it appears. A live region added or unhidden at
+          the same moment as its text is often missed. */}
+      <p role="status" className={message ? 'mt-3 flex items-center gap-2 text-sm' : ''}>
+        {message && (
+          <>
+            <Icon name="check" className="size-5 shrink-0 text-accent" />
+            {message}
+          </>
+        )}
+      </p>
+    </>
+  )
+}
