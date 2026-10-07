@@ -87,7 +87,7 @@ describe('session', () => {
     expect(moved).toBe(2)
     expect(result.current.session).toMatchObject({
       kind: 'account',
-      account: { name: 'Alex Rivera' },
+      account: { name: 'Mike Curts' },
     })
     expect(await accountTags().list('liked')).toEqual([5])
     await waitFor(() => expect(result.current.liked).toEqual([5]))

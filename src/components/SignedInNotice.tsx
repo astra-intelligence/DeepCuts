@@ -10,7 +10,7 @@ const stateSchema = z.object({
   signedIn: z.object({ moved: z.number().int().min(0).max(100_000) }),
 })
 
-/** "Signed in as Alex. Your 3 picks are in your account." Announced once, politely. */
+/** "Signed in as Mike. Your 3 picks are in your account." Announced once, politely. */
 export function SignedInNotice() {
   const { session } = useSession()
   const parsed = stateSchema.safeParse(useLocation().state)

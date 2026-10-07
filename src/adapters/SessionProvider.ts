@@ -49,5 +49,5 @@ export interface SessionProvider {
   signOut(): Promise<Session>
 }
 
-/** The first word of a name, for the header ("Alex Rivera" → "Alex"). */
+/** The first word of a name, for the header ("Mike Curts" → "Mike"). */
 export const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? ''

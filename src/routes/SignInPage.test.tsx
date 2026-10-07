@@ -20,15 +20,15 @@ describe('sign in (ADR-0025)', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Sign in to Deep Cuts' }),
     ).toBeInTheDocument()
-    expect(screen.getByText(/Your 1 unsaved pick comes with you/)).toBeInTheDocument()
+    expect(await screen.findByText(/Your 1 unsaved pick comes with you/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Continue with a demo account/ }))
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/search'))
     expect(router.state.location.search).toBe('?q=thing')
-    const notice = await screen.findByText(/Signed in as Alex\. Your 1 pick is in your account\./)
+    const notice = await screen.findByText(/Signed in as Mike\. Your 1 pick is in your account\./)
     expect(notice).toHaveAttribute('role', 'status')
     expect(
-      within(header()).getByRole('link', { name: 'Alex, open your account' }),
+      within(header()).getByRole('link', { name: 'Mike, open your account' }),
     ).toBeInTheDocument()
     // The account's picks load asynchronously after the session switches.
     await waitFor(() =>
@@ -63,7 +63,7 @@ describe('sign in (ADR-0025)', () => {
     const { router } = renderRoute('/sign-in', {
       initialSession: {
         kind: 'account',
-        account: { id: 'demo', name: 'Alex Rivera', method: 'demo' },
+        account: { id: 'demo', name: 'Mike Curts', method: 'demo' },
       },
     })
     await waitFor(() => expect(router.state.location.pathname).toBe('/account'))
@@ -84,10 +84,10 @@ describe('signed-in account page', () => {
     const { router } = renderRoute('/account', {
       initialSession: {
         kind: 'account',
-        account: { id: 'demo', name: 'Alex Rivera', method: 'demo' },
+        account: { id: 'demo', name: 'Mike Curts', method: 'demo' },
       },
     })
-    expect(screen.getByRole('heading', { level: 1, name: 'Alex Rivera' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Mike Curts' })).toBeInTheDocument()
     expect(screen.getByText('Signed in with the demo account')).toBeInTheDocument()
     expect(screen.getByText(/lists are kept on this device/)).toBeInTheDocument()
 

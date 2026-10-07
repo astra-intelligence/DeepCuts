@@ -74,6 +74,15 @@ export const movieFixture = {
       },
     ],
   },
+  // Keywords and credits as the proxy returns them (credits trimmed to directors, ADR-0028).
+  keywords: {
+    keywords: [
+      { id: 1599, name: 'antarctica' },
+      { id: 9715, name: 'paranoia' },
+      { id: 162846, name: 'shapeshifter' },
+    ],
+  },
+  credits: { crew: [{ id: 11770, name: 'John Carpenter', job: 'Director' }] },
   release_dates: {
     results: [
       { iso_3166_1: 'GB', release_dates: [{ certification: '18' }] },
@@ -81,6 +90,24 @@ export const movieFixture = {
     ],
   },
 }
+
+// Details for the films The Thing recommends, so the scorer's re-rank (ADR-0028) has keywords
+// and directors to work with: The Fog shares John Carpenter with The Thing; Alien doesn't.
+const DIRECTORS: Record<number, { id: number; name: string; job: string }> = {
+  790: { id: 11770, name: 'John Carpenter', job: 'Director' },
+  348: { id: 578, name: 'Ridley Scott', job: 'Director' },
+}
+export const candidateDetailFixtures = Object.fromEntries(
+  movieFixture.recommendations.results.map((m) => [
+    m.id,
+    {
+      ...m,
+      genres: m.genre_ids.map((id) => ({ id, name: '' })),
+      keywords: { keywords: [{ id: 9715, name: 'paranoia' }] },
+      credits: { crew: DIRECTORS[m.id] ? [DIRECTORS[m.id]] : [] },
+    },
+  ]),
+)
 
 export const providersFixture = {
   results: {

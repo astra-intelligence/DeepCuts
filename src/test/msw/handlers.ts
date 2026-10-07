@@ -1,6 +1,6 @@
 // Fake TMDB endpoints for unit tests (Mock Service Worker), answering with the fixtures.
 import { http, HttpResponse } from 'msw'
-import { movieFixture, providersFixture, searchFixture } from './fixtures'
+import { candidateDetailFixtures, movieFixture, providersFixture, searchFixture } from './fixtures'
 
 /** One handler per TMDB proxy path the app uses. */
 export const handlers = [
@@ -11,9 +11,12 @@ export const handlers = [
   }),
   http.get('/api/tmdb/discover/movie', () => HttpResponse.json(searchFixture)),
   http.get('/api/tmdb/movie/:id/watch/providers', () => HttpResponse.json(providersFixture)),
-  http.get('/api/tmdb/movie/:id', ({ params }) =>
-    params.id === String(movieFixture.id)
-      ? HttpResponse.json(movieFixture)
-      : HttpResponse.json({ error: 'not_found' }, { status: 404 }),
-  ),
+  // The Thing, the films it recommends (for the scorer's re-rank), or not found.
+  http.get('/api/tmdb/movie/:id', ({ params }) => {
+    if (params.id === String(movieFixture.id)) return HttpResponse.json(movieFixture)
+    const candidate = candidateDetailFixtures[Number(params.id)]
+    return candidate
+      ? HttpResponse.json(candidate)
+      : HttpResponse.json({ error: 'not_found' }, { status: 404 })
+  }),
 ]

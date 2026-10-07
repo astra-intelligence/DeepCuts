@@ -1,12 +1,15 @@
-// Recommendation scorer v1 (ADR-0026): turns a person's tags into ranked film picks.
+// Recommendation scorer v1.1 (ADR-0026, ADR-0028): turns a person's tags into ranked film picks.
 //
 // How it works, in four steps:
 // 1. Candidates: every film TMDB recommends for any film you liked. A film recommended by
 //    several of your likes is a stronger candidate.
-// 2. Taste profile: a weight per genre, built from your tags (liked +1, Want to see +0.5,
-//    disliked −1), plus the decades and languages of the films you liked.
-// 3. Score: each candidate gets six part scores between 0 and 1 (see DEFAULT_WEIGHTS), which are
+// 2. Taste profile: a weight per genre and per keyword, built from your tags (liked +1, Want to
+//    see +0.5, disliked −1), plus the decades, languages and directors of the films you liked.
+// 3. Score: each candidate gets eight part scores between 0 and 1 (see DEFAULT_WEIGHTS), which are
 //    combined with the weights into one score. "% match" is that score × 100.
+//    Keywords and directors need one extra details call per candidate, so the caller fetches
+//    them only for the top candidates (`TasteInput.details`) and scores again: a re-rank
+//    (ADR-0028). Candidates without details score 0 on those two parts.
 // 4. Rank: highest score first, with a small penalty for repeating a genre so the feed stays varied.
 //
 // Pure and deterministic: no network, no randomness, so the same tags always give the same
@@ -22,6 +25,22 @@ export interface ScorerFilm {
   popularity: number
   voteAverage: number
   voteCount: number
+  /** TMDB keyword ids ("time loop", "cabin in the woods"…), when the film's details are loaded. */
+  keywordIds?: readonly number[]
+  /** The film's directors, when its details are loaded. */
+  directors?: readonly Person[]
+}
+
+/** A person credited on a film (today: directors). */
+export interface Person {
+  id: number
+  name: string
+}
+
+/** Keywords and directors for a candidate, loaded only for the top candidates (ADR-0028). */
+export interface FilmDetails {
+  keywordIds: readonly number[]
+  directors: readonly Person[]
 }
 
 /** Everything the scorer knows about one person's taste. */
@@ -34,18 +53,30 @@ export interface TasteInput {
   disliked: readonly ScorerFilm[]
   /** Every film the person has tagged. None of them is ever recommended. */
   excluded: ReadonlySet<number>
+  /** Keywords and directors for some candidates, by film id (the re-rank pass, ADR-0028). */
+  details?: ReadonlyMap<number, FilmDetails>
 }
 
-/** The six things a candidate is scored on. Each part is a number from 0 (worst) to 1 (best). */
-export const SCORE_PARTS = ['support', 'genre', 'quality', 'deepCut', 'decade', 'language'] as const
-/** One of the six score parts. */
+/** The eight things a candidate is scored on. Each part is a number from 0 (worst) to 1 (best). */
+export const SCORE_PARTS = [
+  'support',
+  'genre',
+  'quality',
+  'deepCut',
+  'decade',
+  'language',
+  'keywords',
+  'director',
+] as const
+/** One of the eight score parts. */
 export type ScorePart = (typeof SCORE_PARTS)[number]
 /** How much each part counts toward the final score. */
 export type Weights = Record<ScorePart, number>
 
 /**
- * The owner's tuned weights (ADR-0026, chosen in the weights lab 2026-10-06), as copied from the
- * lab. Rounded to two places they add up to 1.01, so they're scaled to sum to exactly 1.
+ * The owner's tuned weights (ADR-0026, chosen in the weights lab 2026-10-06), plus provisional
+ * weights for the two v1.1 parts (ADR-0028), all scaled to sum to exactly 1. Adding parts
+ * shrinks the others in proportion; retune in the weights lab.
  */
 export const DEFAULT_WEIGHTS: Weights = normalizeWeights({
   support: 0.32,
@@ -54,6 +85,8 @@ export const DEFAULT_WEIGHTS: Weights = normalizeWeights({
   deepCut: 0.14,
   decade: 0.09,
   language: 0.05,
+  keywords: 0.15,
+  director: 0.05,
 })
 
 /** Each earlier pick with the same primary genre lowers a candidate's rank by this much. */
@@ -91,6 +124,8 @@ export interface Pick {
   match: number
   /** Titles of liked films that recommended it, at most two. */
   because: string[]
+  /** Set when it shares a director with a film you liked: "John Carpenter", "The Thing". */
+  sameDirector?: { director: string; liked: string }
   /** The six part scores (0–1), shown in the weights lab. */
   parts: Record<ScorePart, number>
 }
@@ -140,6 +175,22 @@ function genreProfile(input: TasteInput): Map<number, number> {
   return new Map([...raw].map(([g, w]) => [g, max === 0 ? 0 : w / max]))
 }
 
+/** Keyword weights, unscaled: liked +1, Want to see +0.5, disliked −1, from loaded keywords. */
+function keywordProfile(input: TasteInput): Map<number, number> {
+  const weights = new Map<number, number>()
+  const add = (films: readonly ScorerFilm[], weight: number) => {
+    for (const f of films)
+      for (const k of f.keywordIds ?? []) weights.set(k, (weights.get(k) ?? 0) + weight)
+  }
+  add(
+    input.liked.map((l) => l.film),
+    1,
+  )
+  add(input.wanted, 0.5)
+  add(input.disliked, -1)
+  return weights
+}
+
 /** Share of `values` equal to `value`. Only called with likes present (no likes, no candidates). */
 function shareOf<T>(values: readonly T[], value: T): number {
   return values.filter((v) => v === value).length / values.length
@@ -168,6 +219,20 @@ export function recommend(
   const likedLanguages = likedFilms.map((f) => f.language)
   const maxSupport = Math.max(...candidates.map((c) => c.support))
   const maxPopularity = Math.max(...candidates.map((c) => c.film.popularity))
+  // Keywords: how strongly a candidate's keywords overlap your profile (negative counts as 0).
+  const keywords = keywordProfile(input)
+  const keywordRaw = (id: number) =>
+    Math.max(
+      0,
+      (input.details?.get(id)?.keywordIds ?? []).reduce(
+        (sum, k) => sum + (keywords.get(k) ?? 0),
+        0,
+      ),
+    )
+  const maxKeywordRaw = Math.max(0, ...candidates.map((c) => keywordRaw(c.film.id)))
+  // Directors of the films you liked, and which liked film each one made.
+  const likedByDirector = new Map<number, string>()
+  for (const f of likedFilms) for (const d of f.directors ?? []) likedByDirector.set(d.id, f.title)
 
   // Step 3: score each candidate.
   const scored = candidates.map((c): Pick => {
@@ -180,6 +245,10 @@ export function recommend(
     const rating =
       (v / (v + MIN_VOTES)) * f.voteAverage + (MIN_VOTES / (v + MIN_VOTES)) * MEAN_RATING
     const decade = decadeOf(f.year)
+    // Same director: the first of the candidate's directors who also made a film you liked.
+    const director = (input.details?.get(f.id)?.directors ?? [])
+      .map((d) => ({ name: d.name, liked: likedByDirector.get(d.id) }))
+      .find((d): d is { name: string; liked: string } => d.liked !== undefined)
     const parts: Record<ScorePart, number> = {
       // Relative to the best-supported candidate, so the top one always scores 1.
       support: c.support / maxSupport,
@@ -192,10 +261,24 @@ export function recommend(
       // The share of your likes from the same decade, and in the same original language.
       decade: decade === null ? 0 : shareOf(likedDecades, decade),
       language: f.language ? shareOf(likedLanguages, f.language) : 0,
+      // Relative to the best keyword match among candidates; 0 without loaded keywords.
+      keywords: maxKeywordRaw > 0 ? keywordRaw(f.id) / maxKeywordRaw : 0,
+      // All or nothing: a director you've already liked, or not.
+      director: director ? 1 : 0,
     }
     // The weighted sum of the parts. With weights summing to 1 this is already 0–1.
     const score = clamp01(SCORE_PARTS.reduce((sum, p) => sum + weights[p] * parts[p], 0))
-    return { film: f, score, match: Math.round(score * 100), because: c.because.slice(0, 2), parts }
+    const pick: Pick = {
+      film: f,
+      score,
+      match: Math.round(score * 100),
+      because: c.because.slice(0, 2),
+      parts,
+    }
+    if (director) {
+      pick.sameDirector = { director: director.name, liked: director.liked }
+    }
+    return pick
   })
 
   // Step 4: rank greedily, one pick at a time, nudging down candidates whose primary genre is

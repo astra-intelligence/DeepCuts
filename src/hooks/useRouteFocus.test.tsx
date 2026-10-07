@@ -6,9 +6,9 @@ import { describe, expect, it } from 'vitest'
 import { renderRoute } from '../test/renderRoute'
 
 describe('useRouteFocus', () => {
-  it('does not steal focus on first load', () => {
+  it('does not steal focus on first load', async () => {
     renderRoute('/lists')
-    expect(screen.getByRole('heading', { level: 1 })).not.toHaveFocus()
+    expect(await screen.findByRole('heading', { level: 1 })).not.toHaveFocus()
   })
 
   it('focuses the new page heading after navigation', async () => {

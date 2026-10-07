@@ -23,6 +23,6 @@ describe('navigation', () => {
 
   it('renders the placeholder pages', async () => {
     renderRoute('/lists')
-    expect(screen.getByRole('heading', { level: 1, name: 'My Lists' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'My Lists' })).toBeInTheDocument()
   })
 })

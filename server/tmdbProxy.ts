@@ -12,6 +12,27 @@ import { resolveTmdbRequest } from './tmdbAllowlist.ts'
 const PREFIX = '/api/tmdb/'
 const UPSTREAM = 'https://api.themoviedb.org/3/'
 
+/**
+ * Shrinks a film's appended credits to its directors before they reach the browser (ADR-0028).
+ * Full credits list the whole cast and crew (often 50–150 kB); the app only uses directors.
+ * Anything that isn't a film-details body with credits passes through unchanged.
+ */
+export function trimCredits(body: unknown): unknown {
+  if (typeof body !== 'object' || body === null || !('credits' in body)) return body
+  const credits = (body as { credits: unknown }).credits
+  const crew =
+    typeof credits === 'object' &&
+    credits !== null &&
+    'crew' in credits &&
+    Array.isArray(credits.crew)
+      ? credits.crew
+      : []
+  const directors = crew
+    .filter((p: { job?: unknown }) => p?.job === 'Director')
+    .map(({ id, name, job }: { id: unknown; name: unknown; job: unknown }) => ({ id, name, job }))
+  return { ...body, credits: { crew: directors } }
+}
+
 // Sends a JSON response. Successful answers may be cached privately for 5 minutes; errors never.
 function send(res: ServerResponse, status: number, body: unknown) {
   res.statusCode = status
@@ -50,7 +71,7 @@ export function createTmdbMiddleware(token: string | undefined, fetchImpl: typeo
       )
       if (!upstream.ok)
         return send(res, upstream.status === 404 ? 404 : 502, { error: 'upstream_error' })
-      return send(res, 200, await upstream.json())
+      return send(res, 200, trimCredits(await upstream.json()))
     } catch {
       return send(res, 504, { error: 'upstream_timeout' })
     }
