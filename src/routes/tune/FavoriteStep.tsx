@@ -1,0 +1,52 @@
+import { useQuery } from '@tanstack/react-query'
+import { Button } from 'react-aria-components'
+import { movieQueries } from '../../api/queries'
+import { Icon } from '../../components/Icon'
+import { Prompt } from './Prompt'
+import { primary } from './styles'
+import type { StepProps } from './useTuneState'
+
+/** Step 2: pick a favorite film with the search above (Detail → back keeps it). */
+export function FavoriteStep({ state, update }: StepProps) {
+  const favorite = useQuery({
+    ...movieQueries.detail(state.favorite ?? 0),
+    enabled: !!state.favorite,
+  }).data
+  return (
+    <>
+      <Button
+        onPress={() => update({ step: 1 })}
+        className="mb-3.5 -ml-2 flex min-h-11 w-fit items-center gap-1 px-2 text-sm text-fg-muted"
+      >
+        <Icon name="back" /> Back
+      </Button>
+      <Prompt eyebrow="One more signal" title="What’s your favorite movie?">
+        <p className="mt-3 mb-4 max-w-md leading-relaxed text-fg-muted">
+          Use the search above to find a favorite. You can tag it there and come right back.
+        </p>
+        {favorite && (
+          <p className="mb-3 ml-auto flex w-fit items-center gap-2 rounded-lg border border-accent bg-surface-selected px-3 py-1.5 text-on-selected">
+            <Icon name="check" />
+            <span className="flex flex-col">
+              <small className="text-sm text-fg-muted">Your pick</small>
+              <strong className="text-sm">{favorite.title}</strong>
+            </span>
+          </p>
+        )}
+        <Button
+          isDisabled={!favorite}
+          onPress={() => update({ step: 3, pick: undefined, n: 1 })}
+          className={primary}
+        >
+          Find my taste <Icon name="arrow" />
+        </Button>
+        <Button
+          onPress={() => update({ step: 3, pick: undefined, n: 1 })}
+          className="mt-1 ml-auto block min-h-11 px-3 text-sm text-fg-muted"
+        >
+          Skip favorite movie
+        </Button>
+      </Prompt>
+    </>
+  )
+}

@@ -6,7 +6,7 @@ import { MovieDetailPage } from './routes/MovieDetailPage'
 import { ListsPage } from './routes/ListsPage'
 import { RouteError } from './routes/PlaceholderPages'
 import { SearchPage } from './routes/SearchPage'
-import { TunePage } from './routes/TunePage'
+import { TunePage } from './routes/tune/TunePage'
 
 // Search is the landing page; onboarding (/tune) is optional (ADR-0019 amendment).
 export const routes: RouteObject[] = [
