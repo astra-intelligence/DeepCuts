@@ -29,7 +29,9 @@ const STEPS = {
   900: 0.3,
   950: 0.22,
 }
-const MAX_CHROMA = 0.16
+// High enough that the gamut, not this cap, limits most mid steps: the genre tones should be as
+// vivid as sRGB allows (raised from 0.16, 2026-10-07). The bell curve below still calms the ends.
+const MAX_CHROMA = 0.24
 
 function oklchToSrgb(L, C, h) {
   const a = C * Math.cos((h * Math.PI) / 180)
