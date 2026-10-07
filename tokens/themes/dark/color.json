@@ -90,16 +90,16 @@
         "$value": "{color.teal.400}"
       },
       "action": {
-        "$value": "{color.orange.600}"
+        "$value": "{color.orange.500}"
       },
       "adventure": {
-        "$value": "{color.lime.600}"
+        "$value": "{color.lime.500}"
       },
       "animation": {
-        "$value": "{color.gold.600}"
+        "$value": "{color.gold.500}"
       },
       "comedy": {
-        "$value": "{color.gold.600}"
+        "$value": "{color.gold.500}"
       },
       "crime": {
         "$value": "{color.indigo.600}"
@@ -108,10 +108,10 @@
         "$value": "{color.green.600}"
       },
       "drama": {
-        "$value": "{color.sky.600}"
+        "$value": "{color.sky.500}"
       },
       "family": {
-        "$value": "{color.lime.600}"
+        "$value": "{color.lime.500}"
       },
       "fantasy": {
         "$value": "{color.violet.600}"
@@ -132,19 +132,19 @@
         "$value": "{color.magenta.600}"
       },
       "science-fiction": {
-        "$value": "{color.cyan.600}"
+        "$value": "{color.cyan.500}"
       },
       "thriller": {
-        "$value": "{color.orange.600}"
+        "$value": "{color.orange.500}"
       },
       "tv-movie": {
-        "$value": "{color.sky.600}"
+        "$value": "{color.sky.500}"
       },
       "war": {
-        "$value": "{color.orange.600}"
+        "$value": "{color.orange.500}"
       },
       "western": {
-        "$value": "{color.gold.600}"
+        "$value": "{color.gold.500}"
       }
     },
     "print": {
