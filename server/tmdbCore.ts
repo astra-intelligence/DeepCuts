@@ -7,6 +7,7 @@
 // (tmdbAllowlist.ts), adds the secret read token, calls TMDB and returns the JSON. Errors are
 // reduced to a short code, so TMDB's own messages (or the token) never reach the browser
 // (ADR-0008, ADR-0013).
+import { json } from './http.ts'
 import { resolveTmdbRequest } from './tmdbAllowlist.ts'
 
 /** The path prefix the proxy answers. Anything else isn't a proxy request. */
@@ -42,21 +43,6 @@ export function trimCredits(body: unknown): unknown {
  */
 export function edgeTtl(upstreamPath: string): number {
   return /^(search|discover)\//.test(upstreamPath) ? HOUR : 24 * HOUR
-}
-
-/**
- * A JSON response. Successful answers may be cached privately by the browser for 5 minutes;
- * errors never are.
- */
-export function json(status: number, body: unknown, extraHeaders: Record<string, string> = {}) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': status === 200 ? 'private, max-age=300' : 'no-store',
-      ...extraHeaders,
-    },
-  })
 }
 
 /** Optional extras for {@link handleTmdb}. */

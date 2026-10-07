@@ -1,0 +1,103 @@
+// Calls the accounts API in unit tests the way Cloudflare Pages would (ADR-0031, Stage 6 A6): the
+// shared `/api` guard first (rate limit, Origin check), then the handler the matching file under
+// functions/api/ routes to. A cookie jar makes each client behave like one browser.
+//
+// ROUTES mirrors functions/api/{auth,tags}/**. apiRoutes.test.ts checks that each listed file
+// exists, so the two can't drift apart silently.
+import { deleteAccount, getSession, rename, signOut } from '../accounts/account.ts'
+import {
+  authenticateOptions,
+  authenticateVerify,
+  registerOptions,
+  registerVerify,
+} from '../accounts/auth.ts'
+import type { AccountsEnv } from '../accounts/d1.ts'
+import { changeTag, importTags, listTags } from '../accounts/tags.ts'
+import { guardApi } from '../apiGuard.ts'
+import { route } from '../http.ts'
+import type { RateLimiterBinding } from '../rateLimit.ts'
+
+type Env = AccountsEnv & { RATE_LIMITER?: RateLimiterBinding }
+
+/** Path → [the Pages file that serves it, its method handlers]. */
+export const ROUTES = {
+  '/api/auth/register/options': [
+    'functions/api/auth/register/options.ts',
+    route<Env>({ POST: ({ request, env }) => registerOptions(request, env) }),
+  ],
+  '/api/auth/register/verify': [
+    'functions/api/auth/register/verify.ts',
+    route<Env>({ POST: ({ request, env }) => registerVerify(request, env) }),
+  ],
+  '/api/auth/authenticate/options': [
+    'functions/api/auth/authenticate/options.ts',
+    route<Env>({ POST: ({ request, env }) => authenticateOptions(request, env) }),
+  ],
+  '/api/auth/authenticate/verify': [
+    'functions/api/auth/authenticate/verify.ts',
+    route<Env>({ POST: ({ request, env }) => authenticateVerify(request, env) }),
+  ],
+  '/api/auth/session': [
+    'functions/api/auth/session.ts',
+    route<Env>({ GET: ({ request, env }) => getSession(request, env) }),
+  ],
+  '/api/auth/sign-out': [
+    'functions/api/auth/sign-out.ts',
+    route<Env>({ POST: ({ request, env }) => signOut(request, env) }),
+  ],
+  '/api/auth/me': [
+    'functions/api/auth/me.ts',
+    route<Env>({
+      PATCH: ({ request, env }) => rename(request, env),
+      DELETE: ({ request, env }) => deleteAccount(request, env),
+    }),
+  ],
+  '/api/tags': [
+    'functions/api/tags/index.ts',
+    route<Env>({
+      GET: ({ request, env }) => listTags(request, env),
+      PUT: ({ request, env }) => changeTag(request, env),
+      DELETE: ({ request, env }) => changeTag(request, env),
+    }),
+  ],
+  '/api/tags/import': [
+    'functions/api/tags/import.ts',
+    route<Env>({ POST: ({ request, env }) => importTags(request, env) }),
+  ],
+} as const
+
+/** Where the tests pretend the app is served from. */
+export const ORIGIN = 'http://localhost:8788'
+
+/** One test client: a browser with its own cookies. */
+export function createClient(env: Env, { origin = ORIGIN }: { origin?: string | null } = {}) {
+  const jar = new Map<string, string>()
+
+  /** Sends one request; returns the status, the parsed body and the raw response. */
+  async function call(method: string, path: keyof typeof ROUTES, body?: unknown) {
+    const headers: Record<string, string> = { 'CF-Connecting-IP': '203.0.113.9' }
+    if (origin) headers.Origin = origin
+    if (body !== undefined) headers['Content-Type'] = 'application/json'
+    if (jar.size) headers.Cookie = [...jar].map(([k, v]) => `${k}=${v}`).join('; ')
+    const request = new Request(ORIGIN + path, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+    const response =
+      (await guardApi(request, env.RATE_LIMITER)) ?? (await ROUTES[path][1]({ request, env }))
+    // Keep (or drop) cookies the way a browser would.
+    const set = response.headers.get('Set-Cookie')
+    if (set) {
+      const [pair, ...attrs] = set.split(';')
+      const [name, value] = pair.split('=')
+      const gone = attrs.some((a) => a.trim() === 'Max-Age=0')
+      if (gone) jar.delete(name)
+      else jar.set(name, value)
+    }
+    const text = await response.text()
+    return { status: response.status, body: text ? JSON.parse(text) : null, response }
+  }
+
+  return { call, jar }
+}

@@ -1,10 +1,25 @@
-// The per-client rate limit in front of the Pages Functions (ADR-0029, Stage 4 H4). The Function
-// asks the rate-limit Worker (workers/rate-limit/) over a service binding; over the limit, the
-// client gets a short 429 and the request goes no further.
-import { json } from './tmdbCore.ts'
+// The per-client rate limit in front of every `/api/*` request (ADR-0029 Stage 4 H4, ADR-0031).
+// functions/api/_middleware.ts asks the rate-limit Worker (workers/rate-limit/) over a service
+// binding; over the limit, the client gets a short 429 and the request goes no further.
+import { json } from './http.ts'
 
 /** The rate-limit Worker as the Function sees it through the service binding (an RPC stub). */
-export type RateLimiterBinding = { check(key: string): Promise<{ allowed: boolean }> }
+export type RateLimiterBinding = {
+  check(key: string, bucket?: Bucket): Promise<{ allowed: boolean }>
+}
+
+/** Which limit a request counts against: `auth` is the tighter one (10 / 60 s). */
+export type Bucket = 'api' | 'auth'
+
+/**
+ * Picks the bucket for a request. Anything that signs in, registers or changes the account counts
+ * against the tight `auth` limit. Reading the session (`GET /api/auth/session`, on every page
+ * load) stays in the general bucket, so reloading the app can't lock anyone out.
+ */
+export function bucketFor(request: Request): Bucket {
+  const { pathname } = new URL(request.url)
+  return pathname.startsWith('/api/auth/') && request.method !== 'GET' ? 'auth' : 'api'
+}
 
 /** How long a limited client should wait, in seconds: the limiter's whole period. */
 const RETRY_AFTER_SECONDS = 60
@@ -28,7 +43,7 @@ export async function rateLimit(
   // Locally (`wrangler pages dev`) the header may be absent; everyone then shares one bucket.
   const key = request.headers.get('CF-Connecting-IP') ?? 'unknown'
   try {
-    const { allowed } = await limiter.check(key)
+    const { allowed } = await limiter.check(key, bucketFor(request))
     if (allowed) return null
   } catch {
     return null

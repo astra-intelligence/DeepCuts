@@ -45,3 +45,12 @@ test('with no token the proxy answers 503, never live TMDB', async ({ request })
   expect(res.status()).toBe(503)
   expect(await res.json()).toEqual({ error: 'tmdb_token_missing' })
 })
+
+test('the API refuses data-changing requests from other origins (CSRF)', async ({ request }) => {
+  const res = await request.post('/api/tags/import', {
+    headers: { Origin: 'https://evil.example' },
+    data: { records: [] },
+  })
+  expect(res.status()).toBe(403)
+  expect(await res.json()).toEqual({ error: 'bad_origin' })
+})
