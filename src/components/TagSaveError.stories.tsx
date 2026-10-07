@@ -10,3 +10,6 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
+
+/** On Detail, after Save fails: the staged picks stay selected. */
+export const Staged: Story = { args: { staged: true } }

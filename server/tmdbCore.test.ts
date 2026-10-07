@@ -74,7 +74,7 @@ describe('handleTmdb', () => {
 })
 
 describe('trimCredits (ADR-0028)', () => {
-  it('keeps only directors from appended credits, and drops the cast', () => {
+  it('keeps only directors and writers from appended credits, and drops the cast', () => {
     const body = {
       id: 1091,
       title: 'The Thing',
@@ -83,6 +83,8 @@ describe('trimCredits (ADR-0028)', () => {
         crew: [
           { id: 11770, name: 'John Carpenter', job: 'Director', department: 'Directing' },
           { id: 2, name: 'Dean Cundey', job: 'Director of Photography' },
+          { id: 3, name: 'Bill Lancaster', job: 'Screenplay', department: 'Writing' },
+          { id: 4, name: 'John W. Campbell Jr.', job: 'Novel', department: 'Writing' },
           null,
         ],
       },
@@ -90,7 +92,12 @@ describe('trimCredits (ADR-0028)', () => {
     expect(trimCredits(body)).toEqual({
       id: 1091,
       title: 'The Thing',
-      credits: { crew: [{ id: 11770, name: 'John Carpenter', job: 'Director' }] },
+      credits: {
+        crew: [
+          { id: 11770, name: 'John Carpenter', job: 'Director' },
+          { id: 3, name: 'Bill Lancaster', job: 'Screenplay' },
+        ],
+      },
     })
   })
 

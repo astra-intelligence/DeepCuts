@@ -155,17 +155,21 @@ describe('a tag that fails to save', () => {
     )
   const asPat = { sessionProvider: createCloudflareSessionProvider(), initialSession: PAT }
 
-  it('says so on the Detail page, and the button stays off', async () => {
+  it('says so on the Detail page, and keeps the picks selected to retry', async () => {
     refuseTagChanges()
     const user = userEvent.setup()
     renderRoute('/movie/1091', asPat)
     const group = await screen.findByRole('group', { name: 'Your tags' })
     await user.click(within(group).getByRole('button', { name: 'Like' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('Your change wasn’t saved.')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Your changes weren’t all saved.')
+    // Nothing the person picked is lost, and Save is there to try again.
     expect(within(group).getByRole('button', { name: 'Like' })).toHaveAttribute(
       'aria-pressed',
-      'false',
+      'true',
     )
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
   })
 
   it('says so on a Search result', async () => {

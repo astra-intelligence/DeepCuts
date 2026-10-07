@@ -1,6 +1,6 @@
 // Tests for My Lists: tagged films appear under their list, `?tag=` filters, and an unknown
 // `?tag=` falls back to Want to see.
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { describe, expect, it } from 'vitest'
@@ -12,12 +12,9 @@ describe('my lists', () => {
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
     await user.click(within(group).getByRole('button', { name: 'Seen it' }))
-    await waitFor(() =>
-      expect(within(group).getByRole('button', { name: 'Seen it' })).toHaveAttribute(
-        'aria-pressed',
-        'true',
-      ),
-    )
+    // Detail stages tag changes until Save.
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await screen.findByText(/^Saved\./)
 
     await act(() => router.navigate('/lists'))
     const lists = screen.getByRole('navigation', { name: 'Lists' })

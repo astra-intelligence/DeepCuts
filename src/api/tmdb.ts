@@ -65,7 +65,8 @@ export const movieDetailSchema = z.object({
     .object({ keywords: z.array(z.object({ id: z.number().int(), name: z.string() })) })
     .optional()
     .catch(undefined),
-  // The proxy trims credits to directors only (server/tmdbProxy.ts), so this stays small.
+  // The proxy trims credits to directors and writers only (server/tmdbCore.ts), so this stays
+  // small.
   credits: z
     .object({
       crew: z.array(z.object({ id: z.number().int(), name: z.string(), job: z.string() })),
@@ -214,4 +215,29 @@ export function providersFor(data: WatchProviders, region: string): Provider[] {
 export function certification(movie: MovieDetail, region: string): string {
   const r = movie.release_dates?.results.find((x) => x.iso_3166_1 === region)
   return r?.release_dates.find((d) => d.certification)?.certification ?? ''
+}
+
+/** A film's directors and writers by name, for the Discover cards. */
+export interface Credits {
+  directors: string[]
+  writers: string[]
+}
+
+/** How many names each credit line shows; more would wrap a tile into a wall of text. */
+const MAX_CREDIT_NAMES = 2
+
+/**
+ * The directors and writers from a film's appended credits, de-duplicated, at most two each.
+ * Writers are the "Screenplay" and "Writer" credits; a film with neither falls back to "Story".
+ */
+export function creditsOf(movie: MovieDetail): Credits {
+  const crew = movie.credits?.crew ?? []
+  // Names for the given jobs, in TMDB's order, each name once.
+  const names = (...jobs: string[]) =>
+    [...new Set(crew.filter((p) => jobs.includes(p.job)).map((p) => p.name))].slice(
+      0,
+      MAX_CREDIT_NAMES,
+    )
+  const writers = names('Screenplay', 'Writer')
+  return { directors: names('Director'), writers: writers.length ? writers : names('Story') }
 }

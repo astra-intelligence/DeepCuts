@@ -95,7 +95,12 @@ export const movieFixture = {
       { id: 162846, name: 'shapeshifter' },
     ],
   },
-  credits: { crew: [{ id: 11770, name: 'John Carpenter', job: 'Director' }] },
+  credits: {
+    crew: [
+      { id: 11770, name: 'John Carpenter', job: 'Director' },
+      { id: 3, name: 'Bill Lancaster', job: 'Screenplay' },
+    ],
+  },
   release_dates: {
     results: [
       { iso_3166_1: 'GB', release_dates: [{ certification: '18' }] },
@@ -104,6 +109,14 @@ export const movieFixture = {
   },
 }
 
+// Writers for the same films (Halloween's two writers share one credit line).
+const WRITERS: Record<number, { id: number; name: string; job: string }[]> = {
+  348: [{ id: 8, name: 'Dan O’Bannon', job: 'Screenplay' }],
+  948: [
+    { id: 11770, name: 'John Carpenter', job: 'Writer' },
+    { id: 9, name: 'Debra Hill', job: 'Writer' },
+  ],
+}
 // Details for the films The Thing recommends, so the scorer's re-rank (ADR-0028) has keywords
 // and directors to work with: The Fog and Halloween share John Carpenter with The Thing; Alien
 // doesn't. Two Carpenter films put the director reason on a grid tile as well as the feature.
@@ -119,7 +132,7 @@ export const candidateDetailFixtures = Object.fromEntries(
       ...m,
       genres: m.genre_ids.map((id) => ({ id, name: '' })),
       keywords: { keywords: [{ id: 9715, name: 'paranoia' }] },
-      credits: { crew: DIRECTORS[m.id] ? [DIRECTORS[m.id]] : [] },
+      credits: { crew: [...(DIRECTORS[m.id] ? [DIRECTORS[m.id]] : []), ...(WRITERS[m.id] ?? [])] },
     },
   ]),
 )
