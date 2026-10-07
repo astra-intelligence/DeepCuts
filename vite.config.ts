@@ -42,7 +42,8 @@ export default defineConfig(({ mode }) => ({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}', 'server/**/*.test.ts'],
     css: false,
-    // Node 25+ ships a global localStorage that shadows jsdom's and is unusable without a file.
+    // Newer Node versions ship a global localStorage that shadows jsdom's and is unusable without
+    // a file; the flag turns it off (harmless where it's already off).
     execArgv: ['--no-experimental-webstorage'],
     coverage: {
       provider: 'v8',

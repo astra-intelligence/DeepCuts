@@ -6,6 +6,8 @@ A fast, very visual, one-thumb movie tracker. Tag films (Seen, Liked, Watchlist,
 
 ## Run locally
 
+Requires Node 24 LTS (`.nvmrc`; `nvm use`). Node 25 is not supported by the test tooling.
+
 ```sh
 cp .env.example .env.local   # add your TMDB read token (server-side only, never VITE_)
 npm install

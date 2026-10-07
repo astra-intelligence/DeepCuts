@@ -4,16 +4,16 @@ updates:
     directory: /
     schedule: { interval: weekly }
     groups:
-      dev-dependencies: { dependency-type: development }
+      # Minor and patch updates are batched. Each major update gets its own PR, so an
+      # incompatible major fails CI on its own instead of breaking the whole batch.
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
     ignore:
-      # eslint-plugin-jsx-a11y doesn't support ESLint 10 yet (ADR-0009 needs it). Lift when it does.
-      - dependency-name: eslint
-        update-types: ['version-update:semver-major']
-      - dependency-name: '@eslint/js'
-        update-types: ['version-update:semver-major']
-      # Node's type definitions follow the runtime we target (engines: node >= 24).
+      # Node's type definitions follow the runtime major in .nvmrc (24). Raise this together
+      # with .nvmrc and `engines` when the project moves to the next Node LTS.
       - dependency-name: '@types/node'
-        update-types: ['version-update:semver-major']
+        versions: ['>=25']
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
