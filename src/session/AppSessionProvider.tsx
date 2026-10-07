@@ -12,14 +12,18 @@ interface Props {
   /** Resolved before the first render (see main.tsx), so the tree never renders without a session. */
   initialSession?: Session
   provider?: SessionProvider
-  createLocalTags?: () => TagRepository
+  /** Opens a device-backed tag store; `key` separates the device profile from each account. */
+  createLocalTags?: (key?: string) => TagRepository
 }
+
+const accountKey = (id: string) => `account-${id}-tags`
+const openLocal = (key?: string) => createLocalTagRepository(undefined, undefined, key)
 
 export function AppSessionProvider({
   children,
   initialSession = { kind: 'guest' },
   provider: injected,
-  createLocalTags = createLocalTagRepository,
+  createLocalTags = openLocal,
 }: Props) {
   const queryClient = useQueryClient()
   const [provider] = useState(() => injected ?? createMockSessionProvider())
@@ -27,19 +31,44 @@ export function AppSessionProvider({
   const [session, setSession] = useState(initialSession)
 
   const value = useMemo<SessionValue>(() => {
-    const tags = session.kind === 'profile' ? createLocalTags() : guestTags
+    const storeKey = (s: Session) =>
+      s.kind === 'account' ? accountKey(s.account.id) : s.kind === 'profile' ? 'tags' : null
+    const tagsFor = (s: Session) => {
+      const key = storeKey(s)
+      return key === null ? guestTags : key === 'tags' ? createLocalTags() : createLocalTags(key)
+    }
+    const tags = tagsFor(session)
+
+    // Picks follow the person: copy them into the next store, then clear the old one
+    // (ADR-0011, ADR-0016, ADR-0025).
+    async function moveTo(next: Session) {
+      const records = await tags.exportAll()
+      // Same store (e.g. saving twice): nothing to move, and clearing would delete the picks.
+      if (storeKey(next) !== null && storeKey(next) === storeKey(session)) {
+        setSession(next)
+        return 0
+      }
+      await tagsFor(next).importAll(records)
+      await tags.clear()
+      setGuestTags(createInMemoryTagRepository())
+      setSession(next)
+      await queryClient.invalidateQueries({ queryKey: ['tags'] })
+      return new Set(records.map((r) => r.tmdbId)).size
+    }
+
     return {
       session,
       tags,
+      signInMethods: provider.signInMethods(),
       async createProfile(displayName) {
-        const next = await provider.createProfile(displayName)
-        // Guest picks move into the profile, then leave memory (ADR-0011, ADR-0016).
-        await createLocalTags().importAll(await guestTags.exportAll())
-        setGuestTags(createInMemoryTagRepository())
-        setSession(next)
-        await queryClient.invalidateQueries({ queryKey: ['tags'] })
+        await moveTo(await provider.createProfile(displayName))
+      },
+      async signIn(method) {
+        return { moved: await moveTo(await provider.signIn(method)) }
       },
       async signOut() {
+        // The account keeps its lists; the device returns to an empty guest session.
+        setGuestTags(createInMemoryTagRepository())
         setSession(await provider.signOut())
         await queryClient.invalidateQueries({ queryKey: ['tags'] })
       },

@@ -6,7 +6,8 @@ import { imageUrl, type MovieSummary } from '../../api/tmdb'
 import { Logo } from '../../components/Logo'
 import { MovieSearch } from '../../components/MovieSearch'
 import { useRouteFocus } from '../../hooks/useRouteFocus'
-import { SignInLink, SkipLink } from '../AppLayout'
+import { AccountChip } from '../../components/AccountChip'
+import { SkipLink } from '../AppLayout'
 import { FavoriteStep } from './FavoriteStep'
 import { GenreStep } from './GenreStep'
 import { RateStep } from './RateStep'
@@ -60,7 +61,7 @@ export function TunePage() {
         >
           <Logo className="h-7 w-auto" />
         </Link>
-        <SignInLink />
+        <AccountChip />
       </header>
       <div className="relative z-10 mx-5 mt-1 md:mx-auto md:w-full md:max-w-xl">
         <MovieSearch onPick={(m: MovieSummary) => update({ favorite: m.id }, true)} />

@@ -14,5 +14,6 @@ afterEach(async () => {
   if (typeof window === 'undefined') return
   await createMockSessionProvider().signOut()
   await createLocalTagRepository().clear()
+  await createLocalTagRepository(undefined, undefined, 'account-demo-tags').clear()
 })
 afterAll(() => server.close())
