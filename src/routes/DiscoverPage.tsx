@@ -130,6 +130,16 @@ function Because({ titles }: { titles: string[] | undefined }) {
   )
 }
 
+/** "Directed by John Carpenter, like The Thing" (ADR-0028), on the featured card and grid tiles. */
+function SameDirector({ match }: { match: Item['sameDirector'] }) {
+  if (!match) return null
+  return (
+    <span className="mt-1 block text-sm text-fg-muted">
+      Directed by {match.director}, like <cite className="text-fg not-italic">{match.liked}</cite>
+    </span>
+  )
+}
+
 // The large card at the top: the film's image with its title, match and reasons over a fade.
 function FeatureCard({ item }: { item: Item }) {
   const { movie } = item
@@ -176,12 +186,7 @@ function FeatureCard({ item }: { item: Item }) {
         </h2>
         <span className="block text-sm text-fg-muted">{meta.join(' · ')}</span>
         <Because titles={item.because} />
-        {item.sameDirector && (
-          <span className="mt-1 block text-sm text-fg-muted">
-            Directed by {item.sameDirector.director}, like{' '}
-            <cite className="text-fg not-italic">{item.sameDirector.liked}</cite>
-          </span>
-        )}
+        <SameDirector match={item.sameDirector} />
         <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-info">
           <Icon name="eye" className="size-4" /> View details
         </span>
@@ -190,7 +195,7 @@ function FeatureCard({ item }: { item: Item }) {
   )
 }
 
-// One tile in the grid: poster, title, year · genre, match and the first reason.
+// One tile in the grid: poster, title, year · genre, match, the first reason and a shared director.
 function PosterCard({ item }: { item: Item }) {
   const { movie } = item
   const poster = imageUrl(movie.poster_path, 'w342')
@@ -230,6 +235,7 @@ function PosterCard({ item }: { item: Item }) {
         <p className="text-sm font-bold text-accent">{item.match}% match</p>
       )}
       <Because titles={item.because?.slice(0, 1)} />
+      <SameDirector match={item.sameDirector} />
       <span className="mt-auto inline-flex items-center gap-1.5 pt-2.5 text-sm font-semibold text-info">
         <Icon name="eye" className="size-4" /> View details
       </span>

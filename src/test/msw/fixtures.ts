@@ -72,6 +72,19 @@ export const movieFixture = {
         vote_count: 1500,
         original_language: 'en',
       },
+      {
+        id: 948,
+        title: 'Halloween',
+        release_date: '1978-10-25',
+        overview: 'Fifteen years after a murder, a killer escapes and returns home.',
+        poster_path: null,
+        backdrop_path: null,
+        genre_ids: [27, 53],
+        popularity: 30.5,
+        vote_average: 7.5,
+        vote_count: 6000,
+        original_language: 'en',
+      },
     ],
   },
   // Keywords and credits as the proxy returns them (credits trimmed to directors, ADR-0028).
@@ -92,9 +105,11 @@ export const movieFixture = {
 }
 
 // Details for the films The Thing recommends, so the scorer's re-rank (ADR-0028) has keywords
-// and directors to work with: The Fog shares John Carpenter with The Thing; Alien doesn't.
+// and directors to work with: The Fog and Halloween share John Carpenter with The Thing; Alien
+// doesn't. Two Carpenter films put the director reason on a grid tile as well as the feature.
 const DIRECTORS: Record<number, { id: number; name: string; job: string }> = {
   790: { id: 11770, name: 'John Carpenter', job: 'Director' },
+  948: { id: 11770, name: 'John Carpenter', job: 'Director' },
   348: { id: 578, name: 'Ridley Scott', job: 'Director' },
 }
 export const candidateDetailFixtures = Object.fromEntries(

@@ -76,6 +76,12 @@ describe('discover with likes (ADR-0026)', () => {
     // Picks only appear once both passes are in, so the featured film never changes under you.
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(feature).toHaveTextContent('Directed by John Carpenter, like The Thing')
+    // Grid tiles carry the director reason too; Alien (Ridley Scott) doesn't get one.
+    const grid = screen.getByRole('region', { name: 'Go a little deeper' })
+    expect(within(grid).getByRole('link', { name: /Halloween/ })).toHaveTextContent(
+      'Directed by John Carpenter, like The Thing',
+    )
+    expect(within(grid).getByRole('link', { name: /Alien/ })).not.toHaveTextContent('Directed by')
     // The liked film itself is never recommended back.
     expect(screen.queryByRole('link', { name: /^The Thing/ })).not.toBeInTheDocument()
   })
