@@ -33,6 +33,8 @@ describe('resolveTmdbRequest', () => {
     ['discover/movie', 'sort_by=revenue.desc'],
     ['movie/603', 'append_to_response=credits'],
     ['movie/603', 'append_to_response=release_dates,credits'],
+    ['movie/603', 'append_to_response=recommendations,recommendations'],
+    ['movie/603', 'append_to_response='],
   ])('rejects bad params: %s?%s', (path, query) => {
     expect(resolveTmdbRequest(path, q(query))).toEqual({ ok: false, status: 400 })
   })
@@ -73,11 +75,11 @@ describe('resolveTmdbRequest', () => {
 })
 
 describe('movie detail extras', () => {
-  it('allows only release_dates to be appended (content rating, ADR-0024)', () => {
-    const r = resolveTmdbRequest(
-      'movie/603',
-      new URLSearchParams('append_to_response=release_dates'),
-    )
-    expect(r.ok && r.request.params.get('append_to_response')).toBe('release_dates')
-  })
+  it.each(['release_dates', 'recommendations', 'release_dates,recommendations'])(
+    'allows appending %s (ADR-0024, ADR-0026)',
+    (value) => {
+      const r = resolveTmdbRequest('movie/603', new URLSearchParams(`append_to_response=${value}`))
+      expect(r.ok && r.request.params.get('append_to_response')).toBe(value)
+    },
+  )
 })
