@@ -1,0 +1,12 @@
+{
+  "$description": "Tier 3: the four tag toggles (ADR-0017). Selected and hover colors come from each tag's own color.",
+  "color": {
+    "$type": "color",
+    "tag-toggle": {
+      "bg": { "$value": "{color.surface.overlay}" },
+      "fg": { "$value": "{color.fg.muted}" },
+      "border": { "$value": "{color.border.control}" }
+    }
+  },
+  "radius": { "$type": "dimension", "tag-toggle": { "$value": "{radius.control}" } }
+}

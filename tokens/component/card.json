@@ -1,0 +1,12 @@
+{
+  "$description": "Tier 3: a card resting on the page (lists, account panels, empty states).",
+  "color": {
+    "$type": "color",
+    "card": {
+      "bg": { "$value": "{color.surface.raised}" },
+      "border": { "$value": "{color.border.default}" }
+    }
+  },
+  "radius": { "$type": "dimension", "card": { "$value": "{radius.container}" } },
+  "shadow": { "$type": "shadow", "card": { "$value": "{elevation.raised}" } }
+}

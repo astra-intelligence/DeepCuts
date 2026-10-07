@@ -36,7 +36,7 @@ export function Avatar({ name, large = false }: { name: string; large?: boolean 
   return (
     <span
       aria-hidden="true"
-      className={`grid shrink-0 place-items-center rounded-full border border-accent bg-surface-selected font-bold text-on-selected ${
+      className={`grid shrink-0 place-items-center rounded-full border border-accent bg-surface-selected font-bold text-fg-on-selected ${
         large ? 'size-14 text-2xl' : 'size-9 text-base'
       }`}
     >

@@ -37,7 +37,7 @@ function SignedOut() {
       />
 
       <div className="flex items-center gap-3 rounded-lg border border-border bg-surface-raised p-3 shadow-sm">
-        <span className="grid size-12 shrink-0 place-items-center rounded-xl border border-accent bg-surface-selected text-on-selected">
+        <span className="grid size-12 shrink-0 place-items-center rounded-xl border border-accent bg-surface-selected text-fg-on-selected">
           <Icon name="user" className="size-6" />
         </span>
         <div>
@@ -66,13 +66,13 @@ function SignedOut() {
             Save Seen it, Want to see, Like and Dislike on this device without registering.
           </p>
           {saved ? (
-            <strong className="mt-auto flex min-h-11 items-center gap-2 rounded-md border border-accent bg-surface-selected px-3.5 text-sm font-semibold text-on-selected">
+            <strong className="mt-auto flex min-h-11 items-center gap-2 rounded-md border border-accent bg-surface-selected px-3.5 text-sm font-semibold text-fg-on-selected">
               <Icon name="check" /> Saved on this device
             </strong>
           ) : (
             <Button
               onPress={save}
-              className="mt-auto flex h-11 w-36 items-center justify-center gap-2 rounded-md border border-accent bg-surface-selected text-sm font-semibold text-on-selected hover:bg-accent/15"
+              className="mt-auto flex h-11 w-36 items-center justify-center gap-2 rounded-md border border-accent bg-surface-selected text-sm font-semibold text-fg-on-selected hover:bg-accent/15"
             >
               Save my picks
             </Button>

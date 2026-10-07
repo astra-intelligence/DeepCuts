@@ -37,6 +37,6 @@ export function primaryGenreName(ids: readonly number[]): string {
 
 /** Sets `--tone` to the first genre's color token, for card accents (design v2). */
 export function genreTone(ids: readonly number[]): Record<string, string> {
-  const slug = ids.map(lookup).find(Boolean)?.slug ?? 'default'
-  return { '--tone': `var(--color-genre-${slug})` }
+  const slug = ids.map(lookup).find(Boolean)?.slug
+  return { '--tone': slug ? `var(--color-genre-${slug})` : 'var(--color-genre)' }
 }

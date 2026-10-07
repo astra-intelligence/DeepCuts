@@ -66,7 +66,7 @@ function ResultRow({ movie }: { movie: MovieSummary }) {
         isSelected={wanted}
         onChange={(on) => setTag.mutate({ tmdbId: movie.id, tag: 'watchlist', on })}
         aria-label={`Want to see ${movie.title}`}
-        className="inline-flex h-11 w-36 shrink-0 items-center justify-center gap-2 justify-self-end rounded-md border border-border-control bg-surface-overlay px-3.5 text-sm font-semibold whitespace-nowrap text-fg hover:border-info data-selected:border-info data-selected:bg-info data-selected:text-on-accent"
+        className="inline-flex h-11 w-36 shrink-0 items-center justify-center gap-2 justify-self-end rounded-md border border-border-control bg-surface-overlay px-3.5 text-sm font-semibold whitespace-nowrap text-fg hover:border-info data-selected:border-info data-selected:bg-info data-selected:text-fg-on-accent"
       >
         <Icon name={wanted ? 'check' : 'bookmark'} />
         {wanted ? 'Added' : 'Add to list'}

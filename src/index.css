@@ -6,64 +6,18 @@
 @import '@fontsource/saira/800.css';
 @import './styles/tokens.css';
 
-/* Semantic utilities only (ADR-0006). The default palette is removed so raw colors can't be used. */
-@theme inline {
-  --color-*: initial;
-  --color-surface: var(--dc-color-surface-base);
-  --color-surface-raised: var(--dc-color-surface-raised);
-  --color-surface-overlay: var(--dc-color-surface-overlay);
-  --color-surface-selected: var(--dc-color-surface-selected);
-  --color-fg: var(--dc-color-text-primary);
-  --color-fg-muted: var(--dc-color-text-secondary);
-  --color-fg-placeholder: var(--dc-color-text-placeholder);
-  --color-on-selected: var(--dc-color-text-on-selected);
-  --color-danger-text: var(--dc-color-text-danger);
-  --color-on-accent: var(--dc-color-text-on-accent);
-  --color-accent: var(--dc-color-accent-primary);
-  --color-info: var(--dc-color-accent-secondary);
-  --color-danger: var(--dc-color-accent-danger);
-  --color-border: var(--dc-color-border-subtle);
-  --color-border-control: var(--dc-color-border-control);
-  --color-focus: var(--dc-color-focus);
-  --color-contextual: var(--dc-color-accent-contextual);
-  /* Tag and genre colors (ADR-0020, ADR-0023). Tags always pair color with an icon + label. */
-  --color-tag-seen: var(--dc-color-tag-seen);
-  --color-tag-watchlist: var(--dc-color-tag-watchlist);
-  --color-tag-liked: var(--dc-color-tag-liked);
-  --color-tag-disliked: var(--dc-color-tag-disliked);
-  --color-genre-default: var(--dc-color-genre-default);
-  --color-genre-action: var(--dc-color-genre-action);
-  --color-genre-adventure: var(--dc-color-genre-adventure);
-  --color-genre-animation: var(--dc-color-genre-animation);
-  --color-genre-comedy: var(--dc-color-genre-comedy);
-  --color-genre-crime: var(--dc-color-genre-crime);
-  --color-genre-documentary: var(--dc-color-genre-documentary);
-  --color-genre-drama: var(--dc-color-genre-drama);
-  --color-genre-family: var(--dc-color-genre-family);
-  --color-genre-fantasy: var(--dc-color-genre-fantasy);
-  --color-genre-history: var(--dc-color-genre-history);
-  --color-genre-horror: var(--dc-color-genre-horror);
-  --color-genre-music: var(--dc-color-genre-music);
-  --color-genre-mystery: var(--dc-color-genre-mystery);
-  --color-genre-romance: var(--dc-color-genre-romance);
-  --color-genre-science-fiction: var(--dc-color-genre-science-fiction);
-  --color-genre-thriller: var(--dc-color-genre-thriller);
-  --color-genre-tv-movie: var(--dc-color-genre-tv-movie);
-  --color-genre-war: var(--dc-color-genre-war);
-  --color-genre-western: var(--dc-color-genre-western);
-
-  /* Self-hosted fonts (CSP: no third-party font hosts, ADR-0008) */
-  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'DM Serif Display', ui-serif, Georgia, serif;
-  --font-brand: 'Saira', ui-sans-serif, system-ui, sans-serif;
-}
+/* Tokens (ADR-0027): tiers 1–3, the dark theme layer, and the Tailwind theme GENERATED from them
+   (sd.config.mjs), so every class name is a token name. The default palette and scales are
+   replaced, so only token values can be used. */
+@import './styles/theme-dark.css';
+@import './styles/theme.css';
 
 @layer base {
   :root {
     color-scheme: dark;
   }
   body {
-    @apply bg-surface font-sans text-fg antialiased;
+    @apply bg-surface font-body text-fg antialiased;
   }
   /* Design v2: a 3px ring with a surface-colored gap, raised above neighbours so dense lists
      never hide it (WCAG 2.4.11/2.4.13). Inputs show it on their whole field via `focus-ring-within`. */
@@ -122,21 +76,20 @@
 
 /* Page accent (ADR-0020): a tag-filtered page swaps the contextual accent to that tag's color. */
 @utility page-accent-seen {
-  --dc-color-accent-contextual: var(--dc-color-tag-seen);
+  --dc-color-contextual: var(--dc-color-tag-seen);
 }
 @utility page-accent-watchlist {
-  --dc-color-accent-contextual: var(--dc-color-tag-watchlist);
+  --dc-color-contextual: var(--dc-color-tag-watchlist);
 }
 @utility page-accent-liked {
-  --dc-color-accent-contextual: var(--dc-color-tag-liked);
+  --dc-color-contextual: var(--dc-color-tag-liked);
 }
 @utility page-accent-disliked {
-  --dc-color-accent-contextual: var(--dc-color-tag-disliked);
+  --dc-color-contextual: var(--dc-color-tag-disliked);
 }
 
 /* Gentle entrance for onboarding steps (`animate-enter`); disabled by the reduced-motion rule above. */
 @theme {
-  --animate-enter: enter 0.4s ease both;
   @keyframes enter {
     from {
       opacity: 0;

@@ -1,0 +1,21 @@
+{
+  "$description": "Tier 3: text fields (the search field) and their suggestion popover.",
+  "color": {
+    "$type": "color",
+    "field": {
+      "bg": { "$value": "{color.surface.raised}" },
+      "border": { "$value": "{color.border.control}" },
+      "border-focus": { "$value": "{color.focus}" }
+    },
+    "popover": {
+      "bg": { "$value": "{color.surface.raised}" },
+      "border": { "$value": "{color.border.control}" }
+    }
+  },
+  "radius": {
+    "$type": "dimension",
+    "field": { "$value": "{radius.container}" },
+    "popover": { "$value": "{radius.floating}" }
+  },
+  "shadow": { "$type": "shadow", "popover": { "$value": "{elevation.floating}" } }
+}

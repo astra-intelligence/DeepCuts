@@ -84,7 +84,7 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
           <button
             type="submit"
             disabled={suggestions.length === 0}
-            className="m-1 min-h-9 w-16 self-stretch rounded-md bg-accent text-sm font-semibold text-on-accent hover:bg-accent/85 disabled:cursor-not-allowed disabled:bg-surface-overlay disabled:text-fg-muted"
+            className="m-1 min-h-9 w-16 self-stretch rounded-md bg-accent text-sm font-semibold text-fg-on-accent hover:bg-accent/85 disabled:cursor-not-allowed disabled:bg-surface-overlay disabled:text-fg-muted"
           >
             Find
           </button>
@@ -112,11 +112,11 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
                   className="flex min-h-16 cursor-pointer items-center gap-2.5 border-b border-l-3 border-b-border border-l-(--tone) p-1.5 outline-none last:border-b-0 data-focused:bg-surface-overlay"
                 >
                   {poster ? (
-                    <img src={poster} alt="" className="h-12 w-9 shrink-0 rounded object-cover" />
+                    <img src={poster} alt="" className="rounded h-12 w-9 shrink-0 object-cover" />
                   ) : (
                     <span
                       aria-hidden="true"
-                      className="h-12 w-9 shrink-0 rounded bg-surface-overlay"
+                      className="rounded h-12 w-9 shrink-0 bg-surface-overlay"
                     />
                   )}
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">

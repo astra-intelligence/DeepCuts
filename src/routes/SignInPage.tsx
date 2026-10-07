@@ -77,9 +77,9 @@ export function SignInPage() {
         {failed && (
           <p
             role="alert"
-            className="flex gap-2.5 rounded-lg border border-danger-text bg-danger-text/10 p-3 text-sm"
+            className="flex gap-2.5 rounded-lg border border-fg-danger bg-fg-danger/10 p-3 text-sm"
           >
-            <Icon name="ban" className="size-5 shrink-0 text-danger-text" />
+            <Icon name="ban" className="size-5 shrink-0 text-fg-danger" />
             Sign-in didn’t finish. Nothing was changed. Try again.
           </p>
         )}

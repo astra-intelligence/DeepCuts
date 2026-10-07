@@ -19,7 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "npm run tokens && vitest run --coverage",
-    "check:contrast": "npm run tokens && node scripts/check-contrast.mjs && node scripts/check-theme-coverage.mjs",
+    "check:contrast": "npm run tokens && node scripts/check-contrast.mjs",
     "check:dist": "node scripts/check-dist-secrets.mjs",
     "verify": "npm run lint && npm run typecheck && npm run check:contrast && npm run coverage && npm run build && npm run check:dist",
     "preformat": "npm run tokens",

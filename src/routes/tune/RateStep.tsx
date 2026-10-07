@@ -100,7 +100,7 @@ export function RateStep({ state, update }: StepProps) {
           ))}
           <Button
             onPress={next}
-            className="col-span-2 flex h-11 w-36 items-center justify-center gap-2 self-center justify-self-center rounded-md bg-accent px-3.5 font-semibold text-on-accent hover:bg-accent/85 md:col-span-1"
+            className="col-span-2 flex h-11 w-36 items-center justify-center gap-2 self-center justify-self-center rounded-md bg-accent px-3.5 font-semibold text-fg-on-accent hover:bg-accent/85 md:col-span-1"
           >
             <Icon name="arrow" /> Next film
           </Button>

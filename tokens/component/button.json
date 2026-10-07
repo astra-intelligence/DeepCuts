@@ -1,0 +1,18 @@
+{
+  "$description": "Tier 3: buttons. Primary is the one main action; secondary is everything else.",
+  "color": {
+    "$type": "color",
+    "button": {
+      "primary": {
+        "bg": { "$value": "{color.accent.default}" },
+        "fg": { "$value": "{color.fg.on-accent}" }
+      },
+      "secondary": {
+        "bg": { "$value": "{color.surface.overlay}" },
+        "fg": { "$value": "{color.fg.default}" },
+        "border": { "$value": "{color.border.control}" }
+      }
+    }
+  },
+  "radius": { "$type": "dimension", "button": { "$value": "{radius.control}" } }
+}
