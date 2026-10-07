@@ -23,9 +23,12 @@ export default defineConfig({
     },
   ],
   // Tests run against the production build, where the CSP is applied (ADR-0008).
+  // Same as CI everywhere: a fresh build every run, and no TMDB token, so a missing mock can
+  // never fall through to live TMDB from a developer machine.
   webServer: {
     command: 'npm run build && npx vite preview --port 4173 --strictPort',
     port: 4173,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
+    env: { TMDB_READ_TOKEN: '' },
   },
 })

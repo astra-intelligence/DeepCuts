@@ -27,7 +27,8 @@
     "e2e": "playwright test",
     "design:starter": "npm run tokens && node scripts/design-starter.mjs",
     "tokens:ramps": "node scripts/generate-ramps.mjs && npm run tokens",
-    "tokens:review": "npm run tokens && node scripts/token-review.mjs"
+    "tokens:review": "npm run tokens && node scripts/token-review.mjs",
+    "ci:local": "bash scripts/ci-local.sh"
   },
   "dependencies": {
     "@fontsource/dm-serif-display": "^5.3.0",
