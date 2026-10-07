@@ -26,7 +26,7 @@ export function SignInLink() {
     <Link
       to="/account"
       aria-label="Sign in or open account options"
-      className="flex min-h-11 items-center gap-2 rounded-lg border border-border-control bg-surface-raised py-1 pr-3 pl-1 text-sm font-bold text-fg"
+      className="flex min-h-11 items-center gap-2 rounded-lg border border-border-control bg-surface-raised py-1 pr-3 pl-1 text-sm font-bold whitespace-nowrap text-fg"
     >
       <span className="grid size-9 place-items-center rounded-md bg-surface-overlay text-fg-muted">
         <Icon name="user" />

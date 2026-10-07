@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState, type FormEvent } from 'react'
-import { ComboBox, Input, ListBox, ListBoxItem, Popover } from 'react-aria-components'
+import { ComboBox, Group, Input, ListBox, ListBoxItem, Popover } from 'react-aria-components'
 import { useLocation, useNavigate, useSearchParams } from 'react-router'
 import { movieQueries } from '../api/queries'
 import { imageUrl, releaseYear, type MovieSummary } from '../api/tmdb'
@@ -67,25 +67,28 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
         allowsCustomValue
         allowsEmptyCollection
         menuTrigger="input"
-        className="focus-ring-within flex min-h-12 items-center rounded-lg border border-border-control bg-surface-raised pl-3 focus-within:border-focus"
       >
-        <Icon name="search" className="size-5 shrink-0 text-accent" />
-        <Input
-          // Enter with a highlighted suggestion selects it (React Aria); otherwise it acts as Find.
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.currentTarget.getAttribute('aria-activedescendant'))
-              submit()
-          }}
-          placeholder="Find a movie to tag..."
-          className="min-w-0 flex-1 self-stretch bg-transparent px-3 text-sm text-fg outline-none placeholder:text-fg-placeholder"
-        />
-        <button
-          type="submit"
-          disabled={suggestions.length === 0}
-          className="m-1 min-h-9 w-16 self-stretch rounded-md bg-accent text-sm font-semibold text-on-accent hover:bg-accent/85 disabled:cursor-not-allowed disabled:bg-surface-overlay disabled:text-fg-muted"
-        >
-          Find
-        </button>
+        {/* The Group is the popover's trigger, so the suggestion list matches the whole field's
+            width (--trigger-width), not just the text input's. */}
+        <Group className="focus-ring-within flex min-h-12 items-center rounded-lg border border-border-control bg-surface-raised pl-3 focus-within:border-focus">
+          <Icon name="search" className="size-5 shrink-0 text-accent" />
+          <Input
+            // Enter with a highlighted suggestion selects it (React Aria); otherwise it acts as Find.
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.currentTarget.getAttribute('aria-activedescendant'))
+                submit()
+            }}
+            placeholder="Find a movie to tag..."
+            className="min-w-0 flex-1 self-stretch bg-transparent px-3 text-sm text-fg outline-none placeholder:text-fg-placeholder"
+          />
+          <button
+            type="submit"
+            disabled={suggestions.length === 0}
+            className="m-1 min-h-9 w-16 self-stretch rounded-md bg-accent text-sm font-semibold text-on-accent hover:bg-accent/85 disabled:cursor-not-allowed disabled:bg-surface-overlay disabled:text-fg-muted"
+          >
+            Find
+          </button>
+        </Group>
         <Popover
           offset={6}
           className="max-h-96 w-(--trigger-width) overflow-y-auto rounded-xl border border-border-control bg-surface-raised p-1 shadow-2xl shadow-surface/90"
@@ -117,7 +120,7 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
                     />
                   )}
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <strong className="text-sm font-semibold">{movie.title}</strong>
+                    <strong className="text-sm font-semibold wrap-anywhere">{movie.title}</strong>
                     <small className="text-sm text-fg-muted">
                       {meta.filter(Boolean).join(' · ')}
                       {disliked.has(movie.id) && (

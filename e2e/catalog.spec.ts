@@ -29,6 +29,11 @@ test('search → detail → back, keyboard only', async ({ page }) => {
   await box.focus()
   await page.keyboard.type('thing')
   await expect(page.getByRole('option', { name: /The Thing/ })).toBeVisible()
+  // The suggestion list spans the whole search field, not just the text input (regression).
+  const field = await page.getByRole('search').boundingBox()
+  const list = await page.getByRole('listbox', { name: 'Movie suggestions' }).boundingBox()
+  // (allowing for the popover’s own padding and border around the list)
+  expect(list?.width).toBeGreaterThanOrEqual((field?.width ?? 0) - 12)
   // While the list is open, React Aria hides the rest of the page from screen readers by design.
   // Focus can't reach it (Tab/Escape close the list first), which axe can't see, so only that
   // rule is skipped for this scan.
