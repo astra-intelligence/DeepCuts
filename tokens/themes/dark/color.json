@@ -142,6 +142,16 @@
       "western": {
         "$value": "{color.gold.300}"
       }
+    },
+    "print": {
+      "paper": {
+        "$value": "{color.cream.100}",
+        "$description": "Printed-matter paper: stickers and labels drawn as physical objects"
+      },
+      "ink": {
+        "$value": "{color.umber.950}",
+        "$description": "Ink printed on that paper"
+      }
     }
   }
 }

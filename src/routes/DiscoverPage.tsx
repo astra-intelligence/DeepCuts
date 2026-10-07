@@ -10,6 +10,7 @@ import { movieQueries } from '../api/queries'
 import { imageUrl, releaseYear, type MovieSummary } from '../api/tmdb'
 import { FEATURES } from '../config/features'
 import { EmptyState } from '../components/EmptyState'
+import { GenreSticker } from '../components/GenreSticker'
 import { Icon } from '../components/Icon'
 import { PageHeading } from '../components/PageHeading'
 import { genreTone, primaryGenreName } from '../domain/genres'
@@ -145,6 +146,13 @@ function FeatureCard({ item }: { item: Item }) {
       )}
       {/* Fades the image into the page color so the text on top stays readable. */}
       <div className="absolute inset-0 bg-linear-to-b from-transparent from-35% via-surface/40 via-60% to-surface" />
+      {/* The VHS genre sticker, above the fade so it isn't dimmed. */}
+      <GenreSticker
+        genreIds={movie.genre_ids}
+        seed={movie.id}
+        size="lg"
+        className="absolute top-3.5 right-3.5"
+      />
       <div className="absolute right-5 bottom-5.5 left-5">
         <p className="mb-1 text-sm tracking-widest text-fg-muted uppercase">
           {item.match !== undefined && (
@@ -178,19 +186,27 @@ function PosterCard({ item }: { item: Item }) {
       style={genreTone(movie.genre_ids)}
       className="flex min-w-0 flex-1 flex-col rounded-control"
     >
-      {poster ? (
-        <img
-          src={poster}
-          alt=""
-          loading="lazy"
-          className="aspect-2/3 w-full rounded-poster border border-b-3 border-poster-border border-b-(--tone) object-cover"
+      {/* The poster, with the VHS genre sticker in its top-right corner. */}
+      <span className="relative block">
+        {poster ? (
+          <img
+            src={poster}
+            alt=""
+            loading="lazy"
+            className="block aspect-2/3 w-full rounded-poster border border-b-3 border-poster-border border-b-(--tone) object-cover"
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="block aspect-2/3 w-full rounded-poster border border-b-3 border-poster-border border-b-(--tone) bg-poster-placeholder"
+          />
+        )}
+        <GenreSticker
+          genreIds={movie.genre_ids}
+          seed={movie.id}
+          className="absolute top-1.5 right-1.5"
         />
-      ) : (
-        <span
-          aria-hidden="true"
-          className="aspect-2/3 w-full rounded-poster border border-b-3 border-poster-border border-b-(--tone) bg-poster-placeholder"
-        />
-      )}
+      </span>
       <h3 className="mt-2 mb-1 line-clamp-3 min-h-15 text-sm leading-snug font-semibold">
         {movie.title}
       </h3>

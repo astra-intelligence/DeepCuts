@@ -93,6 +93,34 @@
   --dc-color-contextual: var(--dc-color-tag-disliked);
 }
 
+/* The face of the VHS genre sticker (GenreSticker.tsx; design approved 2026-10-07). Layers, top
+   to bottom: shelf scuffs, a rubbed patch, a sun-bleached patch, paper grain (SVG noise as a data
+   URI, which the CSP allows), and the film's genre color (`--tone`) bleached 35% toward the paper.
+   Highlights use the paper color, so the whole sticker follows the tokens. */
+@utility sticker-face {
+  background:
+    repeating-linear-gradient(
+      115deg,
+      transparent 0 7px,
+      color-mix(in srgb, var(--color-sticker-paper) 22%, transparent) 7px 8px,
+      transparent 8px 19px
+    ),
+    radial-gradient(
+      circle at 74% 70%,
+      color-mix(in srgb, var(--color-sticker-paper) 30%, transparent),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 30% 24%,
+      color-mix(in srgb, var(--color-sticker-paper) 38%, transparent),
+      transparent 58%
+    ),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0 0.42 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")
+      0 0 / 60px 60px,
+    color-mix(in srgb, var(--tone) 65%, var(--color-sticker-paper));
+  background-blend-mode: screen, screen, normal, multiply, normal;
+}
+
 /* Gentle entrance for onboarding steps (`animate-enter`); disabled by the reduced-motion rule above. */
 @theme {
   @keyframes enter {
