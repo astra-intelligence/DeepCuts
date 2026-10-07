@@ -33,6 +33,7 @@ The source of truth for this repo is the files in it, not chat history.
 - Open PRs with `gh pr create`. The description says what changed and why, lists the ADRs involved, how it was tested, and anything the owner should check by hand.
 - Before opening or updating a PR, run **`npm run ci:local`**. It runs exactly what CI runs.
 - After pushing, watch CI (`gh pr checks --watch`). If it fails, read the log (`gh run view --log-failed`), fix it on the branch and push again. **Only hand a PR to the owner when CI is green.**
+- **Security check-in on every PR.** Before handover, review the diff for anything questionable: secrets or tokens, new network calls or endpoints, input that skips Zod, HTML injection, storage outside `src/adapters/local/`, weakened headers or CSP, new dependencies (`npm audit`, maintainer, install scripts), anything that could bill (ADR-0024). Update `docs/security/threat-model.md` when the attack surface changes, and add a "Security check-in" section to the PR description with what was checked and found.
 - After the owner merges: `git switch main && git pull`, then delete the local branch.
 
 ## Keep local and CI identical
