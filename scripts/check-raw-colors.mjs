@@ -2,7 +2,12 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-const IGNORE = new Set(['src/styles/tokens.css'])
+// Generated from tokens/ by sd.config.mjs, where raw values belong (tier 1).
+const IGNORE = new Set([
+  'src/styles/tokens.css',
+  'src/styles/theme-dark.css',
+  'src/styles/theme.css',
+])
 const RULES = [
   [/#[0-9a-fA-F]{3,8}\b/, 'raw hex color'],
   [/\b(?:rgb|rgba|hsl|hsla|oklch)\(/, 'raw color function'],
