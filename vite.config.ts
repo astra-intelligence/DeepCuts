@@ -56,6 +56,9 @@ export default defineConfig(({ mode }) => ({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}', 'server/**/*.test.ts'],
+    // Screen tests drive a whole page through user events; under coverage on a busy machine a few
+    // took 5–7 s (Vitest's default limit is 5 s). 15 s still catches a real hang.
+    testTimeout: 15_000,
     // Tests check behavior, not styles, so CSS isn't processed (faster).
     css: false,
     // Newer Node versions ship a global localStorage that shadows jsdom's and is unusable without

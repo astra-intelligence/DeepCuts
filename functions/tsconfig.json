@@ -31,6 +31,11 @@
     "../server/tmdbCore.ts",
     "../server/rateLimit.ts",
     "../server/securityHeaders.ts",
+    "../server/http.ts",
+    "../server/apiGuard.ts",
+    "../server/accounts",
     "../server/pagesFunction.test.ts"
-  ]
+  ],
+  // The accounts tests run in Node (real SQLite via node:sqlite); tsconfig.node.json checks them.
+  "exclude": ["../server/accounts/*.test.ts"]
 }

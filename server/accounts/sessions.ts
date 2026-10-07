@@ -1,0 +1,98 @@
+// Sign-in sessions (ADR-0031): a random id in a cookie the page's JavaScript can't read, and only
+// its SHA-256 hash in the database.
+//
+// Cookie: `__Host-dc_session` with `HttpOnly; Secure; SameSite=Lax; Path=/`. The `__Host-` prefix
+// makes the browser refuse it unless it's Secure, has Path=/ and no Domain, so no subdomain can
+// set or overwrite it. Sessions last 30 days and are renewed when less than half remains.
+import type { D1Like, D1Stmt } from './d1.ts'
+import { randomToken, sha256Hex } from './crypto.ts'
+
+/** The session cookie's name. */
+export const SESSION_COOKIE = '__Host-dc_session'
+/** How long a session lasts: 30 days (owner decision, 2026-10-07). */
+export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
+/** A session is renewed once less than this much of it remains. */
+const RENEW_BELOW_MS = SESSION_TTL_MS / 2
+
+/** The `Set-Cookie` value that stores session id `id` for the full lifetime. */
+export function sessionCookie(id: string): string {
+  return `${SESSION_COOKIE}=${id}; Max-Age=${SESSION_TTL_MS / 1000}; Path=/; HttpOnly; Secure; SameSite=Lax`
+}
+
+/** The `Set-Cookie` value that deletes the session cookie. */
+export const clearedSessionCookie = `${SESSION_COOKIE}=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax`
+
+/** The session id from the request's cookies, or null. Malformed values are ignored. */
+export function readSessionId(request: Request): string | null {
+  for (const part of (request.headers.get('Cookie') ?? '').split(';')) {
+    const [name, ...rest] = part.trim().split('=')
+    const value = rest.join('=')
+    // 32 random bytes as base64url are always 43 characters.
+    if (name === SESSION_COOKIE && /^[\w-]{43}$/.test(value)) return value
+  }
+  return null
+}
+
+/**
+ * Prepares a new session for `userId`, to run in the caller's batch (so it starts in the same
+ * transaction as whatever signed the person in). Returns the statement and the cookie to send.
+ */
+export async function newSession(
+  db: D1Like,
+  userId: string,
+  now: number,
+): Promise<{ statement: D1Stmt; cookie: string }> {
+  const id = randomToken(32)
+  const statement = db
+    .prepare('INSERT INTO sessions (id_hash, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)')
+    .bind(await sha256Hex(id), userId, now + SESSION_TTL_MS, now)
+  return { statement, cookie: sessionCookie(id) }
+}
+
+/** The signed-in user, plus a renewed cookie to send when the session was extended. */
+export type CurrentUser = { id: string; name: string; renewedCookie: string | null }
+
+/**
+ * Who the request is signed in as, or null. An expired session is deleted. A session past half its
+ * life gets a fresh expiry; the caller sends `renewedCookie` so the browser keeps it as long.
+ */
+export async function currentUser(
+  db: D1Like,
+  request: Request,
+  now: number,
+): Promise<CurrentUser | null> {
+  const id = readSessionId(request)
+  if (!id) return null
+  const hash = await sha256Hex(id)
+  const row = await db
+    .prepare(
+      `SELECT s.expires_at AS expiresAt, u.id AS id, u.name AS name
+       FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id_hash = ?`,
+    )
+    .bind(hash)
+    .first<{ expiresAt: number; id: string; name: string }>()
+  if (!row) return null
+  if (row.expiresAt <= now) {
+    await db.prepare('DELETE FROM sessions WHERE id_hash = ?').bind(hash).run()
+    return null
+  }
+  let renewedCookie: string | null = null
+  if (row.expiresAt - now < RENEW_BELOW_MS) {
+    await db
+      .prepare('UPDATE sessions SET expires_at = ? WHERE id_hash = ?')
+      .bind(now + SESSION_TTL_MS, hash)
+      .run()
+    renewedCookie = sessionCookie(id)
+  }
+  return { id: row.id, name: row.name, renewedCookie }
+}
+
+/** Ends the request's session, if it has one. */
+export async function endSession(db: D1Like, request: Request): Promise<void> {
+  const id = readSessionId(request)
+  if (id)
+    await db
+      .prepare('DELETE FROM sessions WHERE id_hash = ?')
+      .bind(await sha256Hex(id))
+      .run()
+}

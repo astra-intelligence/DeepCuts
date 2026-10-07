@@ -1,11 +1,13 @@
 // @vitest-environment node
-// Tests for the TMDB proxy as a Cloudflare Pages Function (functions/api/tmdb/[[path]].ts,
-// ADR-0029): it passes the same contract as the local proxy, and applies the rate limit first.
+// Tests for the Cloudflare Pages Functions glue (ADR-0029, ADR-0031): the TMDB proxy Function
+// passes the same contract as the local proxy; the `/api` middleware rate-limits and checks the
+// Origin; the catch-all answers a JSON 404; the root middleware adds the security headers.
 // The Workers globals it uses (`caches.default`, `fetch`) are replaced with fakes.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { onRequest as apiCatchAll } from '../functions/api/[[path]]'
 import { onRequest, type Env } from '../functions/api/tmdb/[[path]]'
 import { onRequest as middleware } from '../functions/_middleware'
+import { onRequest as apiMiddleware, type ApiEnv } from '../functions/api/_middleware'
 import { productionHeaders } from './securityHeaders'
 import { tmdbProxyContract } from './tmdbProxy.contract'
 
@@ -34,48 +36,59 @@ tmdbProxyContract('Pages Function', (url, { method, token, fetchImpl }) =>
   viaFunction(url, method, { TMDB_READ_TOKEN: token }, fetchImpl),
 )
 
-describe('TMDB Pages Function: rate limit (Stage 4 H4)', () => {
-  it('refuses a client over the limit with 429 before doing any work', async () => {
-    const fetchImpl = vi.fn()
+describe('/api middleware: rate limit (Stage 4 H4)', () => {
+  // Runs the API middleware with `next` standing in for the route.
+  async function viaApiMiddleware(request: Request, env: ApiEnv) {
+    const next = vi.fn(async () => Response.json({ ok: true }))
+    const res = await apiMiddleware({ request, env, next } as unknown as Parameters<
+      typeof apiMiddleware
+    >[0])
+    return { res, next }
+  }
+  const get = (path: string) =>
+    new Request(`https://deep-cuts.pages.dev${path}`, {
+      headers: { 'CF-Connecting-IP': '203.0.113.7' },
+    })
+
+  it('refuses a client over the limit with 429 before the route runs', async () => {
     const check = vi.fn(async () => ({ allowed: false }))
-    const res = await viaFunction(
-      '/api/tmdb/genre/movie/list',
-      'GET',
-      { TMDB_READ_TOKEN: 't', RATE_LIMITER: { check } },
-      fetchImpl as unknown as typeof fetch,
-    )
-    expect(res).toMatchObject({ status: 429, body: '{"error":"rate_limited"}' })
-    expect(res.headers['retry-after']).toBe('60')
-    expect(res.headers['cache-control']).toBe('no-store')
-    expect(check).toHaveBeenCalledWith('203.0.113.7')
-    expect(fetchImpl).not.toHaveBeenCalled()
+    const { res, next } = await viaApiMiddleware(get('/api/tmdb/genre/movie/list'), {
+      RATE_LIMITER: { check },
+    })
+    expect(res.status).toBe(429)
+    expect(await res.json()).toEqual({ error: 'rate_limited' })
+    expect(res.headers.get('retry-after')).toBe('60')
+    expect(res.headers.get('cache-control')).toBe('no-store')
+    expect(check).toHaveBeenCalledWith('203.0.113.7', 'api')
+    expect(next).not.toHaveBeenCalled()
   })
 
-  it('serves a client within the limit', async () => {
-    const res = await viaFunction(
-      '/api/tmdb/genre/movie/list',
-      'GET',
-      { TMDB_READ_TOKEN: 't', RATE_LIMITER: { check: async () => ({ allowed: true }) } },
-      (async () => Response.json({ genres: [] })) as unknown as typeof fetch,
-    )
+  it('lets a client within the limit through', async () => {
+    const { res } = await viaApiMiddleware(get('/api/tmdb/genre/movie/list'), {
+      RATE_LIMITER: { check: async () => ({ allowed: true }) },
+    })
     expect(res.status).toBe(200)
   })
 
   it('fails open when the limiter itself fails', async () => {
-    const res = await viaFunction(
-      '/api/tmdb/genre/movie/list',
-      'GET',
-      {
-        TMDB_READ_TOKEN: 't',
-        RATE_LIMITER: {
-          check: async () => {
-            throw new Error('limiter down')
-          },
+    const { res } = await viaApiMiddleware(get('/api/tmdb/genre/movie/list'), {
+      RATE_LIMITER: {
+        check: async () => {
+          throw new Error('limiter down')
         },
       },
-      (async () => Response.json({ genres: [] })) as unknown as typeof fetch,
-    )
+    })
     expect(res.status).toBe(200)
+  })
+
+  it('refuses a data-changing request from another origin', async () => {
+    const request = new Request('https://deep-cuts.pages.dev/api/tags/import', {
+      method: 'POST',
+      headers: { Origin: 'https://evil.example' },
+    })
+    const { res, next } = await viaApiMiddleware(request, {})
+    expect(res.status).toBe(403)
+    expect(next).not.toHaveBeenCalled()
   })
 })
 
@@ -87,13 +100,6 @@ describe('API catch-all', () => {
     >[0])
     expect(res.status).toBe(404)
     expect(await res.json()).toEqual({ error: 'not_found' })
-  })
-
-  it('is rate-limited like the rest of the API', async () => {
-    const request = new Request('https://deep-cuts.pages.dev/api/nope')
-    const env = { RATE_LIMITER: { check: async () => ({ allowed: false }) } }
-    const res = await apiCatchAll({ request, env } as unknown as Parameters<typeof apiCatchAll>[0])
-    expect(res.status).toBe(429)
   })
 })
 

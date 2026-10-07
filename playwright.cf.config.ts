@@ -5,8 +5,9 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: 'e2e',
-  // The header/CSP/proxy checks, plus the hosting-only ones (HSTS, `_headers`, SPA routing).
-  testMatch: ['security.spec.ts', 'hosting.spec.ts'],
+  // The header/CSP/proxy checks, the hosting-only ones (HSTS, `_headers`, SPA routing), and real
+  // passkey accounts against the local D1 database (ADR-0031).
+  testMatch: ['security.spec.ts', 'hosting.spec.ts', 'accounts.spec.ts'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
@@ -15,12 +16,13 @@ export default defineConfig({
   // One width is enough: these tests check the server, not the layout.
   projects: [{ name: 'cloudflare', use: { ...devices['Desktop Chrome'] } }],
   // Same rules as the main E2E config: a fresh build every run and no TMDB token (the proxy
-  // answers 503), so nothing can reach live TMDB.
+  // answers 503), so nothing can reach live TMDB. Built with real accounts on, and the local D1
+  // database migrated first (`preview:accounts`).
   webServer: {
-    command: 'npm run build && npm run preview:cf',
+    command: 'npm run preview:accounts',
     port: 8788,
     reuseExistingServer: false,
-    env: { PREVIEW_CF_NO_TOKEN: '1' },
+    env: { PREVIEW_CF_NO_TOKEN: '1', VITE_ACCOUNTS: 'cloudflare' },
     timeout: 180_000,
   },
 })

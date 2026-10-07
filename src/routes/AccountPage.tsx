@@ -1,6 +1,7 @@
 // The Account page (/account). Two versions:
 // - signed out: save picks on this device, or go to sign in;
-// - signed in: the account, its tagged-film count, and sign out (with a confirm step).
+// - signed in: the account, its tagged-film count, and sign out (with a confirm step); a passkey
+//   account can also change its name and delete itself (AccountSettings.tsx, ADR-0031).
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from 'react-aria-components'
@@ -11,6 +12,7 @@ import { Eyebrow } from '../components/Eyebrow'
 import { Icon } from '../components/Icon'
 import { PageHeading } from '../components/PageHeading'
 import { useSession } from '../session/SessionContext'
+import { AccountSettings } from './AccountSettings'
 import { useTagQueries } from '../session/tagQueries'
 
 /**
@@ -127,6 +129,7 @@ function SignedOut() {
 
 // The line under the account name, per kind of account.
 const SIGNED_IN_WITH: Record<Account['method'], string> = {
+  passkey: 'Signed in with a passkey',
   demo: 'Signed in with the demo account',
   practice: 'Practice account, made on this device',
 }
@@ -175,7 +178,7 @@ function SignedIn({ account }: { account: Account }) {
             {films} {films === 1 ? 'film' : 'films'} tagged across Seen it, Want to see, Like and
             Dislike.
           </p>
-          {/* Every account is a practice one today (ADR-0025, ADR-0031), so this always shows. */}
+          {/* Demo and practice accounts live on this device only (ADR-0025, ADR-0031). */}
           {(account.method === 'demo' || account.method === 'practice') && (
             <p className="text-sm text-fg-muted">
               Practice account: lists are kept on this device. A real account will sync them between
@@ -230,6 +233,9 @@ function SignedIn({ account }: { account: Account }) {
             </Button>
           )}
         </section>
+
+        {/* Passkey accounts can be renamed and deleted (ADR-0031 A2b). */}
+        {account.method === 'passkey' && <AccountSettings name={account.name} />}
       </div>
     </>
   )

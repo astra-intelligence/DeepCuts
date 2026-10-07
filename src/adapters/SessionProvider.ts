@@ -3,9 +3,9 @@
 // There are three kinds of session:
 // - guest: picks live only in memory and vanish on reload (ADR-0011, an honest guest mode);
 // - profile: "Save my picks" keeps them in this browser (ADR-0022);
-// - account: signed in. Today there are two practice kinds, the shared "demo" account and a
-//   "practice" account made with the registration form (ADR-0031). Real methods (Google,
-//   GitHub, passkeys…) plug in later through this same interface.
+// - account: signed in. A real account signs in with a passkey (ADR-0031, Cloudflare D1). The
+//   shared "demo" account (ADR-0025) and the "practice" account the local mock makes from the
+//   registration form are stand-ins that live only on this device.
 import { z } from 'zod'
 
 // The name is optional: "Save my picks" creates a profile without asking for one (ADR-0022).
@@ -16,14 +16,15 @@ export const displayNameSchema = z.string().trim().max(40)
 export const accountSchema = z.object({
   id: z.string().regex(/^[\w-]{1,64}$/),
   name: z.string().trim().min(1).max(80),
-  // demo: the shared practice account (ADR-0025). practice: made with the registration form
-  // before real accounts exist (ADR-0031). Neither is a real account; both live only on this device.
-  method: z.enum(['demo', 'practice']),
+  // passkey: a real account on the server (ADR-0031). demo: the shared practice account
+  // (ADR-0025). practice: made by the local mock's registration form. Neither demo nor practice is
+  // a real account; both live only on this device.
+  method: z.enum(['passkey', 'demo', 'practice']),
 })
 /** A signed-in account (see `accountSchema`). */
 export type Account = z.infer<typeof accountSchema>
-/** The sign-in page's buttons. Only `'demo'` exists until real methods are chosen. */
-export type SignInMethodId = Extract<Account['method'], 'demo'>
+/** The sign-in page's buttons: a passkey (real accounts) and the demo account. */
+export type SignInMethodId = Extract<Account['method'], 'passkey' | 'demo'>
 
 /**
  * What the registration form asks for (ADR-0031). The messages are shown under each field.
@@ -72,6 +73,15 @@ export interface SessionProvider {
   register(details: Registration): Promise<Session>
   /** Back to guest mode on this device. A signed-in account keeps its lists. */
   signOut(): Promise<Session>
+  /**
+   * True when `register` only makes a practice account on this device (the local mock), so the
+   * registration page says so (ADR-0025: a mock must never pass for a real account).
+   */
+  readonly practiceRegistration: boolean
+  /** Renames the signed-in passkey account (ADR-0031 A2b). Absent where accounts can't be renamed. */
+  rename?(name: string): Promise<Session>
+  /** Deletes the signed-in passkey account and its lists, for good. Absent where unsupported. */
+  deleteAccount?(): Promise<Session>
 }
 
 /** The first word of a name, for the header ("Mike Curts" → "Mike"). */

@@ -64,6 +64,8 @@ export function createMockSessionProvider(storage?: Storage): SessionProvider {
       profile.save({ displayName })
       return { kind: 'profile', displayName }
     },
+    // Registration here only makes a practice account; the page says so.
+    practiceRegistration: true,
     signInMethods: () => METHODS,
     async signIn(method) {
       if (!METHODS.some((m) => m.id === method))

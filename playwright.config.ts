@@ -4,9 +4,9 @@ import { defineConfig, devices } from '@playwright/test'
 // Three viewports per ADR-0021: Reflow (320), mobile (390), desktop (1280).
 export default defineConfig({
   testDir: 'e2e',
-  // Hosting-only checks (HSTS, `_headers`, Functions) run against wrangler instead
-  // (playwright.cf.config.ts, `npm run e2e:cf`).
-  testIgnore: ['hosting.spec.ts'],
+  // Hosting-only checks (HSTS, `_headers`, Functions) and real passkey accounts run against
+  // wrangler instead (playwright.cf.config.ts, `npm run e2e:cf`).
+  testIgnore: ['hosting.spec.ts', 'accounts.spec.ts'],
   fullyParallel: true,
   // On CI: fail if a test was left as `.only`, retry a flaky test once, and report in GitHub's format.
   forbidOnly: !!process.env.CI,

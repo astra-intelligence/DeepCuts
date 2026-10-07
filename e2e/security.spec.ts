@@ -44,8 +44,13 @@ test('the page loads with no CSP violations', async ({ page }) => {
   expect(violations).toEqual([])
 })
 
-test('the TMDB proxy refuses endpoints outside the allowlist', async ({ request }) => {
+test('the TMDB proxy refuses endpoints outside the allowlist', async ({ request, baseURL }) => {
   expect((await request.get('/api/tmdb/account')).status()).toBe(404)
   expect((await request.get('/api/tmdb/search/movie?query=a&api_key=x')).status()).toBe(400)
-  expect((await request.post('/api/tmdb/genre/movie/list')).status()).toBe(405)
+  // Sent with this site's own Origin, as a browser would; the hosted API refuses other origins
+  // first (403, see hosting.spec.ts).
+  const post = await request.post('/api/tmdb/genre/movie/list', {
+    headers: { Origin: new URL(baseURL ?? '').origin },
+  })
+  expect(post.status()).toBe(405)
 })

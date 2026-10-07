@@ -1,0 +1,115 @@
+// An in-memory fake of the accounts API (`/api/auth/*`, `/api/tags*`) for unit tests of the
+// Cloudflare adapters and the screens (ADR-0031, Stage 6 A4). It behaves like the real Functions
+// from the client's side (status codes, bodies, the tag rules) but keeps one "browser" session in
+// a variable instead of a cookie. The real server is tested on its own (server/accounts/).
+import { http, HttpResponse } from 'msw'
+import { createTagRepository } from '../../adapters/createTagRepository'
+import type { TagRecord, TagRepository } from '../../adapters/TagRepository'
+import { SYSTEM_TAGS, type SystemTag } from '../../domain/tagRules'
+
+type User = { id: string; name: string }
+
+/**
+ * Creates the fake. `now` stamps new tags (the contract suite passes a deterministic clock).
+ * Pass `handlers` to `server.use(...)`.
+ */
+export function createFakeAccountsApi(now: () => string = () => new Date().toISOString()) {
+  const state = {
+    /** Who the "browser" is signed in as. */
+    signedIn: null as User | null,
+    /** Every registered user, by id. */
+    users: new Map<string, User>(),
+    /** Each user's tags, kept with the same shared rules the real server applies. */
+    tags: new Map<string, TagRepository>(),
+    /** Set to make the next registration fail, as with a used invite. */
+    rejectInvite: false,
+  }
+  const tagsOf = (id: string) => {
+    if (!state.tags.has(id)) {
+      let records: TagRecord[] = []
+      state.tags.set(
+        id,
+        createTagRepository({ load: () => records, save: (r) => void (records = r) }, now),
+      )
+    }
+    return state.tags.get(id) as TagRepository
+  }
+  const signedOut = () => HttpResponse.json({ error: 'signed_out' }, { status: 401 })
+  const options = () =>
+    HttpResponse.json({ challengeId: 'C'.repeat(22), options: { challenge: 'challenge' } })
+  let lastRegisteringName = ''
+
+  const handlers = [
+    http.get('/api/auth/session', () =>
+      state.signedIn ? HttpResponse.json(state.signedIn) : signedOut(),
+    ),
+    http.post('/api/auth/register/options', async ({ request }) => {
+      if (state.rejectInvite) return HttpResponse.json({ error: 'invalid_invite' }, { status: 400 })
+      lastRegisteringName = ((await request.json()) as { name: string }).name
+      return options()
+    }),
+    http.post('/api/auth/register/verify', () => {
+      const user = { id: `user-${state.users.size + 1}`, name: lastRegisteringName }
+      state.users.set(user.id, user)
+      state.signedIn = user
+      return HttpResponse.json(user)
+    }),
+    http.post('/api/auth/authenticate/options', options),
+    http.post('/api/auth/authenticate/verify', () => {
+      // The device "chooses" the first registered passkey, or a ready-made account.
+      const user = [...state.users.values()][0] ?? { id: 'passkey-user', name: 'Pat Key' }
+      state.users.set(user.id, user)
+      state.signedIn = user
+      return HttpResponse.json(user)
+    }),
+    http.post('/api/auth/sign-out', () => {
+      state.signedIn = null
+      return HttpResponse.json({ ok: true })
+    }),
+    http.patch('/api/auth/me', async ({ request }) => {
+      if (!state.signedIn) return signedOut()
+      const { name } = (await request.json()) as { name: string }
+      state.signedIn = { ...state.signedIn, name: name.trim() }
+      state.users.set(state.signedIn.id, state.signedIn)
+      return HttpResponse.json(state.signedIn)
+    }),
+    http.delete('/api/auth/me', () => {
+      if (!state.signedIn) return signedOut()
+      state.users.delete(state.signedIn.id)
+      state.tags.delete(state.signedIn.id)
+      state.signedIn = null
+      return HttpResponse.json({ ok: true })
+    }),
+    http.get('/api/tags', async () => {
+      if (!state.signedIn) return signedOut()
+      return HttpResponse.json({ records: await tagsOf(state.signedIn.id).exportAll() })
+    }),
+    http.put('/api/tags', async ({ request }) => {
+      if (!state.signedIn) return signedOut()
+      const { tmdbId, tag } = (await request.json()) as { tmdbId: number; tag: SystemTag }
+      if (!SYSTEM_TAGS.includes(tag))
+        return HttpResponse.json({ error: 'bad_request' }, { status: 400 })
+      return HttpResponse.json({
+        tags: [...(await tagsOf(state.signedIn.id).setTag(tmdbId, tag, true))],
+      })
+    }),
+    http.delete('/api/tags', async ({ request }) => {
+      if (!state.signedIn) return signedOut()
+      const body = (await request.json()) as { tmdbId: number; tag: SystemTag } | { all: true }
+      const repo = tagsOf(state.signedIn.id)
+      if ('all' in body) {
+        await repo.clear()
+        return HttpResponse.json({ tags: [] })
+      }
+      return HttpResponse.json({ tags: [...(await repo.setTag(body.tmdbId, body.tag, false))] })
+    }),
+    http.post('/api/tags/import', async ({ request }) => {
+      if (!state.signedIn) return signedOut()
+      const { records } = (await request.json()) as { records: TagRecord[] }
+      await tagsOf(state.signedIn.id).importAll(records)
+      return HttpResponse.json({ ok: true })
+    }),
+  ]
+
+  return { state, handlers }
+}
