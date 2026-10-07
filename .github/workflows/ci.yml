@@ -42,7 +42,20 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # Playwright's browser download is cached, keyed by the Playwright version in the lockfile,
+      # so most runs skip it (#23: a stalled download hung a job for 11+ minutes). On a cache hit
+      # only the Linux system libraries are installed; those come from apt and aren't cached.
+      - id: playwright
+        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/playwright-core'].version")" >> "$GITHUB_OUTPUT"
+      - id: browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
+      - if: steps.browsers.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.browsers.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
       - run: npm run e2e
       # The security checks again, on Cloudflare's real runtime (wrangler pages dev), locally.
       - run: npm run e2e:cf
@@ -57,7 +70,20 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # Playwright's browser download is cached, keyed by the Playwright version in the lockfile,
+      # so most runs skip it (#23: a stalled download hung a job for 11+ minutes). On a cache hit
+      # only the Linux system libraries are installed; those come from apt and aren't cached.
+      - id: playwright
+        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/playwright-core'].version")" >> "$GITHUB_OUTPUT"
+      - id: browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
+      - if: steps.browsers.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.browsers.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
       - run: npm run storybook:test
   # Scans the whole git history for committed secrets (API keys, tokens).
   gitleaks:
