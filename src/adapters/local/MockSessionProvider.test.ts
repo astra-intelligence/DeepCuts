@@ -1,5 +1,6 @@
 // Tests for the local session provider: the shared SessionProvider contract, a saved profile
-// surviving a new instance, and versionedStore's migration hook.
+// surviving a new instance, a stale demo account name being refreshed, and versionedStore's
+// migration hook.
 import { beforeEach, expect, it } from 'vitest'
 import { sessionProviderContract } from '../sessionProvider.contract'
 import { createMockSessionProvider } from './MockSessionProvider'
@@ -15,6 +16,18 @@ it('a profile survives a new instance (saved on this device)', async () => {
   expect(await createMockSessionProvider().getSession()).toEqual({
     kind: 'profile',
     displayName: 'Mike',
+  })
+})
+
+it('a demo account saved under an old name comes back with the current name', async () => {
+  // What a browser that signed in before the rename still has stored.
+  localStorage.setItem(
+    'deepcuts:v1:account',
+    JSON.stringify({ id: 'demo', name: 'Alex Rivera', method: 'demo' }),
+  )
+  expect(await createMockSessionProvider().getSession()).toEqual({
+    kind: 'account',
+    account: { id: 'demo', name: 'Mike Curts', method: 'demo' },
   })
 })
 

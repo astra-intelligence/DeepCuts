@@ -49,6 +49,9 @@ export function createMockSessionProvider(storage?: Storage): SessionProvider {
     async getSession() {
       // A signed-in account wins over a device profile; with neither, it's a guest.
       const a = account.load()
+      // The demo account is defined here, not by what was stored: a browser that signed in before
+      // the demo was renamed (Alex Rivera → Mike Curts) would otherwise keep the old name forever.
+      if (a?.method === 'demo') return { kind: 'account', account: DEMO_ACCOUNT }
       if (a) return { kind: 'account', account: a }
       const p = profile.load()
       return p ? { kind: 'profile', displayName: p.displayName } : GUEST
