@@ -1,3 +1,4 @@
+// The weights lab (/discover/weights): sliders for the recommendation scorer's weights.
 import { useState } from 'react'
 import {
   Button,
@@ -26,10 +27,14 @@ import { useTaste, type Recommendation } from '../session/useRecommendations'
 // sees the picks re-rank live. Settings live in the URL (whole numbers, so links stay readable):
 // a tuning can be bookmarked or shared, and nothing is stored.
 
+// How many picks the table shows.
 const LIMIT = 20
+// 0.32 → 32: sliders and the URL use whole percentages.
 const toPercent = (n: number) => Math.round(n * 100)
+// The URL key for the genre-variety slider (the scorer's diversity penalty).
 const DIVERSITY_KEY = 'diversity'
 
+// Plain-language names for the six score parts: slider label, short table header, and hint.
 const PARTS: Record<ScorePart, { label: string; short: string; hint: string }> = {
   support: {
     label: 'Recommended by your likes',
@@ -65,6 +70,7 @@ const paramsSchema = z.object({
   [DIVERSITY_KEY]: level(toPercent(DIVERSITY_PENALTY), 20),
 })
 
+/** The weights lab page. Behind the `weightsLab` feature flag. */
 export function WeightsPage() {
   const [params, setParams] = useSearchParams()
   const { diversity, ...levels } = paramsSchema.parse(Object.fromEntries(params))
@@ -73,11 +79,13 @@ export function WeightsPage() {
   const taste = useTaste()
   const tuned = taste.score({ weights, diversityPenalty, limit: LIMIT })
   const baseline = taste.score({ limit: LIMIT })
+  // Today's default ranking, to show how far each film moved.
   const baselineRank = new Map(baseline.map((r, i) => [r.movie.id, i]))
   const tunedIds = new Set(tuned.map((r) => r.movie.id))
   const dropped = baseline.filter((r) => !tunedIds.has(r.movie.id))
   const allZero = SCORE_PARTS.every((p) => levels[p] === 0)
 
+  // Writes one slider's value into the URL. `replace` avoids a history entry per slider step.
   function set(key: ScorePart | typeof DIVERSITY_KEY, value: number) {
     setParams(
       (prev) => {
@@ -175,6 +183,8 @@ export function WeightsPage() {
   )
 }
 
+// One labelled slider with its value, share of the score, and a hint (React Aria Slider:
+// keyboard and screen-reader accessible).
 function WeightSlider({
   label,
   hint,
@@ -281,6 +291,7 @@ function Summary({ weights, diversityPenalty }: { weights: Weights; diversityPen
   )
 }
 
+// The ranked picks, with each part's score so you can see why a film ranks where it does.
 function PicksTable({
   picks,
   baselineRank,

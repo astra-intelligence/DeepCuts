@@ -1,3 +1,7 @@
+// My Lists (/lists): the films on each of the four tag lists.
+//
+// Four tiles pick the list (`?tag=`, so it's linkable); the page accent switches to that tag's
+// color (ADR-0020). Each row loads its film's details from TMDB, cached for a day.
 import { useQueries, useQuery } from '@tanstack/react-query'
 import type { CSSProperties } from 'react'
 import { Link, useSearchParams } from 'react-router'
@@ -24,10 +28,12 @@ const PAGE_ACCENT: Record<SystemTag, string> = {
   disliked: 'page-accent-disliked',
 }
 
+/** The My Lists page. */
 export function ListsPage() {
   const [params] = useSearchParams()
   const { tag } = paramsSchema.parse(Object.fromEntries(params))
   const queries = useTagQueries()
+  // All four lists load at once, for the counts on the tiles.
   const counts = useQueries({ queries: TAGS.map((t) => queries.list(t.tag)) })
   const ids = counts[SYSTEM_TAGS.indexOf(tag)]?.data ?? []
   const label = TAGS.find((t) => t.tag === tag)?.label ?? ''
@@ -41,6 +47,7 @@ export function ListsPage() {
         lede="Everything you’ve tagged, in one place."
       />
 
+      {/* The four list tiles. The current one is marked with aria-current and its tag color. */}
       <nav aria-label="Lists" className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
         {TAGS.map((t, i) => {
           const n = counts[i]?.data?.length ?? 0
@@ -92,6 +99,7 @@ export function ListsPage() {
   )
 }
 
+// One film on the list. Shows a pulsing placeholder until its details arrive.
 function ListRow({ id }: { id: number }) {
   // Each listed film needs its details once; the 24h cache makes repeat visits free (ADR-0015).
   const { data: m } = useQuery(movieQueries.detail(id))

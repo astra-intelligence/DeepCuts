@@ -1,3 +1,6 @@
+// Tests for the TMDB client: responses are validated (bad ones rejected, odd image paths
+// dropped), errors carry the status, and the helpers (image URLs, providers, certification,
+// discover parameters) behave.
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { movieFixture } from '../test/msw/fixtures'

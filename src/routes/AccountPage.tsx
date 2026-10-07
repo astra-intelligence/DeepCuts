@@ -1,3 +1,6 @@
+// The Account page (/account). Two versions:
+// - signed out: save picks on this device, or go to sign in;
+// - signed in: the account, its tagged-film count, and sign out (with a confirm step).
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from 'react-aria-components'
@@ -10,18 +13,22 @@ import { PageHeading } from '../components/PageHeading'
 import { useSession } from '../session/SessionContext'
 import { useTagQueries } from '../session/tagQueries'
 
-// ADR-0022 + ADR-0025: one page for saving on this device, signing in, and the signed-in account.
-// Copy never implies cross-device sync until a real account provider exists (ADR-0013).
+/**
+ * ADR-0022 + ADR-0025: one page for saving on this device, signing in, and the signed-in account.
+ * Copy never implies cross-device sync until a real account provider exists (ADR-0013).
+ */
 export function AccountPage() {
   const { session } = useSession()
   return session.kind === 'account' ? <SignedIn account={session.account} /> : <SignedOut />
 }
 
+// Guest or device profile: explains where picks are kept and offers both ways to keep them.
 function SignedOut() {
   const { session, createProfile } = useSession()
   const saved = session.kind === 'profile'
   const [status, setStatus] = useState('')
 
+  // "Save my picks": moves the guest's picks into this browser, then confirms out loud.
   async function save() {
     await createProfile()
     setStatus('Your picks are saved on this device.')
@@ -50,6 +57,7 @@ function SignedOut() {
         </div>
       </div>
 
+      {/* Two side-by-side choices from md: keep picks on this device, or sign in. */}
       <div className="mt-3 grid items-stretch gap-3 md:grid-cols-2">
         <section
           aria-labelledby="local-heading"
@@ -93,6 +101,7 @@ function SignedOut() {
           <p className="mb-4 text-sm leading-relaxed text-fg-muted">
             Keep your lists in your account instead of a single browser.
           </p>
+          {/* `from` tells the sign-in page where to return afterwards. */}
           <Link
             to="/sign-in"
             state={{ from: '/account' }}
@@ -116,10 +125,13 @@ function SignedOut() {
   )
 }
 
+// Signed in: who you are, how many films you've tagged, and sign out.
 function SignedIn({ account }: { account: Account }) {
   const { signOut } = useSession()
   const navigate = useNavigate()
+  // Distinct films (a film with two tags counts once).
   const films = new Set(useQuery(useTagQueries().all()).data?.map((r) => r.tmdbId)).size
+  // Sign out takes two presses ("Sign out", then "Yes, sign out"), so it can't happen by accident.
   const [confirming, setConfirming] = useState(false)
   const confirmRef = useRef<HTMLButtonElement>(null)
   const askRef = useRef<HTMLButtonElement>(null)
@@ -195,6 +207,7 @@ function SignedIn({ account }: { account: Account }) {
               <Button
                 onPress={() => {
                   setConfirming(false)
+                  // Return focus to "Sign out" once it's back on screen (next frame).
                   requestAnimationFrame(() => askRef.current?.focus())
                 }}
                 className="flex h-11 items-center rounded-button px-2 text-sm font-semibold text-info"

@@ -1,3 +1,5 @@
+// The app shell around Discover, Search, My Lists and Account: header, search band, the page,
+// and the tab bar. (Detail and Sign in have their own layouts.)
 import { Link, NavLink, Outlet } from 'react-router'
 import { FEATURES } from '../config/features'
 import { AccountChip } from '../components/AccountChip'
@@ -7,12 +9,17 @@ import { MovieSearch } from '../components/MovieSearch'
 import { SignedInNotice } from '../components/SignedInNotice'
 import { useRouteFocus } from '../hooks/useRouteFocus'
 
+// The three tabs in the tab bar, in order.
 const NAV: { to: string; label: string; icon: IconName }[] = [
   { to: '/discover', label: 'Discover', icon: 'home' },
   { to: '/search', label: 'Search', icon: 'search' },
   { to: '/lists', label: 'My Lists', icon: 'list' },
 ]
 
+/**
+ * "Skip to content": hidden until a keyboard user tabs to it, then jumps past the header to
+ * <main> (WCAG 2.4.1). Also used by the Detail and Sign-in layouts.
+ */
 export function SkipLink() {
   return (
     <a
@@ -24,13 +31,17 @@ export function SkipLink() {
   )
 }
 
-// Design v2 shell (ADR-0021): sticky header + persistent search band; a bottom tab bar on
-// phones that becomes a floating pill from `md`.
+/**
+ * Design v2 shell (ADR-0021): sticky header + persistent search band; a bottom tab bar on
+ * phones that becomes a floating pill from `md`.
+ */
 export function AppLayout() {
   useRouteFocus()
   return (
+    // Bottom padding keeps the last content clear of the fixed tab bar (and the iPhone home bar).
     <div className="mx-auto min-h-dvh w-full max-w-360 overflow-x-clip pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-28">
       <SkipLink />
+      {/* Header and search stay pinned to the top while the page scrolls. */}
       <div className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur-lg">
         <header className="flex min-h-16 items-center justify-between gap-2.5 px-5 pt-[max(0.625rem,env(safe-area-inset-top))] pb-2 md:px-8">
           <Link
@@ -41,6 +52,7 @@ export function AppLayout() {
             <Logo className="h-7 w-auto" />
           </Link>
           <div className="flex items-center gap-2">
+            {/* "Tune my picks" onboarding is hidden behind a feature flag for now. */}
             {FEATURES.onboarding && (
               <Link
                 to="/tune"
@@ -63,12 +75,15 @@ export function AppLayout() {
 
       <main id="main" className="mx-auto w-full max-w-7xl px-5 pt-5 pb-3 md:pt-6">
         <SignedInNotice />
+        {/* The current page renders here. */}
         <Outlet />
+        {/* Attribution required by TMDB's terms of use. */}
         <p className="mt-10 text-xs text-fg-muted">
           This product uses the TMDB API but is not endorsed or certified by TMDB.
         </p>
       </main>
 
+      {/* The tab bar. NavLink marks the current tab (and gives it aria-current="page"). */}
       <nav
         aria-label="Main"
         className="fixed bottom-0 left-1/2 z-20 w-full max-w-360 -translate-x-1/2 border-t border-nav-border bg-nav-bg/95 px-3.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:bottom-4 md:w-md md:rounded-nav md:border md:p-1 md:shadow-nav md:shadow-surface/80"

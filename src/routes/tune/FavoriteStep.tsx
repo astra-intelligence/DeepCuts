@@ -1,3 +1,4 @@
+// Onboarding step 2: a favorite film, chosen with the search field above.
 import { useQuery } from '@tanstack/react-query'
 import { Button } from 'react-aria-components'
 import { movieQueries } from '../../api/queries'
@@ -8,6 +9,7 @@ import type { StepProps } from './useTuneState'
 
 /** Step 2: pick a favorite film with the search above (Detail → back keeps it). */
 export function FavoriteStep({ state, update }: StepProps) {
+  // Load the chosen film's details to show its title (only once one is chosen).
   const favorite = useQuery({
     ...movieQueries.detail(state.favorite ?? 0),
     enabled: !!state.favorite,
@@ -44,6 +46,7 @@ export function FavoriteStep({ state, update }: StepProps) {
           onPress={() => update({ step: 3, pick: undefined, n: 1 })}
           className="mt-1 ml-auto block min-h-11 px-3 text-sm text-fg-muted"
         >
+          {/* The favorite is optional. */}
           Skip favorite movie
         </Button>
       </Prompt>

@@ -1,3 +1,5 @@
+# GitHub's code security scanner (CodeQL), for the code and the workflows themselves.
+# Runs on pull requests, pushes to main, and weekly (new checks appear over time).
 name: CodeQL
 on:
   push:

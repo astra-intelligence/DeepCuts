@@ -1,8 +1,14 @@
+// One film as a row in a list: poster, title, year/genre, a short overview and "View details".
 import { Link } from 'react-router'
 import { imageUrl, type MovieSummary } from '../api/tmdb'
 import { Icon } from './Icon'
 
-/** Poster + text link for list rows (Search, My Lists). Expects `--tone` from `genreTone()`. */
+/**
+ * Poster + text link for list rows (Search, My Lists). Expects `--tone` from `genreTone()` on a
+ * parent, for the colored line under the poster.
+ * @param meta - Short facts shown under the title, e.g. `['1982', 'Horror']`.
+ * @param disliked - Adds a "Disliked" marker (disliked films stay findable in Search, design E4).
+ */
 export function MovieLink({
   movie,
   meta,
@@ -18,6 +24,8 @@ export function MovieLink({
       to={`/movie/${movie.id}`}
       className="grid min-h-26 min-w-0 grid-cols-[4rem_minmax(0,1fr)] items-center gap-3.5 rounded-control md:grid-cols-[4.75rem_minmax(0,1fr)] md:gap-4.5"
     >
+      {/* The poster is decorative (alt=""): the title right next to it names the link. A film
+          without a poster gets an empty placeholder of the same size. */}
       {poster ? (
         <img
           src={poster}

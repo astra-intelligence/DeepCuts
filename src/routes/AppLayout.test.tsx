@@ -1,3 +1,4 @@
+// Tests for the app shell: the tab bar marks the current page, and unknown URLs show the error page.
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { renderRoute } from '../test/renderRoute'

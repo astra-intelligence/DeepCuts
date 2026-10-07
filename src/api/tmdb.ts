@@ -1,6 +1,13 @@
-// TMDB client (ADR-0002). Talks only to our proxy; every response is Zod-validated (ADR-0008, ADR-0015).
+// TMDB client (ADR-0002): the only code that fetches movie data.
+//
+// The browser never talks to TMDB directly: it calls our own `/api/tmdb/...` proxy, which adds
+// the secret API token on the server (server/tmdbProxy.ts). Every response is checked with a
+// Zod schema before the app uses it (ADR-0008, ADR-0015), so unexpected data fails safely here
+// instead of breaking a screen. Schemas only keep the fields the app actually uses.
 import { z } from 'zod'
 
+// An image path like "/abc123.jpg". Anything else (a full URL, odd characters) becomes null,
+// so we only ever build image URLs on TMDB's own image host.
 const imagePath = z
   .string()
   .regex(/^\/[\w.-]+\.(jpg|jpeg|png|svg|webp)$/i)
@@ -15,6 +22,7 @@ const signals = {
   original_language: z.string().max(8).catch('').default(''),
 }
 
+// A film as it appears in search results, lists and recommendations.
 const movieSummary = z.object({
   id: z.number().int().positive(),
   title: z.string(),
@@ -26,6 +34,7 @@ const movieSummary = z.object({
   ...signals,
 })
 
+/** One page of search or discover results. */
 export const searchResultsSchema = z.object({
   page: z.number().int(),
   total_pages: z.number().int(),
@@ -33,6 +42,7 @@ export const searchResultsSchema = z.object({
   results: z.array(movieSummary),
 })
 
+/** Everything the Detail page needs about one film, from a single call. */
 export const movieDetailSchema = z.object({
   id: z.number().int().positive(),
   title: z.string(),
@@ -63,12 +73,14 @@ export const movieDetailSchema = z.object({
     .catch(undefined),
 })
 
+// A streaming service (Netflix, Apple TV…), from JustWatch via TMDB.
 const provider = z.object({
   provider_id: z.number().int(),
   provider_name: z.string(),
   logo_path: imagePath,
 })
 
+/** Where to watch a film, per country code ("US"), split by subscription, rent and buy. */
 export const watchProvidersSchema = z.object({
   results: z.record(
     z.string(),
@@ -80,12 +92,14 @@ export const watchProvidersSchema = z.object({
   ),
 })
 
+// TypeScript types derived from the schemas, so types and validation can't disagree.
 export type MovieSummary = z.infer<typeof movieSummary>
 export type SearchResults = z.infer<typeof searchResultsSchema>
 export type MovieDetail = z.infer<typeof movieDetailSchema>
 export type Provider = z.infer<typeof provider>
 export type WatchProviders = z.infer<typeof watchProvidersSchema>
 
+/** A TMDB request that came back with an error status (e.g. 404 for an unknown film). */
 export class TmdbError extends Error {
   readonly status: number
   constructor(status: number) {
@@ -94,6 +108,8 @@ export class TmdbError extends Error {
   }
 }
 
+// Fetches one proxy path, throws on an error status, and validates the JSON with `schema`.
+// `signal` lets TanStack Query cancel requests that are no longer needed.
 async function get<T>(
   path: string,
   schema: z.ZodType<T>,
@@ -106,9 +122,12 @@ async function get<T>(
   return schema.parse(await res.json())
 }
 
+/** The TMDB calls the app makes. Each returns validated data. */
 export const tmdb = {
+  /** Films whose title matches `query`. */
   search: (query: string, page = 1, signal?: AbortSignal) =>
     get('search/movie', searchResultsSchema, { query, page: String(page) }, signal),
+  /** One film's details, plus its content ratings and recommended films in the same call. */
   movie: (id: number, signal?: AbortSignal) =>
     get(
       `movie/${id}`,
@@ -123,15 +142,19 @@ export const tmdb = {
       searchResultsSchema,
       {
         sort_by: 'popularity.desc',
+        // Skip barely-rated films so the feed isn't full of obscure noise.
         'vote_count.gte': '200',
+        // `|` means "any of these genres" to TMDB; capped at 10 to keep the URL short.
         ...(genres.length > 0 && { with_genres: genres.slice(0, 10).join('|') }),
       },
       signal,
     ),
+  /** Where a film can be streamed, rented or bought. */
   watchProviders: (id: number, signal?: AbortSignal) =>
     get(`movie/${id}/watch/providers`, watchProvidersSchema, undefined, signal),
 }
 
+// The image widths TMDB serves ("w342" = 342px wide).
 type ImageSize = 'w92' | 'w185' | 'w342' | 'w500' | 'w780' | 'w1280' | 'original'
 
 /** Builds a TMDB CDN URL; the CSP only allows images from this host. */
@@ -139,10 +162,12 @@ export function imageUrl(path: string | null, size: ImageSize): string | null {
   return path ? `https://image.tmdb.org/t/p/${size}${path}` : null
 }
 
+/** "1982-06-25" → "1982"; '' when the date is missing or malformed. */
 export function releaseYear(date: string): string {
   return /^\d{4}/.test(date) ? date.slice(0, 4) : ''
 }
 
+/** 109 → "1h 49m"; 45 → "45m"; '' when unknown. */
 export function formatRuntime(minutes: number | null): string {
   if (!minutes) return ''
   const h = Math.floor(minutes / 60)
@@ -155,6 +180,7 @@ export function providersFor(data: WatchProviders, region: string): Provider[] {
   const r = data.results[region]
   if (!r) return []
   const seen = new Set<number>()
+  // A service often offers both rent and buy; keep its first (most useful) appearance only.
   return [...(r.flatrate ?? []), ...(r.rent ?? []), ...(r.buy ?? [])].filter((p) =>
     seen.has(p.provider_id) ? false : (seen.add(p.provider_id), true),
   )

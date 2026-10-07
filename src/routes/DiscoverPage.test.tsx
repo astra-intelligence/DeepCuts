@@ -1,3 +1,5 @@
+// Tests for Discover: the feed without likes (popular films minus dislikes) and with likes
+// (scored picks with a match and the reason).
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
@@ -12,7 +14,9 @@ describe('discover', () => {
       await screen.findByRole('link', { name: /Today’s featured deep cut.*The Thing/ }),
     ).toBeInTheDocument()
     const grid = screen.getByRole('region', { name: 'Go a little deeper' })
-    expect(within(grid).getByRole('link', { name: /Alien.*1979 · Horror/ })).toBeInTheDocument()
+    const alien = within(grid).getByRole('link', { name: /Alien.*1979 · Horror/ })
+    // Each poster wears its VHS genre sticker, which stays out of the link's accessible name.
+    expect(alien.querySelector('[data-genre-sticker="horror"]')).toHaveTextContent('Horror')
   })
 
   it('leaves disliked films out of the feed (ADR-0017)', async () => {

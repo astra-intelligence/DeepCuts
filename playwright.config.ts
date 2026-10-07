@@ -1,12 +1,15 @@
+// Playwright configuration for the end-to-end tests in e2e/ (`npm run e2e`).
 import { defineConfig, devices } from '@playwright/test'
 
 // Three viewports per ADR-0021: Reflow (320), mobile (390), desktop (1280).
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: true,
+  // On CI: fail if a test was left as `.only`, retry a flaky test once, and report in GitHub's format.
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',
+  // Keep a step-by-step trace of failed tests, for debugging (npx playwright show-trace).
   use: { baseURL: 'http://localhost:4173', trace: 'retain-on-failure' },
   projects: [
     {

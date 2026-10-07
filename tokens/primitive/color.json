@@ -57,6 +57,18 @@
       "300": {
         "$value": "#f27c81"
       }
+    },
+    "cream": {
+      "100": {
+        "$value": "#f2e8d2",
+        "$description": "Aged paper (VHS genre sticker, approved 2026-10-07)"
+      }
+    },
+    "umber": {
+      "950": {
+        "$value": "#1d1813",
+        "$description": "Warm near-black printing ink (VHS genre sticker)"
+      }
     }
   }
 }

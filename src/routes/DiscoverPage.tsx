@@ -1,3 +1,8 @@
+// Discover (/discover): a feed of films picked for you.
+//
+// A large featured film on top, then a grid of 16 more. With likes, the picks come from the
+// recommendation scorer (ADR-0026) and show a "% match" and why. Without likes, it shows popular
+// films (minus disliked ones) and suggests liking a few films.
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router'
 import { z } from 'zod'
@@ -5,6 +10,7 @@ import { movieQueries } from '../api/queries'
 import { imageUrl, releaseYear, type MovieSummary } from '../api/tmdb'
 import { FEATURES } from '../config/features'
 import { EmptyState } from '../components/EmptyState'
+import { GenreSticker } from '../components/GenreSticker'
 import { Icon } from '../components/Icon'
 import { PageHeading } from '../components/PageHeading'
 import { genreTone, primaryGenreName } from '../domain/genres'
@@ -21,22 +27,29 @@ const paramsSchema = z.object({
     .default([]),
 })
 
+// For the eyebrow, e.g. "Tuesday's edit".
 const WEEKDAY = new Intl.DateTimeFormat('en-US', { weekday: 'long' })
 
-// With likes, Discover ranks films with the scorer (ADR-0026). Without likes it shows popular films
-// minus disliked ones, and says how to tune it.
+/**
+ * With likes, Discover ranks films with the scorer (ADR-0026). Without likes it shows popular
+ * films minus disliked ones, and says how to tune it.
+ */
 export function DiscoverPage() {
   const [params] = useSearchParams()
   const { genres } = paramsSchema.parse(Object.fromEntries(params))
+  // 17 = one featured film + 16 grid tiles.
   const tuned = useRecommendations(17)
   const popular = useQuery(movieQueries.discover(genres))
   const excluded = useQuery(useTagQueries().feedExclusions()).data
 
+  // Use the scorer's picks when there are likes and the scorer has (or is still finding) picks;
+  // otherwise fall back to popular films so the page is never empty.
   const usePicks = tuned.hasLikes && (tuned.loading || tuned.recommendations.length > 0)
   const items: Item[] = usePicks
     ? tuned.recommendations.map((r) => ({ movie: r.movie, match: r.match, because: r.because }))
     : (popular.data?.results ?? []).filter((m) => !excluded?.has(m.id)).map((movie) => ({ movie }))
   const loading = usePicks ? tuned.loading : popular.isPending
+  // The first film is featured; the rest fill the grid.
   const [feature, ...rest] = items
 
   return (
@@ -108,6 +121,7 @@ function Because({ titles }: { titles: string[] | undefined }) {
   )
 }
 
+// The large card at the top: the film's image with its title, match and reasons over a fade.
 function FeatureCard({ item }: { item: Item }) {
   const { movie } = item
   const poster = imageUrl(movie.poster_path, 'w780')
@@ -121,6 +135,7 @@ function FeatureCard({ item }: { item: Item }) {
     >
       {(poster || backdrop) && (
         <picture>
+          {/* Tall poster on phones; the wide backdrop from md, where the card is landscape. */}
           {backdrop && <source media="(min-width: 768px)" srcSet={backdrop} />}
           <img
             src={poster ?? backdrop ?? undefined}
@@ -129,7 +144,15 @@ function FeatureCard({ item }: { item: Item }) {
           />
         </picture>
       )}
+      {/* Fades the image into the page color so the text on top stays readable. */}
       <div className="absolute inset-0 bg-linear-to-b from-transparent from-35% via-surface/40 via-60% to-surface" />
+      {/* The VHS genre sticker, above the fade so it isn't dimmed. */}
+      <GenreSticker
+        genreIds={movie.genre_ids}
+        seed={movie.id}
+        size="lg"
+        className="absolute top-3.5 right-3.5"
+      />
       <div className="absolute right-5 bottom-5.5 left-5">
         <p className="mb-1 text-sm tracking-widest text-fg-muted uppercase">
           {item.match !== undefined && (
@@ -152,6 +175,7 @@ function FeatureCard({ item }: { item: Item }) {
   )
 }
 
+// One tile in the grid: poster, title, year · genre, match and the first reason.
 function PosterCard({ item }: { item: Item }) {
   const { movie } = item
   const poster = imageUrl(movie.poster_path, 'w342')
@@ -162,19 +186,27 @@ function PosterCard({ item }: { item: Item }) {
       style={genreTone(movie.genre_ids)}
       className="flex min-w-0 flex-1 flex-col rounded-control"
     >
-      {poster ? (
-        <img
-          src={poster}
-          alt=""
-          loading="lazy"
-          className="aspect-2/3 w-full rounded-poster border border-b-3 border-poster-border border-b-(--tone) object-cover"
+      {/* The poster, with the VHS genre sticker in its top-right corner. */}
+      <span className="relative block">
+        {poster ? (
+          <img
+            src={poster}
+            alt=""
+            loading="lazy"
+            className="block aspect-2/3 w-full rounded-poster border border-b-3 border-poster-border border-b-(--tone) object-cover"
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="block aspect-2/3 w-full rounded-poster border border-b-3 border-poster-border border-b-(--tone) bg-poster-placeholder"
+          />
+        )}
+        <GenreSticker
+          genreIds={movie.genre_ids}
+          seed={movie.id}
+          className="absolute top-1.5 right-1.5"
         />
-      ) : (
-        <span
-          aria-hidden="true"
-          className="aspect-2/3 w-full rounded-poster border border-b-3 border-poster-border border-b-(--tone) bg-poster-placeholder"
-        />
-      )}
+      </span>
       <h3 className="mt-2 mb-1 line-clamp-3 min-h-15 text-sm leading-snug font-semibold">
         {movie.title}
       </h3>

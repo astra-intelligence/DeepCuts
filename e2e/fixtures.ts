@@ -1,3 +1,5 @@
+// Shared setup for every E2E test: fake TMDB responses, and two reusable checks
+// (accessibility scan, no sideways scrolling).
 import AxeBuilder from '@axe-core/playwright'
 import { test as base, expect, type Page } from '@playwright/test'
 import { movieFixture, providersFixture, searchFixture } from '../src/test/msw/fixtures'
@@ -31,6 +33,7 @@ export const test = base.extend<{ page: Page }>({
 
 export { expect }
 
+/** Fails the test if axe finds any WCAG 2.2 A/AA violation on the page (ADR-0009). */
 export async function expectNoA11yViolations(page: Page, disableRules: string[] = []) {
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
@@ -41,6 +44,7 @@ export async function expectNoA11yViolations(page: Page, disableRules: string[] 
   ).toEqual([])
 }
 
+/** Fails the test if the page scrolls sideways (WCAG 1.4.10 reflow, ADR-0021). */
 export async function expectNoHorizontalOverflow(page: Page) {
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,

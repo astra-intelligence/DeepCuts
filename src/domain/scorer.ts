@@ -1,5 +1,16 @@
-// Recommendation scorer v1 (ADR-0026). Pure and deterministic: the same tags always give the same
-// picks, and every pick can say why it was chosen ("because you liked …").
+// Recommendation scorer v1 (ADR-0026): turns a person's tags into ranked film picks.
+//
+// How it works, in four steps:
+// 1. Candidates: every film TMDB recommends for any film you liked. A film recommended by
+//    several of your likes is a stronger candidate.
+// 2. Taste profile: a weight per genre, built from your tags (liked +1, Want to see +0.5,
+//    disliked −1), plus the decades and languages of the films you liked.
+// 3. Score: each candidate gets six part scores between 0 and 1 (see DEFAULT_WEIGHTS), which are
+//    combined with the weights into one score. "% match" is that score × 100.
+// 4. Rank: highest score first, with a small penalty for repeating a genre so the feed stays varied.
+//
+// Pure and deterministic: no network, no randomness, so the same tags always give the same
+// picks, every pick can say why it was chosen ("because you liked …"), and it is fully testable.
 
 /** The facts about a film the scorer uses. Mapped from TMDB data outside the domain. */
 export interface ScorerFilm {
@@ -13,6 +24,7 @@ export interface ScorerFilm {
   voteCount: number
 }
 
+/** Everything the scorer knows about one person's taste. */
 export interface TasteInput {
   /** Liked films (most recent first) with the films TMDB recommends for each. */
   liked: readonly { film: ScorerFilm; recommendations: readonly ScorerFilm[] }[]
@@ -24,8 +36,11 @@ export interface TasteInput {
   excluded: ReadonlySet<number>
 }
 
+/** The six things a candidate is scored on. Each part is a number from 0 (worst) to 1 (best). */
 export const SCORE_PARTS = ['support', 'genre', 'quality', 'deepCut', 'decade', 'language'] as const
+/** One of the six score parts. */
 export type ScorePart = (typeof SCORE_PARTS)[number]
+/** How much each part counts toward the final score. */
 export type Weights = Record<ScorePart, number>
 
 /**
@@ -52,16 +67,22 @@ export function normalizeWeights(weights: Weights): Weights {
   ) as Weights
 }
 
+/** Optional settings for `recommend` (the weights lab passes its own). */
 export interface RecommendOptions {
   /** Defaults to DEFAULT_WEIGHTS. Should sum to 1 (see normalizeWeights). */
   weights?: Weights
+  /** How much each repeat of a genre lowers a film's rank. Defaults to DIVERSITY_PENALTY. */
   diversityPenalty?: number
+  /** How many picks to return. Defaults to 20. */
   limit?: number
 }
 /** Votes needed before a film's own rating outweighs the average (Bayesian shrinkage). */
+// A film with 3 votes averaging 10 shouldn't beat a classic with 5,000 votes averaging 8.5, so a
+// rating is blended with the typical TMDB rating (about 6.5) until it has enough votes to trust.
 const MIN_VOTES = 100
 const MEAN_RATING = 6.5
 
+/** One recommended film, with its score and the reasons for it. */
 export interface Pick {
   film: ScorerFilm
   /** 0–1, before the diversity adjustment. */
@@ -70,18 +91,24 @@ export interface Pick {
   match: number
   /** Titles of liked films that recommended it, at most two. */
   because: string[]
+  /** The six part scores (0–1), shown in the weights lab. */
   parts: Record<ScorePart, number>
 }
 
+// A film under consideration, before scoring: how many of your likes recommend it, and which.
 interface Candidate {
   film: ScorerFilm
   support: number
   because: string[]
 }
 
+// Keeps a number between 0 and 1.
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n))
+// 1984 → 1980; unknown years stay unknown.
 const decadeOf = (year: number | null) => (year === null ? null : Math.floor(year / 10) * 10)
 
+// Step 1: gathers every film your likes recommend, counting how many likes recommend each.
+// Films you've already tagged, and a liked film recommending itself, are skipped.
 function collectCandidates(input: TasteInput): Map<number, Candidate> {
   const candidates = new Map<number, Candidate>()
   for (const { film: source, recommendations } of input.liked) {
@@ -108,6 +135,7 @@ function genreProfile(input: TasteInput): Map<number, number> {
   )
   add(input.wanted, 0.5)
   add(input.disliked, -1)
+  // Scale so the strongest genre is ±1 and the others are relative to it.
   const max = Math.max(0, ...[...raw.values()].map(Math.abs))
   return new Map([...raw].map(([g, w]) => [g, max === 0 ? 0 : w / max]))
 }
@@ -117,6 +145,10 @@ function shareOf<T>(values: readonly T[], value: T): number {
   return values.filter((v) => v === value).length / values.length
 }
 
+/**
+ * Ranks films for a person: the main entry point (Discover and the weights lab call it).
+ * Returns at most `limit` picks, best first; an empty list when there are no likes yet.
+ */
 export function recommend(
   input: TasteInput,
   {
@@ -125,9 +157,11 @@ export function recommend(
     limit = 20,
   }: RecommendOptions = {},
 ): Pick[] {
+  // Step 1: candidates. Without likes there are none, and nothing to recommend.
   const candidates = [...collectCandidates(input).values()]
   if (candidates.length === 0) return []
 
+  // Step 2: the taste profile, and the highest values used to scale parts to 0–1.
   const profile = genreProfile(input)
   const likedFilms = input.liked.map((l) => l.film)
   const likedDecades = likedFilms.map((f) => decadeOf(f.year))
@@ -135,34 +169,44 @@ export function recommend(
   const maxSupport = Math.max(...candidates.map((c) => c.support))
   const maxPopularity = Math.max(...candidates.map((c) => c.film.popularity))
 
+  // Step 3: score each candidate.
   const scored = candidates.map((c): Pick => {
     const f = c.film
+    // Genre fit: the average of your profile's weight (−1…1) for each of the film's genres.
     const genres = f.genreIds.map((g) => profile.get(g) ?? 0)
     const genreMean = genres.length ? genres.reduce((a, b) => a + b, 0) / genres.length : 0
+    // Quality: the vote-weighted rating (see MIN_VOTES above).
     const v = f.voteCount
     const rating =
       (v / (v + MIN_VOTES)) * f.voteAverage + (MIN_VOTES / (v + MIN_VOTES)) * MEAN_RATING
     const decade = decadeOf(f.year)
     const parts: Record<ScorePart, number> = {
+      // Relative to the best-supported candidate, so the top one always scores 1.
       support: c.support / maxSupport,
+      // −1…1 mapped onto 0…1, so a neutral genre scores 0.5.
       genre: (genreMean + 1) / 2,
+      // A rating of 5 or less scores 0; 9 or more scores 1.
       quality: clamp01((rating - 5) / 4),
       // Lesser-known films score higher; log scale so one blockbuster doesn't flatten the rest.
       deepCut: maxPopularity > 0 ? 1 - Math.log1p(f.popularity) / Math.log1p(maxPopularity) : 0.5,
+      // The share of your likes from the same decade, and in the same original language.
       decade: decade === null ? 0 : shareOf(likedDecades, decade),
       language: f.language ? shareOf(likedLanguages, f.language) : 0,
     }
+    // The weighted sum of the parts. With weights summing to 1 this is already 0–1.
     const score = clamp01(SCORE_PARTS.reduce((sum, p) => sum + weights[p] * parts[p], 0))
     return { film: f, score, match: Math.round(score * 100), because: c.because.slice(0, 2), parts }
   })
 
-  // Rank greedily, nudging down candidates whose primary genre is already well represented.
+  // Step 4: rank greedily, one pick at a time, nudging down candidates whose primary genre is
+  // already well represented. Ties break by film id so the order is always the same.
   const picks: Pick[] = []
   const usedGenres = new Map<number, number>()
   const pool = [...scored].sort((a, b) => b.score - a.score || a.film.id - b.film.id)
   while (picks.length < limit && pool.length > 0) {
     let best = 0
     let bestValue = -Infinity
+    // Find the best remaining candidate after the genre-repeat penalty.
     pool.forEach((p, i) => {
       const primary = p.film.genreIds[0]
       const repeats = primary === undefined ? 0 : (usedGenres.get(primary) ?? 0)
@@ -172,6 +216,7 @@ export function recommend(
         bestValue = value
       }
     })
+    // Take it out of the pool, and count its genre for the next round's penalty.
     const [pick] = pool.splice(best, 1) as [Pick]
     const primary = pick.film.genreIds[0]
     if (primary !== undefined) usedGenres.set(primary, (usedGenres.get(primary) ?? 0) + 1)

@@ -1,6 +1,8 @@
+// Fake TMDB endpoints for unit tests (Mock Service Worker), answering with the fixtures.
 import { http, HttpResponse } from 'msw'
 import { movieFixture, providersFixture, searchFixture } from './fixtures'
 
+/** One handler per TMDB proxy path the app uses. */
 export const handlers = [
   http.get('/api/tmdb/search/movie', ({ request }) => {
     const q = new URL(request.url).searchParams.get('query')?.toLowerCase() ?? ''

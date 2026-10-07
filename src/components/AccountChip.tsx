@@ -1,8 +1,10 @@
+// The account control at the right of the header (ADR-0025).
 import { Link, useLocation } from 'react-router'
 import { firstName } from '../adapters/SessionProvider'
 import { useSession } from '../session/SessionContext'
 import { Icon } from './Icon'
 
+// Shared look for both states, so the header doesn't shift when someone signs in.
 const chip =
   'flex min-h-11 items-center gap-2 rounded-container border border-border-control bg-surface-raised py-1 pr-3 pl-1 text-sm font-bold whitespace-nowrap text-fg'
 
@@ -11,6 +13,7 @@ export function AccountChip() {
   const { session } = useSession()
   const { pathname, search } = useLocation()
 
+  // Signed in: avatar + first name, linking to the Account page.
   if (session.kind === 'account') {
     const first = firstName(session.account.name)
     return (

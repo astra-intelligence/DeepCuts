@@ -1,3 +1,4 @@
+// Tests for the Account page: "Save my picks" keeps a guest's picks on this device.
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'

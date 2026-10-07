@@ -1,3 +1,5 @@
+// Tests for tags saved in this browser: the shared TagRepository contract, plus storage under a
+// versioned key that survives a new instance (like a page reload).
 import { beforeEach, describe, expect, it } from 'vitest'
 import { tagRepositoryContract } from '../tagRepository.contract'
 import { createLocalTagRepository } from './LocalTagRepository'

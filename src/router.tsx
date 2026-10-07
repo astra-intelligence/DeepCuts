@@ -1,3 +1,4 @@
+// The app's pages and their URLs (React Router, data mode).
 import { Navigate, type RouteObject } from 'react-router'
 import { FEATURES, type Features } from './config/features'
 import { AccountPage } from './routes/AccountPage'
@@ -11,10 +12,14 @@ import { SignInPage } from './routes/SignInPage'
 import { TunePage } from './routes/tune/TunePage'
 import { WeightsPage } from './routes/WeightsPage'
 
-// Search is the landing page; onboarding (/tune) is optional (ADR-0019 amendment) and behind a
-// feature flag. While it's off, /tune redirects to Search.
+/**
+ * Builds the route table. Search is the landing page; onboarding (/tune) is optional
+ * (ADR-0019 amendment) and behind a feature flag. While it's off, /tune redirects to Search.
+ * Tests pass their own `features` to check both states of a flag.
+ */
 export function createRoutes(features: Features = FEATURES): RouteObject[] {
   return [
+    // Pages inside the main shell: header, search band and tab bar (AppLayout).
     {
       path: '/',
       element: <AppLayout />,
@@ -29,6 +34,7 @@ export function createRoutes(features: Features = FEATURES): RouteObject[] {
         { path: 'search', element: <SearchPage /> },
         { path: 'lists', element: <ListsPage /> },
         { path: 'account', element: <AccountPage /> },
+        // Any unknown URL shows the "not found" page inside the shell.
         { path: '*', element: <RouteError /> },
       ],
     },
@@ -45,4 +51,5 @@ export function createRoutes(features: Features = FEATURES): RouteObject[] {
   ]
 }
 
+/** The routes with the real feature flags, used by the app (main.tsx). */
 export const routes = createRoutes()

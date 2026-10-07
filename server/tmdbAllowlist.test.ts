@@ -1,4 +1,6 @@
 // @vitest-environment node
+// Tests for the proxy allowlist: which TMDB paths and query parameters may pass, and that
+// everything else is refused (ADR-0008).
 import { describe, expect, it } from 'vitest'
 import { resolveTmdbRequest } from './tmdbAllowlist'
 

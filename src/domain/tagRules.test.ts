@@ -1,3 +1,4 @@
+// Tests for the tag rules (ADR-0017): which tags exclude which, and what appears in feeds and lists.
 import { describe, expect, it } from 'vitest'
 import { applyTag, isInFeeds, isOnList, type SystemTag, type TagSet } from './tagRules'
 
