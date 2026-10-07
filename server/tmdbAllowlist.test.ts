@@ -70,10 +70,7 @@ describe('resolveTmdbRequest', () => {
   })
 
   it('allows discover with sort', () => {
-    const r = resolveTmdbRequest(
-      'discover/movie',
-      q('sort_by=vote_average.desc&vote_count.gte=50'),
-    )
+    const r = resolveTmdbRequest('discover/movie', q('sort_by=vote_average.desc&vote_count.gte=50'))
     expect(r.ok && r.request.params.get('include_adult')).toBe('false')
   })
 
