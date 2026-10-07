@@ -12,6 +12,7 @@ import { EmptyState } from '../components/EmptyState'
 import { Icon } from '../components/Icon'
 import { MovieLink } from '../components/MovieLink'
 import { PageHeading } from '../components/PageHeading'
+import { TagSaveError } from '../components/TagSaveError'
 import { genreTone, primaryGenreName } from '../domain/genres'
 import { useSetTag, useTagQueries } from '../session/tagQueries'
 
@@ -79,6 +80,7 @@ function ResultRow({ movie }: { movie: MovieSummary }) {
         <Icon name={wanted ? 'check' : 'bookmark'} />
         {wanted ? 'Added' : 'Add to list'}
       </ToggleButton>
+      {setTag.isError && <TagSaveError className="md:col-span-full" />}
     </li>
   )
 }
