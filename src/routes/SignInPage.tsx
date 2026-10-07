@@ -77,9 +77,9 @@ export function SignInPage() {
         {failed && (
           <p
             role="alert"
-            className="flex gap-2.5 rounded-lg border border-danger-text bg-danger-text/10 p-3 text-sm"
+            className="flex gap-2.5 rounded-container border border-fg-danger bg-fg-danger/10 p-3 text-sm"
           >
-            <Icon name="ban" className="size-5 shrink-0 text-danger-text" />
+            <Icon name="ban" className="size-5 shrink-0 text-fg-danger" />
             Sign-in didn’t finish. Nothing was changed. Try again.
           </p>
         )}
@@ -90,9 +90,9 @@ export function SignInPage() {
               <Button
                 onPress={() => start(m.id)}
                 isPending={pending !== null}
-                className="flex min-h-13 w-full items-center gap-3 rounded-md border border-border-control bg-surface-overlay px-3.5 text-left text-sm font-semibold hover:border-accent data-pending:opacity-70"
+                className="flex min-h-13 w-full items-center gap-3 rounded-button border border-button-secondary-border bg-button-secondary-bg px-3.5 text-left text-sm font-semibold hover:border-accent data-pending:opacity-70"
               >
-                <span className="grid size-8 shrink-0 place-items-center rounded-md bg-surface-selected text-accent">
+                <span className="grid size-8 shrink-0 place-items-center rounded-control bg-surface-selected text-accent">
                   <Icon name="user" className="size-4.5" />
                 </span>
                 <span>
@@ -107,7 +107,7 @@ export function SignInPage() {
           {pending ? 'Signing you in…' : ''}
         </p>
 
-        <p className="rounded-lg border border-dashed border-border-control p-3 text-sm text-fg-muted">
+        <p className="rounded-container border border-dashed border-border-control p-3 text-sm text-fg-muted">
           <strong className="text-fg">More ways to sign in are coming.</strong> Google, GitHub, an
           emailed code or a passkey will appear here once they’re chosen.
         </p>

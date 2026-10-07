@@ -9,6 +9,6 @@ describe('genres', () => {
 
   it('maps the first genre to its tone token, with a default', () => {
     expect(genreTone([878])).toEqual({ '--tone': 'var(--color-genre-science-fiction)' })
-    expect(genreTone([999])).toEqual({ '--tone': 'var(--color-genre-default)' })
+    expect(genreTone([999])).toEqual({ '--tone': 'var(--color-genre)' })
   })
 })

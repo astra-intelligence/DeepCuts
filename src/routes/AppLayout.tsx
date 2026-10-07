@@ -17,7 +17,7 @@ export function SkipLink() {
   return (
     <a
       href="#main"
-      className="sr-only z-50 rounded-md bg-surface-overlay px-3 py-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+      className="sr-only z-50 rounded-control bg-surface-overlay px-3 py-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
     >
       Skip to content
     </a>
@@ -46,7 +46,7 @@ export function AppLayout() {
                 to="/tune"
                 aria-label="Tune my picks"
                 title="Tune my picks"
-                className="grid size-11 place-items-center rounded-lg border border-border-control bg-surface-raised text-accent hover:border-accent hover:bg-surface-selected"
+                className="grid size-11 place-items-center rounded-container border border-border-control bg-surface-raised text-accent hover:border-accent hover:bg-surface-selected"
               >
                 <Icon name="heart" />
               </Link>
@@ -71,7 +71,7 @@ export function AppLayout() {
 
       <nav
         aria-label="Main"
-        className="fixed bottom-0 left-1/2 z-20 w-full max-w-360 -translate-x-1/2 border-t border-border bg-surface-raised/95 px-3.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:bottom-4 md:w-md md:rounded-2xl md:border md:p-1 md:shadow-2xl md:shadow-surface/80"
+        className="fixed bottom-0 left-1/2 z-20 w-full max-w-360 -translate-x-1/2 border-t border-nav-border bg-nav-bg/95 px-3.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:bottom-4 md:w-md md:rounded-nav md:border md:p-1 md:shadow-nav md:shadow-surface/80"
       >
         <ul className="grid grid-cols-3">
           {NAV.map((item) => (
@@ -79,8 +79,10 @@ export function AppLayout() {
               <NavLink
                 to={item.to}
                 className={({ isActive }) =>
-                  `flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-sm md:flex-row md:gap-2 ${
-                    isActive ? 'text-accent' : 'text-fg-muted hover:text-fg'
+                  `flex min-h-14 flex-col items-center justify-center gap-1 rounded-nav-item text-sm md:flex-row md:gap-2 ${
+                    isActive
+                      ? 'text-nav-item-fg-current'
+                      : 'text-nav-item-fg hover:text-nav-item-fg-hover'
                   }`
                 }
               >

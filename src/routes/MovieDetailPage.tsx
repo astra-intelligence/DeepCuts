@@ -110,7 +110,7 @@ function MovieDetail({ id }: { id: number }) {
           <span>{meta.join(' · ')}</span>
           {rating && (
             <span
-              className="rounded-sm border border-border-control px-1.5 py-0.5"
+              className="rounded-subtle border border-border-control px-1.5 py-0.5"
               aria-label={`Rated ${rating}`}
             >
               {rating}
@@ -150,7 +150,7 @@ function MovieDetail({ id }: { id: number }) {
                         alt={p.provider_name}
                         width={32}
                         height={32}
-                        className="rounded-md"
+                        className="rounded-control"
                       />
                     ) : (
                       <span className="text-sm">{p.provider_name}</span>

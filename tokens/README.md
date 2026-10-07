@@ -1,14 +1,35 @@
-# Design tokens (ADR-0006, ADR-0023)
+# Design tokens (ADR-0006, ADR-0023, ADR-0027)
 
-DTCG-format JSON, built by Style Dictionary (`npm run tokens`) into every output.
+DTCG 2025.10 JSON, built by Style Dictionary (`npm run tokens`) into every output. The structure follows Brad Frost's three tiers: each tier may only reference the tier below it (`npm run lint` checks this).
 
-| Tier      | Folder       | Who may use it                                                                                                       |
-| --------- | ------------ | -------------------------------------------------------------------------------------------------------------------- |
-| Primitive | `primitive/` | Only other tokens. `color.json` holds the approved v1 anchors; `hues.json` is **generated** (`npm run tokens:ramps`) |
-| Brand     | `brand/`     | Only `Logo.tsx` and the app icon. The logo's exact colors                                                            |
-| Semantic  | `semantic/`  | Components, via Tailwind utilities (`bg-surface`, `text-tag-liked`, `text-genre-drama`)                              |
-| Component | `component/` | Added only when a component needs its own variant                                                                    |
+| Tier        | Folder         | What it holds                                                                                                                                                                                                                                          | Who may use it                                                            |
+| ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| 1 Primitive | `primitive/`   | Raw values: color anchors (`color.json`), generated ramps (`hues.json`, `npm run tokens:ramps`), spacing, radius, sizes, blur (`dimension.json`), type (`typography.json`), `shadow.json`, `motion.json`. Non-color values are **Tailwind's defaults** | Other tokens. In code only the spacing and type scales (`p-4`, `text-sm`) |
+| 1 Brand     | `brand/`       | The logo's exact colors                                                                                                                                                                                                                                | Only `Logo.tsx` and the app icon                                          |
+| 2 Semantic  | `semantic/`    | Mode-independent roles: font families, radius and elevation roles, motion                                                                                                                                                                              | Components and component tokens                                           |
+| 2 Theme     | `themes/dark/` | Mode-dependent color roles. A light theme is `themes/light/` with the same names                                                                                                                                                                       | Components and component tokens                                           |
+| 3 Component | `component/`   | Card, button, field, popover, tag toggle, nav, slider, poster                                                                                                                                                                                          | That component                                                            |
 
-Outputs (in `build/`, not committed): `src/styles/tokens.css` (web), `build/tokens/tokens.json` (flat, for checks), `build/tokens/js/` (typed ES module for SVG/canvas and React Native), `build/figma/deep-cuts.tokens.json` (DTCG 2025.10, importable as Figma variables).
+## Names in code
 
-Every semantic color pair is contrast-checked in CI (`scripts/contrast-pairs.json`).
+`src/styles/theme.css` (the Tailwind theme) is **generated**, so a class name is always the token name: the token path without its namespace and a trailing `default`.
+
+| Token                     | Tailwind               |
+| ------------------------- | ---------------------- |
+| `color.surface.default`   | `bg-surface`           |
+| `color.fg.muted`          | `text-fg-muted`        |
+| `color.button.primary.bg` | `bg-button-primary-bg` |
+| `radius.card`             | `rounded-card`         |
+| `elevation.raised`        | `shadow-raised`        |
+| `font.family.display`     | `font-display`         |
+
+Prefer a component token when the component has one, else a semantic one. Colors reach CSS through variables, so a theme or the page accent (ADR-0020) can swap them at runtime.
+
+## Outputs (generated, not committed)
+
+- `src/styles/tokens.css`: tiers 1–3 as CSS variables (`--dc-*`)
+- `src/styles/theme-dark.css`: the theme layer under `:root, [data-theme='dark']`
+- `src/styles/theme.css`: the Tailwind theme
+- `build/tokens/tokens.json` (flat, for checks), `build/tokens/js/` (typed ES module for SVG/canvas and React Native), `build/figma/deep-cuts.tokens.json` (DTCG 2025.10, importable as Figma variables)
+
+Every color pair in `scripts/contrast-pairs.json`, semantic and component, is contrast-checked in CI.

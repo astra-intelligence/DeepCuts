@@ -1,0 +1,37 @@
+{
+  "$description": "Tier 2: corner and elevation roles (ADR-0027).",
+  "radius": {
+    "$type": "dimension",
+    "subtle": {
+      "$value": "{radius.sm}",
+      "$description": "Thumbnails and inline badges"
+    },
+    "control": {
+      "$value": "{radius.md}",
+      "$description": "Buttons, toggles, posters, small icon tiles"
+    },
+    "container": {
+      "$value": "{radius.lg}",
+      "$description": "Cards, fields, notices, icon tiles"
+    },
+    "prominent": {
+      "$value": "{radius.xl}",
+      "$description": "Popovers, avatars, items inside the tab bar"
+    },
+    "dock": {
+      "$value": "{radius.2xl}",
+      "$description": "The floating tab bar"
+    }
+  },
+  "elevation": {
+    "$type": "shadow",
+    "raised": {
+      "$value": "{shadow.sm}",
+      "$description": "Cards resting on the page"
+    },
+    "floating": {
+      "$value": "{shadow.2xl}",
+      "$description": "Popovers and the floating tab bar"
+    }
+  }
+}

@@ -71,7 +71,7 @@ export function RateStep({ state, update }: StepProps) {
       </div>
       <article
         aria-label={pick.title}
-        className="relative flex min-h-130 flex-col justify-end overflow-hidden rounded-lg border border-border bg-surface-raised shadow-sm md:min-h-140"
+        className="relative flex min-h-130 flex-col justify-end overflow-hidden rounded-card border border-card-border bg-card-bg shadow-card md:min-h-140"
       >
         {image && <img src={image} alt="" className="absolute inset-0 size-full object-cover" />}
         <div className="absolute inset-0 bg-linear-to-b from-transparent from-20% via-surface/30 via-45% to-surface to-70%" />
@@ -100,7 +100,7 @@ export function RateStep({ state, update }: StepProps) {
           ))}
           <Button
             onPress={next}
-            className="col-span-2 flex h-11 w-36 items-center justify-center gap-2 self-center justify-self-center rounded-md bg-accent px-3.5 font-semibold text-on-accent hover:bg-accent/85 md:col-span-1"
+            className="col-span-2 flex h-11 w-36 items-center justify-center gap-2 self-center justify-self-center rounded-button bg-button-primary-bg px-3.5 font-semibold text-button-primary-fg hover:bg-button-primary-bg/85 md:col-span-1"
           >
             <Icon name="arrow" /> Next film
           </Button>

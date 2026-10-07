@@ -25,7 +25,7 @@ export function GenreStep({ state, update }: StepProps) {
               key={id}
               isSelected={selected}
               onChange={(on) => toggle(Number(id), on)}
-              className="flex min-h-11 items-center gap-1.5 rounded-full border border-border-control bg-surface-raised/80 px-4 text-sm data-selected:border-accent data-selected:bg-surface-selected data-selected:text-on-selected"
+              className="flex min-h-11 items-center gap-1.5 rounded-full border border-border-control bg-surface-raised/80 px-4 text-sm data-selected:border-accent data-selected:bg-surface-selected data-selected:text-fg-on-selected"
             >
               {selected && <Icon name="check" className="size-4" />}
               {g.name}

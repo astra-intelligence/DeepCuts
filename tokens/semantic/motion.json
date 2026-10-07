@@ -1,0 +1,28 @@
+{
+  "$description": "Tier 2: motion roles. All motion is switched off under prefers-reduced-motion (src/index.css).",
+  "motion": {
+    "transition": {
+      "duration": {
+        "$type": "duration",
+        "$value": "{duration.150}",
+        "$description": "Default for hover and state changes"
+      },
+      "easing": { "$type": "cubicBezier", "$value": "{easing.in-out}" }
+    },
+    "enter": {
+      "duration": {
+        "$type": "duration",
+        "$value": "{duration.400}",
+        "$description": "Onboarding steps fading in"
+      },
+      "easing": { "$type": "cubicBezier", "$value": "{easing.ease}" }
+    },
+    "zoom": {
+      "duration": {
+        "$type": "duration",
+        "$value": "{duration.500}",
+        "$description": "Poster zoom on hover"
+      }
+    }
+  }
+}

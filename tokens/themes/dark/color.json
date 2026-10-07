@@ -1,8 +1,9 @@
 {
+  "$description": "Tier 2, dark theme (the only theme today). Semantic color roles; a light theme would be tokens/themes/light/ with the same names (ADR-0027).",
   "color": {
     "$type": "color",
     "surface": {
-      "base": {
+      "default": {
         "$value": "{color.ink}"
       },
       "raised": {
@@ -15,11 +16,11 @@
         "$value": "{color.teal.900}"
       }
     },
-    "text": {
-      "primary": {
+    "fg": {
+      "default": {
         "$value": "{color.neutral.50}"
       },
-      "secondary": {
+      "muted": {
         "$value": "{color.neutral.300}"
       },
       "placeholder": {
@@ -36,22 +37,22 @@
       }
     },
     "accent": {
-      "primary": {
+      "default": {
         "$value": "{color.teal.400}"
-      },
-      "secondary": {
-        "$value": "{color.blue.300}"
-      },
-      "danger": {
-        "$value": "{color.red.600}"
-      },
-      "contextual": {
-        "$value": "{color.accent.primary}",
-        "$description": "The page accent (ADR-0020). Defaults to the brand accent; a tag-filtered list sets it to that tag's color."
       }
     },
+    "info": {
+      "$value": "{color.blue.300}"
+    },
+    "danger": {
+      "$value": "{color.red.600}"
+    },
+    "contextual": {
+      "$value": "{color.accent.default}",
+      "$description": "The page accent (ADR-0020). Defaults to the brand accent; a tag-filtered list sets it to that tag's color."
+    },
     "border": {
-      "subtle": {
+      "default": {
         "$value": "{color.neutral.700}"
       },
       "control": {
