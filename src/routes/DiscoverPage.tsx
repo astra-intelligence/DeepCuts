@@ -117,7 +117,7 @@ function FeatureCard({ item }: { item: Item }) {
     <Link
       to={`/movie/${movie.id}`}
       style={genreTone(movie.genre_ids)}
-      className="group relative block aspect-4/5 w-full overflow-hidden rounded-lg border border-(--tone) bg-surface-raised shadow-sm md:aspect-auto md:h-110"
+      className="group relative block aspect-4/5 w-full overflow-hidden rounded-card border border-(--tone) bg-card-bg shadow-card md:aspect-auto md:h-110"
     >
       {(poster || backdrop) && (
         <picture>
@@ -160,19 +160,19 @@ function PosterCard({ item }: { item: Item }) {
     <Link
       to={`/movie/${movie.id}`}
       style={genreTone(movie.genre_ids)}
-      className="flex min-w-0 flex-1 flex-col rounded-md"
+      className="flex min-w-0 flex-1 flex-col rounded-control"
     >
       {poster ? (
         <img
           src={poster}
           alt=""
           loading="lazy"
-          className="aspect-2/3 w-full rounded-md border border-b-3 border-border-control border-b-(--tone) object-cover"
+          className="aspect-2/3 w-full rounded-poster border border-b-3 border-poster-border border-b-(--tone) object-cover"
         />
       ) : (
         <span
           aria-hidden="true"
-          className="aspect-2/3 w-full rounded-md border border-b-3 border-border-control border-b-(--tone) bg-surface-overlay"
+          className="aspect-2/3 w-full rounded-poster border border-b-3 border-poster-border border-b-(--tone) bg-poster-placeholder"
         />
       )}
       <h3 className="mt-2 mb-1 line-clamp-3 min-h-15 text-sm leading-snug font-semibold">

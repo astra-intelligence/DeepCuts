@@ -19,7 +19,7 @@ export function SignedInNotice() {
   return (
     <p
       role="status"
-      className="mb-4 flex items-center gap-2 rounded-lg border border-accent bg-surface-selected px-3 py-2.5 text-sm text-fg-on-selected"
+      className="mb-4 flex items-center gap-2 rounded-container border border-accent bg-surface-selected px-3 py-2.5 text-sm text-fg-on-selected"
     >
       <Icon name="check" className="size-4.5 shrink-0" />
       Signed in as {firstName(session.account.name)}.

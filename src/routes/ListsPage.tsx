@@ -51,10 +51,10 @@ export function ListsPage() {
               to={`?tag=${t.tag}`}
               aria-current={active ? 'true' : undefined}
               style={tagColor(t.tag) as CSSProperties}
-              className={`flex min-h-27 flex-col items-start rounded-lg border p-3 shadow-sm md:min-h-34 ${
+              className={`flex min-h-27 flex-col items-start rounded-card border p-3 shadow-card md:min-h-34 ${
                 active
                   ? 'border-(--tag) bg-(--tag)/10'
-                  : 'border-border bg-surface-raised hover:border-border-control'
+                  : 'border-card-border bg-card-bg hover:border-border-control'
               }`}
             >
               <Icon name={t.icon} className="mb-auto size-5 text-(--tag)" />
@@ -99,7 +99,7 @@ function ListRow({ id }: { id: number }) {
     return (
       <li
         aria-hidden="true"
-        className="h-32 animate-pulse rounded-lg border border-border bg-surface-raised"
+        className="h-32 animate-pulse rounded-card border border-card-border bg-card-bg"
       />
     )
   }
@@ -112,7 +112,7 @@ function ListRow({ id }: { id: number }) {
   return (
     <li
       style={genreTone(m.genres.map((g) => g.id))}
-      className="rounded-lg border border-border bg-surface-raised p-3 shadow-sm md:p-4"
+      className="rounded-card border border-card-border bg-card-bg p-3 shadow-card md:p-4"
     >
       <MovieLink movie={m} meta={meta} />
     </li>

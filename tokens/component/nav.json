@@ -27,7 +27,7 @@
       "$value": "{radius.dock}"
     },
     "nav-item": {
-      "$value": "{radius.floating}"
+      "$value": "{radius.prominent}"
     }
   },
   "shadow": {

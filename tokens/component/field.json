@@ -15,7 +15,7 @@
   "radius": {
     "$type": "dimension",
     "field": { "$value": "{radius.container}" },
-    "popover": { "$value": "{radius.floating}" }
+    "popover": { "$value": "{radius.prominent}" }
   },
   "shadow": { "$type": "shadow", "popover": { "$value": "{elevation.floating}" } }
 }

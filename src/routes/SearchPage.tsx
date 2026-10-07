@@ -59,14 +59,14 @@ function ResultRow({ movie }: { movie: MovieSummary }) {
   return (
     <li
       style={genreTone(movie.genre_ids)}
-      className="grid min-w-0 gap-2.5 rounded-lg border border-border bg-surface-raised p-3 shadow-sm md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-4 md:p-4"
+      className="grid min-w-0 gap-2.5 rounded-card border border-card-border bg-card-bg p-3 shadow-card md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-4 md:p-4"
     >
       <MovieLink movie={movie} meta={meta} disliked={tags?.has('disliked') ?? false} />
       <ToggleButton
         isSelected={wanted}
         onChange={(on) => setTag.mutate({ tmdbId: movie.id, tag: 'watchlist', on })}
         aria-label={`Want to see ${movie.title}`}
-        className="inline-flex h-11 w-36 shrink-0 items-center justify-center gap-2 justify-self-end rounded-md border border-border-control bg-surface-overlay px-3.5 text-sm font-semibold whitespace-nowrap text-fg hover:border-info data-selected:border-info data-selected:bg-info data-selected:text-fg-on-accent"
+        className="inline-flex h-11 w-36 shrink-0 items-center justify-center gap-2 justify-self-end rounded-button border border-button-secondary-border bg-button-secondary-bg px-3.5 text-sm font-semibold whitespace-nowrap text-button-secondary-fg hover:border-info data-selected:border-info data-selected:bg-info data-selected:text-fg-on-accent"
       >
         <Icon name={wanted ? 'check' : 'bookmark'} />
         {wanted ? 'Added' : 'Add to list'}

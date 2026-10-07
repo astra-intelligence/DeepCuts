@@ -22,7 +22,7 @@ export function TagToggle({
       isSelected={isSelected}
       onChange={onChange}
       style={tagColor(tag.tag) as CSSProperties}
-      className={`flex min-w-0 items-center justify-center gap-2 rounded-md border border-border-control bg-surface-overlay px-2 py-1.5 text-sm text-fg-muted hover:border-(--tag) data-selected:border-(--tag) data-selected:bg-(--tag)/12 data-selected:text-(--tag) ${className}`}
+      className={`flex min-w-0 items-center justify-center gap-2 rounded-tag-toggle border border-tag-toggle-border bg-tag-toggle-bg px-2 py-1.5 text-sm text-tag-toggle-fg hover:border-(--tag) data-selected:border-(--tag) data-selected:bg-(--tag)/12 data-selected:text-(--tag) ${className}`}
     >
       <Icon name={tag.icon} className="size-5 shrink-0 text-(--tag)" />
       <span className="flex flex-col gap-0.5">

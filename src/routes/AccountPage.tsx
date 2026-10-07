@@ -36,8 +36,8 @@ function SignedOut() {
         lede="Save your picks on this device, or sign in to keep them in your account."
       />
 
-      <div className="flex items-center gap-3 rounded-lg border border-border bg-surface-raised p-3 shadow-sm">
-        <span className="grid size-12 shrink-0 place-items-center rounded-xl border border-accent bg-surface-selected text-fg-on-selected">
+      <div className="flex items-center gap-3 rounded-card border border-card-border bg-card-bg p-3 shadow-card">
+        <span className="grid size-12 shrink-0 place-items-center rounded-prominent border border-accent bg-surface-selected text-fg-on-selected">
           <Icon name="user" className="size-6" />
         </span>
         <div>
@@ -53,9 +53,9 @@ function SignedOut() {
       <div className="mt-3 grid items-stretch gap-3 md:grid-cols-2">
         <section
           aria-labelledby="local-heading"
-          className="flex min-h-62 flex-col items-start rounded-lg border border-border bg-surface-raised p-4.5 shadow-sm"
+          className="flex min-h-62 flex-col items-start rounded-card border border-card-border bg-card-bg p-4.5 shadow-card"
         >
-          <span className="mb-4.5 grid size-11 place-items-center rounded-lg bg-surface-selected text-accent">
+          <span className="mb-4.5 grid size-11 place-items-center rounded-container bg-surface-selected text-accent">
             <Icon name="bookmark" />
           </span>
           <Eyebrow>On this device</Eyebrow>
@@ -66,13 +66,13 @@ function SignedOut() {
             Save Seen it, Want to see, Like and Dislike on this device without registering.
           </p>
           {saved ? (
-            <strong className="mt-auto flex min-h-11 items-center gap-2 rounded-md border border-accent bg-surface-selected px-3.5 text-sm font-semibold text-fg-on-selected">
+            <strong className="mt-auto flex min-h-11 items-center gap-2 rounded-button border border-accent bg-surface-selected px-3.5 text-sm font-semibold text-fg-on-selected">
               <Icon name="check" /> Saved on this device
             </strong>
           ) : (
             <Button
               onPress={save}
-              className="mt-auto flex h-11 w-36 items-center justify-center gap-2 rounded-md border border-accent bg-surface-selected text-sm font-semibold text-fg-on-selected hover:bg-accent/15"
+              className="mt-auto flex h-11 w-36 items-center justify-center gap-2 rounded-button border border-accent bg-surface-selected text-sm font-semibold text-fg-on-selected hover:bg-accent/15"
             >
               Save my picks
             </Button>
@@ -81,9 +81,9 @@ function SignedOut() {
 
         <section
           aria-labelledby="signin-heading"
-          className="flex min-h-62 flex-col items-start rounded-lg border border-border bg-surface-raised p-4.5 shadow-sm"
+          className="flex min-h-62 flex-col items-start rounded-card border border-card-border bg-card-bg p-4.5 shadow-card"
         >
-          <span className="mb-4.5 grid size-11 place-items-center rounded-lg bg-info/12 text-info">
+          <span className="mb-4.5 grid size-11 place-items-center rounded-container bg-info/12 text-info">
             <Icon name="user" />
           </span>
           <Eyebrow tone="info">Your account</Eyebrow>
@@ -96,7 +96,7 @@ function SignedOut() {
           <Link
             to="/sign-in"
             state={{ from: '/account' }}
-            className="mt-auto flex h-11 w-36 items-center justify-center rounded-md border border-info bg-info/12 text-sm font-semibold text-info hover:bg-info/20"
+            className="mt-auto flex h-11 w-36 items-center justify-center rounded-button border border-info bg-info/12 text-sm font-semibold text-info hover:bg-info/20"
           >
             Sign in
           </Link>
@@ -150,7 +150,7 @@ function SignedIn({ account }: { account: Account }) {
       <div className="grid items-stretch gap-3 md:grid-cols-2">
         <section
           aria-labelledby="lists-heading"
-          className="grid content-start gap-2.5 rounded-lg border border-border bg-surface-raised p-4 shadow-sm"
+          className="grid content-start gap-2.5 rounded-card border border-card-border bg-card-bg p-4 shadow-card"
         >
           <h2 id="lists-heading" className="font-display text-2xl">
             Your lists
@@ -175,7 +175,7 @@ function SignedIn({ account }: { account: Account }) {
 
         <section
           aria-labelledby="signout-heading"
-          className="grid content-start gap-2.5 rounded-lg border border-border bg-surface-raised p-4 shadow-sm"
+          className="grid content-start gap-2.5 rounded-card border border-card-border bg-card-bg p-4 shadow-card"
         >
           <h2 id="signout-heading" className="font-display text-2xl">
             Sign out
@@ -188,7 +188,7 @@ function SignedIn({ account }: { account: Account }) {
               <Button
                 ref={confirmRef}
                 onPress={confirmSignOut}
-                className="flex h-11 items-center rounded-md border border-border-control bg-surface-overlay px-3.5 text-sm font-semibold text-fg"
+                className="flex h-11 items-center rounded-button border border-button-secondary-border bg-button-secondary-bg px-3.5 text-sm font-semibold text-button-secondary-fg"
               >
                 Yes, sign out
               </Button>
@@ -197,7 +197,7 @@ function SignedIn({ account }: { account: Account }) {
                   setConfirming(false)
                   requestAnimationFrame(() => askRef.current?.focus())
                 }}
-                className="flex h-11 items-center rounded-md px-2 text-sm font-semibold text-info"
+                className="flex h-11 items-center rounded-button px-2 text-sm font-semibold text-info"
               >
                 Cancel
               </Button>
@@ -206,7 +206,7 @@ function SignedIn({ account }: { account: Account }) {
             <Button
               ref={askRef}
               onPress={() => setConfirming(true)}
-              className="flex h-11 w-36 items-center justify-center rounded-md border border-border-control bg-surface-overlay text-sm font-semibold text-fg"
+              className="flex h-11 w-36 items-center justify-center rounded-button border border-button-secondary-border bg-button-secondary-bg text-sm font-semibold text-button-secondary-fg"
             >
               Sign out
             </Button>

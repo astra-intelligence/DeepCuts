@@ -16,19 +16,19 @@ export function MovieLink({
   return (
     <Link
       to={`/movie/${movie.id}`}
-      className="grid min-h-26 min-w-0 grid-cols-[4rem_minmax(0,1fr)] items-center gap-3.5 rounded-md md:grid-cols-[4.75rem_minmax(0,1fr)] md:gap-4.5"
+      className="grid min-h-26 min-w-0 grid-cols-[4rem_minmax(0,1fr)] items-center gap-3.5 rounded-control md:grid-cols-[4.75rem_minmax(0,1fr)] md:gap-4.5"
     >
       {poster ? (
         <img
           src={poster}
           alt=""
           loading="lazy"
-          className="h-24 w-16 rounded-md border-b-3 border-(--tone) object-cover md:h-26 md:w-19"
+          className="h-24 w-16 rounded-poster border-b-3 border-(--tone) object-cover md:h-26 md:w-19"
         />
       ) : (
         <span
           aria-hidden="true"
-          className="h-24 w-16 rounded-md border-b-3 border-(--tone) bg-surface-overlay md:h-26 md:w-19"
+          className="h-24 w-16 rounded-poster border-b-3 border-(--tone) bg-poster-placeholder md:h-26 md:w-19"
         />
       )}
       <span className="flex min-w-0 flex-col gap-1.5">
