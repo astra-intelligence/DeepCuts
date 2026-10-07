@@ -1,16 +1,15 @@
 // The app's pages and their URLs (React Router, data mode).
 //
-// Code splitting: the shell (AppLayout) and the landing page (Search) are in the main bundle, so
-// the first screen needs one download. Every other page is `lazy`: its code is a separate file,
-// fetched the first time someone opens that page. That keeps the first visit small (see
-// `npm run analyze` and the bundle budget in scripts/check-bundle-size.mjs).
+// Code splitting: the shell (AppLayout) is in the main bundle. Every page is `lazy`: its code is a
+// separate file, fetched the first time someone opens that page. That keeps the first visit small
+// (see `npm run analyze` and the bundle budget in scripts/check-bundle-size.mjs).
 import { Navigate, type RouteObject } from 'react-router'
-import { FEATURES, type Features } from './config/features'
+import { FEATURES, homeOf, type Features } from './config/features'
 import { AppLayout } from './routes/AppLayout'
 import { RouteError } from './routes/PlaceholderPages'
-import { SearchPage } from './routes/SearchPage'
 
 // Each loader imports one page module and hands React Router its component.
+const search = async () => ({ Component: (await import('./routes/SearchPage')).SearchPage })
 const discover = async () => ({ Component: (await import('./routes/DiscoverPage')).DiscoverPage })
 const weights = async () => ({ Component: (await import('./routes/WeightsPage')).WeightsPage })
 const lists = async () => ({ Component: (await import('./routes/ListsPage')).ListsPage })
@@ -23,11 +22,13 @@ const detail = async () => ({
 const tune = async () => ({ Component: (await import('./routes/tune/TunePage')).TunePage })
 
 /**
- * Builds the route table. Search is the landing page; onboarding (/tune) is optional
- * (ADR-0019 amendment) and behind a feature flag. While it's off, /tune redirects to Search.
- * Tests pass their own `features` to check both states of a flag.
+ * Builds the route table. The landing page is "home": Discover, or Search while the Search page
+ * is on (`homeOf`). Onboarding (/tune) is optional (ADR-0019 amendment) and behind a feature
+ * flag; while a page's flag is off, its URL redirects home. Tests pass their own `features` to
+ * check both states of a flag.
  */
 export function createRoutes(features: Features = FEATURES): RouteObject[] {
+  const home = homeOf(features).path
   return [
     // Pages inside the main shell: header, search band and tab bar (AppLayout).
     {
@@ -35,12 +36,14 @@ export function createRoutes(features: Features = FEATURES): RouteObject[] {
       element: <AppLayout />,
       errorElement: <RouteError />,
       children: [
-        { index: true, element: <Navigate to="/search" replace /> },
+        { index: true, element: <Navigate to={home} replace /> },
         { path: 'discover', lazy: discover },
         features.weightsLab
           ? { path: 'discover/weights', lazy: weights }
           : { path: 'discover/weights', element: <Navigate to="/discover" replace /> },
-        { path: 'search', element: <SearchPage /> },
+        features.searchPage
+          ? { path: 'search', lazy: search }
+          : { path: 'search', element: <Navigate to={home} replace /> },
         { path: 'lists', lazy: lists },
         { path: 'account', lazy: account },
         // Any unknown URL shows the "not found" page inside the shell.
@@ -56,7 +59,7 @@ export function createRoutes(features: Features = FEATURES): RouteObject[] {
     // Optional onboarding, also outside the tab-bar shell (ADR-0019 amendment).
     features.onboarding
       ? { path: '/tune', lazy: tune, errorElement: <RouteError /> }
-      : { path: '/tune', element: <Navigate to="/search" replace />, errorElement: <RouteError /> },
+      : { path: '/tune', element: <Navigate to={home} replace />, errorElement: <RouteError /> },
   ]
 }
 

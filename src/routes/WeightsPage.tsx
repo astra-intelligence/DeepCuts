@@ -12,6 +12,7 @@ import { Link, useSearchParams } from 'react-router'
 import { z } from 'zod'
 import { releaseYear } from '../api/tmdb'
 import { EmptyState } from '../components/EmptyState'
+import { HOME } from '../config/features'
 import { PageHeading } from '../components/PageHeading'
 import {
   DEFAULT_WEIGHTS,
@@ -130,7 +131,7 @@ export function WeightsPage() {
         <EmptyState>
           Like a few films first. The weights rank films your likes recommend, so there’s nothing to
           tune yet.{' '}
-          <Link to="/search" className="text-info underline">
+          <Link to={HOME.path} className="text-info underline">
             Find films to like
           </Link>
           .

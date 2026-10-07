@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { Button } from 'react-aria-components'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { Icon } from '../components/Icon'
+import { HOME } from '../config/features'
 import { Logo } from '../components/Logo'
 import { SkipLink } from './AppLayout'
 
@@ -17,16 +18,16 @@ export function AuthLayout({ title, children }: { title: string; children: React
       <title>{`${title} · Deep Cuts`}</title>
       <SkipLink />
       <header className="flex min-h-16 items-center justify-between gap-2.5 border-b border-border px-5 pt-[max(0.625rem,env(safe-area-inset-top))] pb-2 md:px-8">
-        {/* Back to the previous page; a page opened directly (no history) goes to Search. */}
+        {/* Back to the previous page; a page opened directly (no history) goes home. */}
         <Button
-          onPress={() => (location.key === 'default' ? navigate('/search') : navigate(-1))}
+          onPress={() => (location.key === 'default' ? navigate(HOME.path) : navigate(-1))}
           className="-ml-2 flex min-h-11 items-center gap-1 px-2 text-sm text-info"
         >
           <Icon name="back" /> Back
         </Button>
         <Link
-          to="/search"
-          aria-label="Deep Cuts, go to Search"
+          to={HOME.path}
+          aria-label={`Deep Cuts, go to ${HOME.label}`}
           className="inline-flex min-h-11 items-center"
         >
           <Logo className="h-7 w-auto" />

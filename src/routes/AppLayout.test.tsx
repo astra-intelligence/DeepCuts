@@ -5,13 +5,23 @@ import { renderRoute } from '../test/renderRoute'
 
 describe('navigation', () => {
   it('marks the current destination with aria-current', async () => {
-    renderRoute('/search')
-    const nav = screen.getByRole('navigation', { name: 'Main' })
-    expect(within(nav).getByRole('link', { name: 'Search' })).toHaveAttribute(
+    renderRoute('/lists')
+    const nav = await screen.findByRole('navigation', { name: 'Main' })
+    expect(within(nav).getByRole('link', { name: 'My Lists' })).toHaveAttribute(
       'aria-current',
       'page',
     )
     expect(within(nav).getByRole('link', { name: 'Discover' })).not.toHaveAttribute('aria-current')
+  })
+
+  it('has no Search tab while the Search page is hidden', async () => {
+    renderRoute('/lists')
+    const nav = await screen.findByRole('navigation', { name: 'Main' })
+    expect(
+      within(nav)
+        .getAllByRole('link')
+        .map((l) => l.textContent),
+    ).toEqual(['Discover', 'My Lists'])
   })
 
   it('shows the error page for unknown routes', async () => {

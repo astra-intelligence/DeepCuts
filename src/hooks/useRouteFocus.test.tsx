@@ -13,8 +13,9 @@ describe('useRouteFocus', () => {
 
   it('focuses the new page heading after navigation', async () => {
     const { router } = renderRoute('/lists')
-    await act(() => router.navigate('/search'))
-    expect(screen.getByRole('heading', { level: 1, name: 'Find your next film' })).toHaveFocus()
+    await act(() => router.navigate('/account'))
+    const heading = await screen.findByRole('heading', { level: 1, name: 'Keep your cuts' })
+    await waitFor(() => expect(heading).toHaveFocus())
   })
 
   it('waits for a heading that renders after data loads', async () => {
@@ -26,7 +27,9 @@ describe('useRouteFocus', () => {
   })
 
   it('does not move focus when only search params change (typing on /search)', async () => {
-    const { router } = renderRoute('/search')
+    const { router } = renderRoute('/search', { features: { searchPage: true } })
+    // The page is lazy-loaded; wait for it, so the param change below is the only change.
+    await screen.findByRole('heading', { level: 1 })
     await act(() => router.navigate('/search?q=alien', { replace: true }))
     expect(screen.getByRole('heading', { level: 1 })).not.toHaveFocus()
   })
