@@ -51,12 +51,11 @@ export function sessionProviderContract(name: string, make: () => SessionProvide
       expect(await make().getSession()).toEqual({ kind: 'guest' })
     })
 
-    it('registers an account that survives a reload, and signs out to guest (ADR-0030)', async () => {
+    it('registers an account that survives a reload, and signs out to guest (ADR-0031)', async () => {
       const provider = make()
       const session = await provider.register({
         name: '  Ada Lovelace ',
-        email: 'ada@example.com',
-        password: 'correct horse battery',
+        invite: 'AAAAAAAAAAAAAAAAAAAAAA',
       })
       expect(session).toMatchObject({ kind: 'account', account: { name: 'Ada Lovelace' } })
       expect(await make().getSession()).toEqual(session)
@@ -64,10 +63,13 @@ export function sessionProviderContract(name: string, make: () => SessionProvide
     })
 
     it('rejects invalid registration details', async () => {
-      const valid = { name: 'Ada', email: 'ada@example.com', password: 'correct horse battery' }
+      const valid = { name: 'Ada', invite: 'AAAAAAAAAAAAAAAAAAAAAA' }
       await expect(make().register({ ...valid, name: '  ' })).rejects.toThrow()
-      await expect(make().register({ ...valid, email: 'ada@' })).rejects.toThrow()
-      await expect(make().register({ ...valid, password: 'too short' })).rejects.toThrow()
+      await expect(make().register({ ...valid, invite: '' })).rejects.toThrow()
+      await expect(make().register({ ...valid, invite: 'short' })).rejects.toThrow()
+      await expect(
+        make().register({ ...valid, invite: '<script>AAAAAAAAAAAAAA' }),
+      ).rejects.toThrow()
       expect(await make().getSession()).toEqual({ kind: 'guest' })
     })
 

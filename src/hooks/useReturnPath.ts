@@ -1,5 +1,5 @@
 // Where the account pages (Sign in, Create an account) send someone when they're done: back to
-// the page sign-in started from (ADR-0025, ADR-0030).
+// the page sign-in started from (ADR-0025, ADR-0031).
 import { useLocation } from 'react-router'
 import { z } from 'zod'
 
