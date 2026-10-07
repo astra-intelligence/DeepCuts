@@ -5,15 +5,16 @@
 // An invite link (`/register?invite=…`) fills the code in, then the code is removed from the
 // address bar so it doesn't linger in history or get shared by copying the URL.
 //
-// The passkey and the server checks arrive with the accounts stage (Cloudflare D1). Until then the
-// local mock makes a *practice* account on this device, keeps only the name, and the page says so.
-// Like sign-in, the person's picks move into the new account and the page returns to where
-// sign-in started.
+// With real accounts (VITE_ACCOUNTS=cloudflare), the device creates a passkey and the server checks
+// the invite (single use, not expired). With the local mock, a *practice* account is made on this
+// device, only the name is kept, and the page says so (ADR-0025). Like sign-in, the person's picks
+// move into the new account and the page returns to where sign-in started.
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Button, FieldError, Form, Input, Label, Text, TextField } from 'react-aria-components'
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { z } from 'zod'
+import { AccountsApiError } from '../adapters/cloudflare/AccountsApiError'
 import { registrationSchema } from '../adapters/SessionProvider'
 import { Eyebrow } from '../components/Eyebrow'
 import { Icon } from '../components/Icon'
@@ -26,6 +27,10 @@ import { AuthLayout } from './AuthLayout'
 // Field errors by field name, in the shape React Aria's <Form validationErrors> expects.
 type FieldErrors = Record<string, string[]>
 
+// Shown under the invite field when the server refuses the code (used, expired or unknown). The
+// server doesn't say which, so a guessed code learns nothing.
+const INVITE_REFUSED = 'This invite can’t be used. It may have expired or been used already.'
+
 // Shared field styles. The whole field box shows the focus ring (focus-ring-within), and turns
 // the danger color while it has an error.
 const fieldBox =
@@ -36,7 +41,7 @@ const inputClass =
 /** The registration page (ADR-0031): a name and an invite code, then a passkey. */
 export function RegisterPage() {
   useRouteFocus()
-  const { session, register } = useSession()
+  const { session, register, practiceRegistration } = useSession()
   const navigate = useNavigate()
   const from = useReturnPath()
   // How many films the person has tagged, to reassure them their picks come along.
@@ -84,9 +89,13 @@ export function RegisterPage() {
     try {
       const { moved } = await register(result.data)
       navigate(from, { replace: true, state: { signedIn: { moved } } })
-    } catch {
-      setFailed(true)
+    } catch (e) {
       setPending(false)
+      // The server refused the invite: say so on the field, where the person can act on it.
+      if (e instanceof AccountsApiError && e.code === 'invalid_invite') {
+        setErrors({ invite: [INVITE_REFUSED] })
+        setAttempt((n) => n + 1)
+      } else setFailed(true)
     }
   }
 
@@ -101,10 +110,12 @@ export function RegisterPage() {
       </div>
 
       {/* ADR-0025's rule: a mock must never pass for a real account. */}
-      <p className="rounded-container border border-dashed border-border-control p-3 text-sm text-fg-muted">
-        <strong className="text-fg">Practice registration.</strong> No passkey or real account is
-        created yet. Your name is kept on this device; the invite code is checked, then discarded.
-      </p>
+      {practiceRegistration && (
+        <p className="rounded-container border border-dashed border-border-control p-3 text-sm text-fg-muted">
+          <strong className="text-fg">Practice registration.</strong> No passkey or real account is
+          created yet. Your name is kept on this device; the invite code is checked, then discarded.
+        </p>
+      )}
 
       {failed && (
         <p

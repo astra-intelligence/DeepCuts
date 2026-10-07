@@ -2,10 +2,11 @@
 //
 // It owns three things: the session provider (who is signed in), the guest's in-memory tag
 // store, and the current session. From those it picks the right tag store for the current
-// session, and moves picks between stores when someone saves them or signs in, so their picks
-// follow them instead of being lost.
+// session (a passkey account's lists live on the server, ADR-0031), and moves picks between stores
+// when someone saves them or signs in, so their picks follow them instead of being lost.
 import { useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState, type ReactNode } from 'react'
+import { createCloudflareTagRepository } from '../adapters/cloudflare/CloudflareTagRepository'
 import { createMockSessionProvider } from '../adapters/local/MockSessionProvider'
 import { createLocalTagRepository } from '../adapters/local/LocalTagRepository'
 import { createInMemoryTagRepository } from '../adapters/memory/InMemoryTagRepository'
@@ -21,6 +22,8 @@ interface Props {
   provider?: SessionProvider
   /** Opens a device-backed tag store; `key` separates the device profile from each account. */
   createLocalTags?: (key?: string) => TagRepository
+  /** Opens a passkey account's tag store on the server (ADR-0031); tests inject a fake. */
+  createRemoteTags?: () => TagRepository
 }
 
 // Each account's tags live under their own storage key.
@@ -33,6 +36,7 @@ export function AppSessionProvider({
   initialSession = { kind: 'guest' },
   provider: injected,
   createLocalTags = openLocal,
+  createRemoteTags = createCloudflareTagRepository,
 }: Props) {
   const queryClient = useQueryClient()
   // Created once and kept for the life of the app.
@@ -42,13 +46,21 @@ export function AppSessionProvider({
   const [session, setSession] = useState(initialSession)
 
   const value = useMemo<SessionValue>(() => {
-    // Which storage key a session's tags live under; null means the in-memory guest store.
+    // Which store a session's tags live in; null means the in-memory guest store.
     const storeKey = (s: Session) =>
-      s.kind === 'account' ? accountKey(s.account.id) : s.kind === 'profile' ? 'tags' : null
+      s.kind === 'account'
+        ? s.account.method === 'passkey'
+          ? `remote-${s.account.id}`
+          : accountKey(s.account.id)
+        : s.kind === 'profile'
+          ? 'tags'
+          : null
     // The tag store for a session.
     const tagsFor = (s: Session) => {
       const key = storeKey(s)
-      return key === null ? guestTags : key === 'tags' ? createLocalTags() : createLocalTags(key)
+      if (key === null) return guestTags
+      if (key.startsWith('remote-')) return createRemoteTags()
+      return key === 'tags' ? createLocalTags() : createLocalTags(key)
     }
     const tags = tagsFor(session)
 
@@ -89,8 +101,21 @@ export function AppSessionProvider({
         setSession(await provider.signOut())
         await queryClient.invalidateQueries({ queryKey: ['tags'] })
       },
+      practiceRegistration: provider.practiceRegistration,
+      rename: provider.rename
+        ? async (name) => setSession((await provider.rename?.(name)) ?? session)
+        : undefined,
+      deleteAccount: provider.deleteAccount
+        ? async () => {
+            // The account and its lists are gone; the device starts over as an empty guest.
+            const next = (await provider.deleteAccount?.()) ?? { kind: 'guest' }
+            setGuestTags(createInMemoryTagRepository())
+            setSession(next)
+            await queryClient.invalidateQueries({ queryKey: ['tags'] })
+          }
+        : undefined,
     }
-  }, [session, guestTags, provider, createLocalTags, queryClient])
+  }, [session, guestTags, provider, createLocalTags, createRemoteTags, queryClient])
 
   return <SessionContext value={value}>{children}</SessionContext>
 }

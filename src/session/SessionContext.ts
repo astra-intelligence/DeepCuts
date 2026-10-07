@@ -1,8 +1,9 @@
 // Session context (ADR-0016): makes the current session, and the tag store that belongs to it,
 // available to every screen through `useSession()`.
 //
-// Screens never pick a store themselves: a guest gets the in-memory store, a saved profile or
-// account gets its own localStorage store. AppSessionProvider fills this context.
+// Screens never pick a store themselves: a guest gets the in-memory store, a saved profile or a
+// demo/practice account gets its own localStorage store, and a passkey account gets its lists on
+// the server (ADR-0031). AppSessionProvider fills this context.
 import { createContext, useContext } from 'react'
 import type {
   Registration,
@@ -15,7 +16,7 @@ import type { TagRepository } from '../adapters/TagRepository'
 /** What `useSession()` gives a component. */
 export interface SessionValue {
   session: Session
-  /** Guest: in memory. Device profile or account: localStorage. Callers never need to know which. */
+  /** Guest: in memory. Profile, demo or practice: localStorage. Passkey account: the server. */
   tags: TagRepository
   /** The sign-in options to show on the sign-in page. */
   signInMethods: readonly SignInMethod[]
@@ -27,6 +28,12 @@ export interface SessionValue {
   register(details: Registration): Promise<{ moved: number }>
   /** Back to an empty guest session; the account keeps its lists. */
   signOut(): Promise<void>
+  /** True when registration only makes a practice account on this device (the local mock). */
+  practiceRegistration: boolean
+  /** Renames the signed-in passkey account. Undefined where accounts can't be renamed. */
+  rename: ((name: string) => Promise<void>) | undefined
+  /** Deletes the signed-in passkey account and its lists. Undefined where unsupported. */
+  deleteAccount: (() => Promise<void>) | undefined
 }
 
 /** The React context itself. Use `useSession()` rather than reading this directly. */

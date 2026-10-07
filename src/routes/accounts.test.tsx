@@ -1,0 +1,147 @@
+// Screen tests for real passkey accounts (ADR-0031, Stage 6 A2b/A4): with the Cloudflare session
+// provider, registration drops the "practice" notice and explains a refused invite on its field;
+// sign-in offers the passkey first; the Account page renames and deletes a passkey account. The
+// accounts API is the MSW fake, and the device's passkey prompt is stubbed.
+import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createCloudflareSessionProvider } from '../adapters/cloudflare/CloudflareSessionProvider'
+import type { Session } from '../adapters/SessionProvider'
+import { createFakeAccountsApi } from '../test/msw/fakeAccountsApi'
+import { server } from '../test/msw/server'
+import { renderRoute } from '../test/renderRoute'
+
+vi.mock('@simplewebauthn/browser', () => ({
+  startRegistration: vi.fn(async () => ({ id: 'cred', type: 'public-key' })),
+  startAuthentication: vi.fn(async () => ({ id: 'cred', type: 'public-key' })),
+}))
+
+const INVITE = 'AAAAAAAAAAAAAAAAAAAAAA'
+let api: ReturnType<typeof createFakeAccountsApi>
+beforeEach(() => {
+  api = createFakeAccountsApi()
+  server.use(...api.handlers)
+})
+
+const PAT: Session = {
+  kind: 'account',
+  account: { id: 'passkey-user', name: 'Pat Key', method: 'passkey' },
+}
+
+describe('registration with real accounts', () => {
+  it('has no "practice" notice, and makes a passkey account', async () => {
+    const user = userEvent.setup()
+    const { router } = renderRoute('/register', {
+      sessionProvider: createCloudflareSessionProvider(),
+    })
+    await screen.findByRole('heading', { level: 1, name: 'Create an account' })
+    expect(screen.queryByText(/No passkey or real account is created/)).not.toBeInTheDocument()
+
+    await user.type(screen.getByRole('textbox', { name: 'Name' }), 'Ada Lovelace')
+    await user.type(screen.getByRole('textbox', { name: 'Invite code' }), INVITE)
+    await user.click(screen.getByRole('button', { name: 'Create passkey' }))
+    await waitFor(() => expect(router.state.location.pathname).not.toBe('/register'))
+    expect(api.state.signedIn).toEqual({ id: 'user-1', name: 'Ada Lovelace' })
+  })
+
+  it('explains a refused invite on the invite field, and focuses it', async () => {
+    api.state.rejectInvite = true
+    const user = userEvent.setup()
+    renderRoute('/register', { sessionProvider: createCloudflareSessionProvider() })
+    await screen.findByRole('heading', { level: 1, name: 'Create an account' })
+    await user.type(screen.getByRole('textbox', { name: 'Name' }), 'Ada')
+    await user.type(screen.getByRole('textbox', { name: 'Invite code' }), INVITE)
+    await user.click(screen.getByRole('button', { name: 'Create passkey' }))
+
+    const invite = screen.getByRole('textbox', { name: 'Invite code' })
+    await waitFor(() => expect(invite).toHaveFocus())
+    expect(invite).toHaveAccessibleDescription(/may have expired or been used already/)
+    expect(api.state.signedIn).toBeNull()
+  })
+})
+
+describe('sign-in with real accounts', () => {
+  it('offers the passkey first, then the demo, and signs in with it', async () => {
+    const user = userEvent.setup()
+    const { router } = renderRoute('/sign-in', {
+      sessionProvider: createCloudflareSessionProvider(),
+    })
+    const [first] = await screen.findAllByRole('button', { name: /Sign in with a passkey|demo/ })
+    if (!first) throw new Error('no sign-in buttons')
+    expect(first).toHaveAccessibleName(/Sign in with a passkey/)
+    await user.click(first)
+    await waitFor(() => expect(router.state.location.pathname).not.toBe('/sign-in'))
+    expect(api.state.signedIn).toMatchObject({ name: 'Pat Key' })
+  })
+})
+
+describe('account settings (A2b)', () => {
+  beforeEach(() => void (api.state.signedIn = { id: 'passkey-user', name: 'Pat Key' }))
+
+  const renderAccount = () =>
+    renderRoute('/account', {
+      sessionProvider: createCloudflareSessionProvider(),
+      initialSession: PAT,
+    })
+
+  it('says how the person signed in, and renames the account', async () => {
+    const user = userEvent.setup()
+    renderAccount()
+    expect(await screen.findByText('Signed in with a passkey')).toBeInTheDocument()
+    const name = screen.getByRole('textbox', { name: 'Name' })
+    await user.clear(name)
+    await user.type(name, 'Patricia Key')
+    await user.click(screen.getByRole('button', { name: 'Save name' }))
+    expect(await screen.findByText('Name saved.')).toBeInTheDocument()
+    expect(api.state.signedIn?.name).toBe('Patricia Key')
+    expect(screen.getByRole('heading', { level: 1, name: 'Patricia Key' })).toBeInTheDocument()
+  })
+
+  it('refuses an empty name without calling the server', async () => {
+    const user = userEvent.setup()
+    renderAccount()
+    const name = await screen.findByRole('textbox', { name: 'Name' })
+    await user.clear(name)
+    await user.click(screen.getByRole('button', { name: 'Save name' }))
+    expect(name).toHaveAccessibleDescription(/Enter your name\./)
+    expect(api.state.signedIn?.name).toBe('Pat Key')
+  })
+
+  it('deletes the account only after a confirm, then goes to Search as a guest', async () => {
+    const user = userEvent.setup()
+    const { router } = renderAccount()
+    await user.click(await screen.findByRole('button', { name: 'Delete account' }))
+    expect(api.state.signedIn).not.toBeNull()
+    expect(screen.getByText(/This can’t be undone/)).toBeInTheDocument()
+    const confirm = screen.getByRole('button', { name: 'Yes, delete my account' })
+    await waitFor(() => expect(confirm).toHaveFocus())
+    await user.click(confirm)
+    await waitFor(() => expect(router.state.location.pathname).toBe('/search'))
+    expect(api.state.signedIn).toBeNull()
+  })
+
+  it('cancelling the delete puts focus back and changes nothing', async () => {
+    const user = userEvent.setup()
+    renderAccount()
+    const ask = await screen.findByRole('button', { name: 'Delete account' })
+    await user.click(ask)
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Delete account' })).toHaveFocus(),
+    )
+    expect(api.state.signedIn).not.toBeNull()
+  })
+
+  it('demo accounts get neither setting', async () => {
+    renderRoute('/account', {
+      sessionProvider: createCloudflareSessionProvider(),
+      initialSession: {
+        kind: 'account',
+        account: { id: 'demo', name: 'Mike Curts', method: 'demo' },
+      },
+    })
+    await screen.findByText('Signed in with the demo account')
+    expect(screen.queryByRole('button', { name: 'Delete account' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save name' })).not.toBeInTheDocument()
+  })
+})
