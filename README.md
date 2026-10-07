@@ -69,13 +69,13 @@ The app is ready to host on **Cloudflare Pages** (ADR-0029), but it is **not dep
 
 Most config files explain themselves in comments. These formats can't hold comments, so they're described here:
 
-| File                | What it sets                                                                                                                   |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `package.json`      | Dependencies and the scripts above. `engines` limits Node to 24 LTS or 26+, enforced by `.npmrc`                               |
-| `package-lock.json` | The exact dependency versions; CI installs exactly these (`npm ci`). Regenerate on Node 24 only                                |
-| `.nvmrc`            | The Node version (`24`); `nvm use` picks it up, and CI reads it too                                                            |
-| `.prettierrc.json`  | Code formatting: single quotes, no semicolons, 100-character lines, and Tailwind class sorting (using `src/index.css`'s theme) |
-| `.prettierignore`   | Files Prettier skips: build output, generated files, the lockfile and docs                                                     |
+| File                | What it sets                                                                                                                                                                                                                                                            |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `package.json`      | Dependencies and the scripts above. `engines` limits Node to 24 LTS or 26+, enforced by `.npmrc`. `overrides` lifts Wrangler's local runtime (miniflare) from `sharp` 0.35.4 to the patched 0.35.5 (a high-severity librsvg CVE); remove it once Wrangler ships the fix |
+| `package-lock.json` | The exact dependency versions; CI installs exactly these (`npm ci`). Regenerate on Node 24 only                                                                                                                                                                         |
+| `.nvmrc`            | The Node version (`24`); `nvm use` picks it up, and CI reads it too                                                                                                                                                                                                     |
+| `.prettierrc.json`  | Code formatting: single quotes, no semicolons, 100-character lines, and Tailwind class sorting (using `src/index.css`'s theme)                                                                                                                                          |
+| `.prettierignore`   | Files Prettier skips: build output, generated files, the lockfile and docs                                                                                                                                                                                              |
 
 Other config: `vite.config.ts` (dev server, build, unit tests), `server/securityHeaders.ts` (the security headers, for every runtime), `wrangler.toml` + `workers/rate-limit/wrangler.toml` (Cloudflare Pages and the rate-limit Worker, no secrets), `playwright.config.ts` / `playwright.cf.config.ts` (E2E), `eslint.config.js` (lint rules), `tsconfig*.json` (TypeScript), `sd.config.mjs` (design tokens), `.github/` (CI, CodeQL, Dependabot), `.githooks/pre-commit` (local secret scan).
 
