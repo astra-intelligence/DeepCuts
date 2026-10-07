@@ -1,3 +1,5 @@
+// Tests for the Detail page: tag toggles follow the rules, streaming logos aren't interactive,
+// back navigation, the disliked marker in Search, and "not found" for bad ids.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'

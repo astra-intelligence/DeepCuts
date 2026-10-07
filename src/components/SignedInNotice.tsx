@@ -1,3 +1,4 @@
+// The confirmation shown once after signing in, at the top of the page sign-in returned to.
 import { useLocation } from 'react-router'
 import { z } from 'zod'
 import { firstName } from '../adapters/SessionProvider'
@@ -13,11 +14,13 @@ const stateSchema = z.object({
 export function SignedInNotice() {
   const { session } = useSession()
   const parsed = stateSchema.safeParse(useLocation().state)
+  // Only right after signing in (the navigation carries `signedIn`), and only while signed in.
   if (!parsed.success || session.kind !== 'account') return null
   const { moved } = parsed.data.signedIn
   const picks = moved === 1 ? 'pick is' : 'picks are'
   return (
     <p
+      // role=status: screen readers announce it without interrupting.
       role="status"
       className="mb-4 flex items-center gap-2 rounded-container border border-accent bg-surface-selected px-3 py-2.5 text-sm text-fg-on-selected"
     >

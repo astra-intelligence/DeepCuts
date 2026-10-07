@@ -1,3 +1,4 @@
+// Onboarding step 1: pick the genres you're into.
 import { Button, ToggleButton } from 'react-aria-components'
 import { Icon } from '../../components/Icon'
 import { GENRES } from '../../domain/genres'
@@ -7,6 +8,7 @@ import type { StepProps } from './useTuneState'
 
 /** Step 1: choose genres. */
 export function GenreStep({ state, update }: StepProps) {
+  // Adds or removes a genre (at most 10, the most TMDB's discover call takes from us).
   const toggle = (id: number, on: boolean) =>
     update(
       { genres: on ? [...state.genres, id].slice(0, 10) : state.genres.filter((g) => g !== id) },
@@ -33,6 +35,7 @@ export function GenreStep({ state, update }: StepProps) {
           )
         })}
       </div>
+      {/* Continue needs at least one genre. */}
       <Button
         isDisabled={state.genres.length === 0}
         onPress={() => update({ step: 2 })}

@@ -1,3 +1,5 @@
+// Tests for sessions: picks moving between guest, device profile and account stores, and the
+// query cache following the current session.
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'

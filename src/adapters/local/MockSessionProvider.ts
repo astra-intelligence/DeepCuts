@@ -1,5 +1,8 @@
-// The MVP session provider (ADR-0013, ADR-0025). "Save my picks" stores a profile on this device;
-// "sign in" offers only a clearly labelled demo account. No password, no email, no network.
+// The MVP session provider (ADR-0013, ADR-0025), running entirely in this browser.
+//
+// "Save my picks" stores a profile on this device; "sign in" offers only a clearly labelled demo
+// account. No password, no email, no network. When real sign-in methods are chosen, a new
+// provider implements the same SessionProvider interface and the screens don't change.
 import { z } from 'zod'
 import {
   accountSchema,
@@ -12,7 +15,9 @@ import {
 import { versionedStore } from './versionedStore'
 
 const GUEST: Session = { kind: 'guest' }
+// The practice account everyone signs in as. Fictional, and labelled as a demo in the UI.
 const DEMO_ACCOUNT: Account = { id: 'demo', name: 'Alex Rivera', method: 'demo' }
+// The sign-in options shown on the sign-in page, in order.
 const METHODS: readonly SignInMethod[] = [
   {
     id: 'demo',
@@ -21,8 +26,13 @@ const METHODS: readonly SignInMethod[] = [
   },
 ]
 
+/**
+ * Builds the local session provider.
+ * @param storage - Defaults to the browser's localStorage; tests pass their own.
+ */
 export function createMockSessionProvider(storage?: Storage): SessionProvider {
   const opts = storage ? { storage } : {}
+  // Two stored values: the device profile ("Save my picks") and the signed-in account.
   const profile = versionedStore<{ displayName: string } | null>({
     key: 'profile',
     schema: z.object({ displayName: displayNameSchema }).nullable(),
@@ -37,12 +47,14 @@ export function createMockSessionProvider(storage?: Storage): SessionProvider {
   })
   return {
     async getSession() {
+      // A signed-in account wins over a device profile; with neither, it's a guest.
       const a = account.load()
       if (a) return { kind: 'account', account: a }
       const p = profile.load()
       return p ? { kind: 'profile', displayName: p.displayName } : GUEST
     },
     async createProfile(name = '') {
+      // parse() throws for an over-long name, which the Account page shows as an error.
       const displayName = displayNameSchema.parse(name)
       profile.save({ displayName })
       return { kind: 'profile', displayName }
@@ -57,6 +69,7 @@ export function createMockSessionProvider(storage?: Storage): SessionProvider {
       return { kind: 'account', account: DEMO_ACCOUNT }
     },
     async signOut() {
+      // Forget who's signed in. The account's own tag list stays stored for next time.
       account.remove()
       profile.remove()
       return GUEST

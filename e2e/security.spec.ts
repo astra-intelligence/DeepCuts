@@ -1,3 +1,6 @@
+// End-to-end security checks against the production build: the Content-Security-Policy and other
+// security headers are sent, the page loads without CSP violations, and the TMDB proxy refuses
+// anything outside its allowlist (ADR-0008).
 import { expect, test } from '@playwright/test'
 
 // ADR-0008: strict CSP and security headers on the production build.

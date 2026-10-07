@@ -1,3 +1,4 @@
+// Onboarding step 3: tag a few popular films from your genres, one card at a time.
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useEffectEvent } from 'react'
 import { Button } from 'react-aria-components'
@@ -37,6 +38,8 @@ export function RateStep({ state, update }: StepProps) {
     if (pinId) pin(pinId)
   }, [pinId])
 
+  // Next card, skipping disliked films; after PICKS cards (or when none are left), finish on
+  // Discover, tuned to the chosen genres.
   function next() {
     const after = pool.findIndex((m, i) => i > current && !excluded?.has(m.id))
     if (state.n >= PICKS || after === -1) {
@@ -47,6 +50,7 @@ export function RateStep({ state, update }: StepProps) {
   }
 
   if (!results) return <p role="status">Finding films for you…</p>
+  // Ran out of films to offer.
   if (!pick) {
     return (
       <Prompt eyebrow="Tune your picks" title="That’s everything for now">
@@ -74,6 +78,7 @@ export function RateStep({ state, update }: StepProps) {
         className="relative flex min-h-130 flex-col justify-end overflow-hidden rounded-card border border-card-border bg-card-bg shadow-card md:min-h-140"
       >
         {image && <img src={image} alt="" className="absolute inset-0 size-full object-cover" />}
+        {/* Fades the film image into the page so the title and buttons stay readable. */}
         <div className="absolute inset-0 bg-linear-to-b from-transparent from-20% via-surface/30 via-45% to-surface to-70%" />
         <div className="relative px-4.5 pb-3">
           <p className="mb-1 text-sm text-info">{meta.join(' · ')}</p>

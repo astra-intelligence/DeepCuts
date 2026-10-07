@@ -1,3 +1,6 @@
+// End-to-end tests in a real browser (Playwright) at 320, 390 and 1280px: every page passes the
+// axe accessibility scan with no sideways scrolling, and the main journeys work by keyboard.
+// TMDB is never called; e2e/fixtures.ts answers every request with fixed data.
 import { expect, expectNoA11yViolations, expectNoHorizontalOverflow, test } from './fixtures'
 
 for (const path of [

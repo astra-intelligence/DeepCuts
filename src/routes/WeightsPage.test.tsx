@@ -1,3 +1,4 @@
+// Tests for the weights lab: sliders, settings in the URL, reset, and the feature flag.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'

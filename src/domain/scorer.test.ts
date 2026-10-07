@@ -1,3 +1,5 @@
+// Tests for the recommendation scorer (ADR-0026), with small hand-made films: each score part,
+// exclusions, ranking, diversity, weights and determinism. The scorer must stay at 100% coverage.
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_WEIGHTS,

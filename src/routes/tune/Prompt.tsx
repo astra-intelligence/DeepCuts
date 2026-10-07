@@ -1,3 +1,4 @@
+// The heading block shared by the onboarding steps.
 import type { ReactNode } from 'react'
 import { Eyebrow } from '../../components/Eyebrow'
 
@@ -12,6 +13,7 @@ export function Prompt({
   children: ReactNode
 }) {
   return (
+    // Fades in each time a step appears (off under reduced motion).
     <div className="animate-enter">
       <Eyebrow>{eyebrow}</Eyebrow>
       <h1 className="max-w-md font-display text-5xl leading-none tracking-tight text-balance md:text-6xl">

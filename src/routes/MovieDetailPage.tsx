@@ -1,3 +1,7 @@
+// The Detail page (/movie/:id): one film's details, your tags for it, and where to watch it.
+//
+// Information only (ADR-0018): no ratings or reviews of our own. It has its own full-bleed
+// layout without the tab bar, with the film's backdrop behind the page.
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { Button } from 'react-aria-components'
@@ -14,7 +18,9 @@ import { useRouteFocus } from '../hooks/useRouteFocus'
 import { useSetTag, useTagQueries } from '../session/tagQueries'
 import { SkipLink } from './AppLayout'
 
+// The :id in the URL is untrusted: it must be a positive whole number of sensible size.
 const idSchema = z.coerce.number().int().positive().max(99_999_999)
+// Ratings and streaming services are shown for one country for now.
 const REGION = 'US'
 
 /** Length-aware title scale from design v2 (55 and 95 character thresholds). */
@@ -24,6 +30,7 @@ function titleSize(title: string) {
   return 'text-5xl md:text-7xl leading-none'
 }
 
+/** The Detail page: shows the film, or "not found" for a malformed id. */
 export function MovieDetailPage() {
   const parsed = idSchema.safeParse(useParams().id)
   return (
@@ -63,6 +70,7 @@ function DetailLayout({ children }: { children: ReactNode }) {
   )
 }
 
+// The film itself, once its id is known to be valid.
 function MovieDetail({ id }: { id: number }) {
   const movie = useQuery(movieQueries.detail(id))
   const providers = useQuery(movieQueries.providers(id))
@@ -80,6 +88,7 @@ function MovieDetail({ id }: { id: number }) {
   const m = movie.data
   const backdrop = imageUrl(m.backdrop_path, 'w1280')
   const rating = certification(m, REGION)
+  // "1982 · 1h 49m · Horror, Science Fiction" (empty parts are skipped).
   const meta = [
     releaseYear(m.release_date),
     formatRuntime(m.runtime),
@@ -119,6 +128,7 @@ function MovieDetail({ id }: { id: number }) {
         </p>
         {m.overview && <p className="my-3.5 leading-relaxed text-fg-muted">{m.overview}</p>}
 
+        {/* The four tag toggles. Changes save at once (and follow the tag rules, ADR-0017). */}
         <div role="group" aria-label="Your tags" className="grid grid-cols-4 gap-1.5">
           {TAGS.map((t) => (
             <TagToggle
@@ -138,6 +148,7 @@ function MovieDetail({ id }: { id: number }) {
           >
             Where to watch ({REGION})
           </h2>
+          {/* Service logos (with the name as alt text), or a short message. */}
           {watch.length > 0 ? (
             <ul className="flex flex-wrap items-center gap-3.5">
               {watch.map((p) => {
@@ -166,6 +177,7 @@ function MovieDetail({ id }: { id: number }) {
                 : 'Not streaming in your region right now.'}
             </p>
           )}
+          {/* Attribution required for JustWatch data. */}
           <p className="mt-3 text-xs text-fg-muted">Streaming availability data from JustWatch.</p>
         </section>
       </div>
@@ -173,6 +185,7 @@ function MovieDetail({ id }: { id: number }) {
   )
 }
 
+// Shown for an unknown or malformed film id.
 function NotFound() {
   return (
     <div className="px-5 pt-40">

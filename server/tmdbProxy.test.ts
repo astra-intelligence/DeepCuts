@@ -1,4 +1,6 @@
 // @vitest-environment node
+// Tests for the TMDB proxy middleware: it adds the token server-side, forwards only allowed
+// requests, and never leaks the token or upstream errors to the browser.
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { describe, expect, it, vi } from 'vitest'
 import { createTmdbMiddleware } from './tmdbProxy'

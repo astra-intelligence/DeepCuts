@@ -1,4 +1,6 @@
 /// <reference types="vitest/config" />
+// Vite configuration: the dev server, the production build, the local TMDB proxy, security
+// headers, and the unit-test runner (Vitest reads its settings from `test` below).
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
@@ -14,6 +16,9 @@ const baseHeaders = {
   'X-Frame-Options': 'DENY',
 }
 
+// Content-Security-Policy: the browser may only load scripts, styles and fonts from this app,
+// images from this app or TMDB's image host, and may not be framed by other sites.
+// Exported so the E2E security test checks the exact same policy.
 export const contentSecurityPolicy = [
   "default-src 'self'",
   "script-src 'self'",
@@ -33,18 +38,22 @@ export default defineConfig(({ mode }) => ({
   server: { headers: baseHeaders },
   preview: { headers: { ...baseHeaders, 'Content-Security-Policy': contentSecurityPolicy } },
   // Fonts are never inlined as data: URIs, which the CSP's font-src 'self' would block.
+  // No source maps in the production build, so the original source isn't published.
   build: {
     sourcemap: false,
     assetsInlineLimit: (file: string) => (/\.(woff2?|ttf|otf)$/.test(file) ? false : undefined),
   },
+  // Unit tests (Vitest): a simulated browser (jsdom), shared setup, and which files are tests.
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}', 'server/**/*.test.ts'],
+    // Tests check behavior, not styles, so CSS isn't processed (faster).
     css: false,
     // Newer Node versions ship a global localStorage that shadows jsdom's and is unusable without
     // a file; the flag turns it off (harmless where it's already off).
     execArgv: ['--no-experimental-webstorage'],
+    // `npm run coverage` fails if tests cover less than these minimums.
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}', 'server/**/*.ts'],

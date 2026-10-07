@@ -1,5 +1,10 @@
+// Film genres: names and color tones for TMDB's genre ids.
+//
 // TMDB's movie genre ids are stable, so names and tones come from this map instead of an extra
-// API call (ADR-0024). Each slug has a matching `genre-*` color token (ADR-0023).
+// API call (ADR-0024, zero cost). Each slug has a matching `genre-*` color token (ADR-0023,
+// tokens/themes/dark/color.json), used as a decorative accent on cards and posters.
+
+/** Every TMDB movie genre, keyed by its id. `slug` names the color token; `name` is shown. */
 export const GENRES = {
   28: { slug: 'action', name: 'Action' },
   12: { slug: 'adventure', name: 'Adventure' },
@@ -22,8 +27,10 @@ export const GENRES = {
   37: { slug: 'western', name: 'Western' },
 } as const satisfies Record<number, { slug: string; name: string }>
 
+/** A genre id we know about (a key of GENRES). */
 export type GenreId = keyof typeof GENRES
 
+// Looks up any number, known or not; unknown ids (TMDB could add one) return undefined.
 const lookup = (id: number) => (GENRES as Record<number, { slug: string; name: string }>)[id]
 
 /** The first known genre's name, or '' when TMDB gives none we recognise. */
@@ -35,7 +42,11 @@ export function primaryGenreName(ids: readonly number[]): string {
   return ''
 }
 
-/** Sets `--tone` to the first genre's color token, for card accents (design v2). */
+/**
+ * Inline style that sets `--tone` to the first known genre's color, for card accents (design
+ * v2). Components then use it as `border-(--tone)`. Films with no known genre get the default
+ * genre color (`--color-genre`, from the token `color.genre.default`).
+ */
 export function genreTone(ids: readonly number[]): Record<string, string> {
   const slug = ids.map(lookup).find(Boolean)?.slug
   return { '--tone': slug ? `var(--color-genre-${slug})` : 'var(--color-genre)' }

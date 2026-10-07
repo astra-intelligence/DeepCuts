@@ -1,3 +1,4 @@
+// Tests for the logo: one accessible image named "Deep Cuts", and a unique gradient id per copy.
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { Logo } from './Logo'
