@@ -16,9 +16,16 @@ const UPSTREAM = 'https://api.themoviedb.org/3/'
 const HOUR = 60 * 60
 
 /**
- * Shrinks a film's appended credits to its directors before they reach the browser (ADR-0028).
- * Full credits list the whole cast and crew (often 50–150 kB); the app only uses directors.
- * Anything that isn't a film-details body with credits passes through unchanged.
+ * The crew jobs the app shows or scores: the director (ADR-0028) and the writers credited on
+ * Discover tiles. TMDB files writers under several jobs; "Story" is the fallback when a film has
+ * no screenplay or writer credit.
+ */
+export const KEPT_CREW_JOBS = ['Director', 'Screenplay', 'Writer', 'Story'] as const
+
+/**
+ * Shrinks a film's appended credits to its directors and writers before they reach the browser
+ * (ADR-0028). Full credits list the whole cast and crew (often 50–150 kB); the app only uses
+ * these few. Anything that isn't a film-details body with credits passes through unchanged.
  */
 export function trimCredits(body: unknown): unknown {
   if (typeof body !== 'object' || body === null || !('credits' in body)) return body
@@ -30,10 +37,10 @@ export function trimCredits(body: unknown): unknown {
     Array.isArray(credits.crew)
       ? credits.crew
       : []
-  const directors = crew
-    .filter((p: { job?: unknown }) => p?.job === 'Director')
+  const kept = crew
+    .filter((p: { job?: unknown }) => (KEPT_CREW_JOBS as readonly unknown[]).includes(p?.job))
     .map(({ id, name, job }: { id: unknown; name: unknown; job: unknown }) => ({ id, name, job }))
-  return { ...body, credits: { crew: directors } }
+  return { ...body, credits: { crew: kept } }
 }
 
 /**

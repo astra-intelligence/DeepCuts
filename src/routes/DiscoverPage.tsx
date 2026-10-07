@@ -2,12 +2,13 @@
 //
 // A large featured film on top, then a grid of 16 more. With likes, the picks come from the
 // recommendation scorer (ADR-0026) and show a "% match" and why. Without likes, it shows popular
-// films (minus disliked ones) and suggests liking a few films.
-import { useQuery } from '@tanstack/react-query'
+// films (minus disliked ones) and suggests liking a few films. Every card names the film's
+// director and writer, from its details (the same cached call the Detail page makes).
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router'
 import { z } from 'zod'
 import { movieQueries } from '../api/queries'
-import { imageUrl, releaseYear, type MovieSummary } from '../api/tmdb'
+import { creditsOf, imageUrl, releaseYear, type Credits, type MovieSummary } from '../api/tmdb'
 import { FEATURES } from '../config/features'
 import { EmptyState } from '../components/EmptyState'
 import { GenreSticker } from '../components/GenreSticker'
@@ -52,12 +53,20 @@ export function DiscoverPage() {
         movie: r.movie,
         match: r.match,
         because: r.because,
-        ...(r.sameDirector && { sameDirector: r.sameDirector }),
       }))
     : (popular.data?.results ?? []).filter((m) => !excluded?.has(m.id)).map((movie) => ({ movie }))
   const loading = usePicks ? tuned.loading : popular.isPending
+  // Director and writer for each card on show: one details call per film, cached for a day and
+  // shared with Detail (and with the scorer's re-rank, so most picks are already loaded). A card
+  // shows its film at once and the credit lines fill in when its details arrive.
+  const shown = items.slice(0, 17)
+  const details = useQueries({ queries: shown.map((i) => movieQueries.detail(i.movie.id)) })
+  const withCredits = shown.map((item, i) => {
+    const data = details[i]?.data
+    return data ? { ...item, credits: creditsOf(data) } : item
+  })
   // The first film is featured; the rest fill the grid.
-  const [feature, ...rest] = items
+  const [feature, ...rest] = withCredits
 
   return (
     <>
@@ -116,8 +125,8 @@ interface Item {
   movie: MovieSummary
   match?: number
   because?: string[]
-  /** Set when it shares a director with a film you liked (ADR-0028). */
-  sameDirector?: { director: string; liked: string }
+  /** Director and writer names, once the film's details have loaded. */
+  credits?: Credits
 }
 
 /** "Because you liked Alien and The Thing" */
@@ -130,14 +139,21 @@ function Because({ titles }: { titles: string[] | undefined }) {
   )
 }
 
-/** "Directed by John Carpenter, like The Thing" (ADR-0028), on the featured card and grid tiles. */
-function SameDirector({ match }: { match: Item['sameDirector'] }) {
-  if (!match) return null
-  return (
-    <span className="mt-1 block text-sm text-fg-muted">
-      Directed by {match.director}, like <cite className="text-fg not-italic">{match.liked}</cite>
+/**
+ * "Director: John Carpenter" and "Writer: Bill Lancaster" (plural with two names). A line is
+ * left out when TMDB has no such credit, and both are left out until the details load.
+ */
+function CreditLines({ credits }: { credits: Credits | undefined }) {
+  if (!credits) return null
+  const lines = [
+    { label: credits.directors.length > 1 ? 'Directors' : 'Director', names: credits.directors },
+    { label: credits.writers.length > 1 ? 'Writers' : 'Writer', names: credits.writers },
+  ].filter((l) => l.names.length > 0)
+  return lines.map((l) => (
+    <span key={l.label} className="mt-1 block text-sm text-fg-muted">
+      {l.label}: <span className="text-fg">{l.names.join(', ')}</span>
     </span>
-  )
+  ))
 }
 
 // The large card at the top: the film's image with its title, match and reasons over a fade.
@@ -186,7 +202,7 @@ function FeatureCard({ item }: { item: Item }) {
         </h2>
         <span className="block text-sm text-fg-muted">{meta.join(' · ')}</span>
         <Because titles={item.because} />
-        <SameDirector match={item.sameDirector} />
+        <CreditLines credits={item.credits} />
         <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-info">
           <Icon name="eye" className="size-4" /> View details
         </span>
@@ -195,7 +211,7 @@ function FeatureCard({ item }: { item: Item }) {
   )
 }
 
-// One tile in the grid: poster, title, year · genre, match, the first reason and a shared director.
+// One tile in the grid: poster, title, year · genre, match, the first reason, director and writer.
 function PosterCard({ item }: { item: Item }) {
   const { movie } = item
   const poster = imageUrl(movie.poster_path, 'w342')
@@ -227,7 +243,12 @@ function PosterCard({ item }: { item: Item }) {
           className="absolute top-1.5 right-1.5"
         />
       </span>
-      <h3 className="mt-2 mb-1 line-clamp-3 min-h-15 text-sm leading-snug font-semibold">
+      {/* Two lines at most, then an ellipsis. The clamp is visual only: the full title stays in
+          the page, so it's still the link's accessible name, and `title` shows it on hover. */}
+      <h3
+        title={movie.title}
+        className="mt-2 mb-1 line-clamp-2 min-h-10 text-sm leading-snug font-semibold"
+      >
         {movie.title}
       </h3>
       <p className="min-h-5 text-sm text-fg-muted">{meta.join(' · ')}</p>
@@ -235,7 +256,7 @@ function PosterCard({ item }: { item: Item }) {
         <p className="text-sm font-bold text-accent">{item.match}% match</p>
       )}
       <Because titles={item.because?.slice(0, 1)} />
-      <SameDirector match={item.sameDirector} />
+      <CreditLines credits={item.credits} />
       <span className="mt-auto inline-flex items-center gap-1.5 pt-2.5 text-sm font-semibold text-info">
         <Icon name="eye" className="size-4" /> View details
       </span>

@@ -19,6 +19,13 @@ describe('discover', () => {
     const alien = within(grid).getByRole('link', { name: /Alien.*1979 · Horror/ })
     // Each poster wears its VHS genre sticker, which stays out of the link's accessible name.
     expect(alien.querySelector('[data-genre-sticker="horror"]')).toHaveTextContent('Horror')
+    // Director and writer fill in from the film's details, without any likes.
+    await waitFor(() => expect(alien).toHaveTextContent('Director: Ridley Scott'))
+    expect(alien).toHaveTextContent('Writer: Dan O’Bannon')
+    // The title is clamped to two lines visually; the full title stays in the page and on hover.
+    const title = within(alien).getByRole('heading', { level: 3, name: 'Alien' })
+    expect(title).toHaveClass('line-clamp-2')
+    expect(title).toHaveAttribute('title', 'Alien')
   })
 
   it('leaves disliked films out of the feed (ADR-0017)', async () => {
@@ -75,13 +82,13 @@ describe('discover with likes (ADR-0026)', () => {
     expect(feature).toHaveTextContent('The Fog')
     // Picks only appear once both passes are in, so the featured film never changes under you.
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
-    expect(feature).toHaveTextContent('Directed by John Carpenter, like The Thing')
-    // Grid tiles carry the director reason too; Alien (Ridley Scott) doesn't get one.
+    // Cards name the director and writer; the old "Directed by X, like Y" reason is gone.
+    expect(feature).toHaveTextContent('Director: John Carpenter')
+    expect(feature).not.toHaveTextContent('Directed by')
     const grid = screen.getByRole('region', { name: 'Go a little deeper' })
-    expect(within(grid).getByRole('link', { name: /Halloween/ })).toHaveTextContent(
-      'Directed by John Carpenter, like The Thing',
-    )
-    expect(within(grid).getByRole('link', { name: /Alien/ })).not.toHaveTextContent('Directed by')
+    const halloween = within(grid).getByRole('link', { name: /Halloween/ })
+    await waitFor(() => expect(halloween).toHaveTextContent('Writers: John Carpenter, Debra Hill'))
+    expect(halloween).toHaveTextContent('Director: John Carpenter')
     // The liked film itself is never recommended back.
     expect(screen.queryByRole('link', { name: /^The Thing/ })).not.toBeInTheDocument()
   })
