@@ -1,3 +1,5 @@
+// ESLint configuration (`npm run lint`): code-quality, React and accessibility rules, plus
+// project rules that enforce security ADRs.
 import js from '@eslint/js'
 import jsxA11y from 'eslint-plugin-jsx-a11y'
 import reactHooks from 'eslint-plugin-react-hooks'
@@ -6,10 +8,13 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
+// Shown when code outside the storage adapters touches browser storage.
 const storageMsg = 'Browser storage is only allowed in src/adapters/local/ (ADR-0013).'
 
 export default defineConfig([
   globalIgnores(['dist', 'build', 'coverage']),
+  // All TypeScript: recommended JS rules, strict TypeScript rules, React hooks rules, fast-refresh
+  // safety, and strict accessibility (jsx-a11y).
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -21,6 +26,7 @@ export default defineConfig([
     ],
     languageOptions: { globals: globals.browser },
     rules: {
+      // Browser storage only through src/adapters/local/ (ADR-0013).
       'no-restricted-globals': [
         'error',
         { name: 'localStorage', message: storageMsg },
@@ -32,6 +38,7 @@ export default defineConfig([
         { object: 'window', property: 'sessionStorage', message: storageMsg },
         { object: 'globalThis', property: 'localStorage', message: storageMsg },
       ],
+      // Raw HTML injection is an XSS risk (ADR-0008).
       'no-restricted-syntax': [
         'error',
         {
@@ -46,10 +53,12 @@ export default defineConfig([
     files: ['e2e/**'],
     rules: { 'react-hooks/rules-of-hooks': 'off' },
   },
+  // The one place allowed to use browser storage.
   {
     files: ['src/adapters/local/**'],
     rules: { 'no-restricted-globals': 'off', 'no-restricted-properties': 'off' },
   },
+  // Build scripts and config files run in Node, not the browser.
   {
     files: ['scripts/**/*.mjs', '*.config.{js,mjs,ts}', 'sd.config.mjs'],
     extends: [js.configs.recommended],

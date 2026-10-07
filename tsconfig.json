@@ -1,3 +1,6 @@
+// TypeScript project root. It only points at the two real configs:
+// tsconfig.app.json (the app in src/, runs in the browser) and tsconfig.node.json (config files,
+// the local server and E2E tests, run in Node). `tsc -b` checks both.
 {
   "files": [],
   "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]

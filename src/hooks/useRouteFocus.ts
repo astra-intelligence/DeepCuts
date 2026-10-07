@@ -1,6 +1,9 @@
+// Accessible page changes (WCAG 2.4.3): moves keyboard and screen-reader focus to each new page.
 import { useEffect, useRef } from 'react'
 import { useLocation } from 'react-router'
 
+// Headings aren't normally focusable; tabIndex -1 lets code focus them without adding them to
+// the Tab order. (index.css hides the ring for this programmatic focus.)
 function focusHeading(h1: HTMLElement) {
   h1.tabIndex = -1
   h1.focus()
@@ -19,14 +22,17 @@ export function useRouteFocus() {
   // this correct when React StrictMode runs the effect twice in development.
   const initialPath = useRef(key === 'default' ? pathname : null)
   useEffect(() => {
+    // Initial load: leave focus where the browser puts it.
     if (pathname === initialPath.current) return
     initialPath.current = null
     const main = document.getElementById('main')
     const existing = main?.querySelector<HTMLElement>('h1')
+    // The heading is already there (or there's no <main>): focus it now and stop.
     if (!main || existing) {
       if (existing) focusHeading(existing)
       return
     }
+    // Otherwise the page is still loading its data: watch <main> until an <h1> appears.
     const observer = new MutationObserver(() => {
       const h1 = main.querySelector<HTMLElement>('h1')
       if (h1) {
@@ -35,6 +41,7 @@ export function useRouteFocus() {
       }
     })
     observer.observe(main, { childList: true, subtree: true })
+    // Give up after 3 seconds, so a page that never shows a heading doesn't leave a watcher.
     const timeout = setTimeout(() => observer.disconnect(), 3000)
     return () => {
       observer.disconnect()

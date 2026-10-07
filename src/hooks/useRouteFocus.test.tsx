@@ -1,3 +1,5 @@
+// Tests that focus moves to the new page's heading after navigation, but not on first load or
+// when only the search parameters change.
 import { screen, waitFor } from '@testing-library/react'
 import { act } from 'react'
 import { describe, expect, it } from 'vitest'

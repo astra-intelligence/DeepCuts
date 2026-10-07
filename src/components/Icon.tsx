@@ -1,4 +1,5 @@
-// Stroke icons from the v2 design. Each is one path so they stay tiny and tree-shake as data.
+// Stroke icons from the v2 design. Each is one SVG path, so they stay tiny and need no icon library.
+// To add an icon, add its 24×24 path data here; the name then becomes a valid `IconName`.
 const PATHS = {
   home: 'm3 10 9-7 9 7M5 9v11h14V9M9 20v-6h6v6',
   search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM20 20l-4-4',
@@ -15,6 +16,7 @@ const PATHS = {
   x: 'm6 6 12 12M18 6 6 18',
 } as const
 
+/** The name of any icon above, e.g. `'search'`. */
 export type IconName = keyof typeof PATHS
 
 /** Decorative icon; the accessible name always comes from adjacent text. */
@@ -24,6 +26,7 @@ export function Icon({ name, className = 'size-5' }: { name: IconName; className
       aria-hidden="true"
       viewBox="0 0 24 24"
       fill="none"
+      // Drawn in the surrounding text color, so `text-*` classes color the icon.
       stroke="currentColor"
       strokeWidth="1.8"
       strokeLinecap="round"

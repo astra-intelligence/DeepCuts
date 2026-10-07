@@ -1,3 +1,5 @@
+// Tests for Discover: the feed without likes (popular films minus dislikes) and with likes
+// (scored picks with a match and the reason).
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'

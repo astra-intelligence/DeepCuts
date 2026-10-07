@@ -1,3 +1,5 @@
+# Dependabot opens weekly pull requests to update dependencies and the pinned GitHub Actions.
+# Each one goes through CI like any other change; the owner merges them.
 version: 2
 updates:
   - package-ecosystem: npm

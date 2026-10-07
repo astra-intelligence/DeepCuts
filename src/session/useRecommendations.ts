@@ -20,6 +20,8 @@ export interface Recommendation extends Omit<Pick, 'film'> {
   movie: MovieSummary
 }
 
+// Converts TMDB's data (either shape) into the plain facts the scorer uses, so the scorer never
+// depends on TMDB's field names.
 function toScorerFilm(m: MovieSummary | MovieDetail): ScorerFilm {
   return {
     id: m.id,
@@ -41,6 +43,7 @@ export interface Taste {
   score: (options?: RecommendOptions) => Recommendation[]
 }
 
+/** Loads the current person's taste (their recent tags plus each tagged film's details). */
 export function useTaste(): Taste {
   const tagQueries = useTagQueries()
   const liked = (useQuery(tagQueries.list('liked')).data ?? []).slice(0, LIMITS.liked)
@@ -49,6 +52,7 @@ export function useTaste(): Taste {
   const tagged = useQuery(tagQueries.all()).data
 
   const ids = [...new Set([...liked, ...wanted, ...disliked])]
+  // One details call per tagged film, all in parallel; already-cached films cost nothing.
   const details = useQueries({ queries: ids.map((id) => movieQueries.detail(id)) })
   const byId = new Map<number, MovieDetail>()
   details.forEach((q, i) => {
@@ -58,6 +62,7 @@ export function useTaste(): Taste {
   const detailsOf = (list: number[]) => list.flatMap((id) => byId.get(id) ?? [])
 
   const likedMovies = detailsOf(liked)
+  // TMDB's own summaries of every candidate film, to show posters and titles for the picks.
   const summaries = new Map(
     likedMovies.flatMap((m) => (m.recommendations?.results ?? []).map((r) => [r.id, r] as const)),
   )
@@ -83,6 +88,7 @@ export function useTaste(): Taste {
   }
 }
 
+/** Discover's picks with the default weights: `{ recommendations, hasLikes, loading }`. */
 export function useRecommendations(limit = 20) {
   const { score, hasLikes, loading } = useTaste()
   return { recommendations: score({ limit }), hasLikes, loading }

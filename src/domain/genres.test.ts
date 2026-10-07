@@ -1,3 +1,4 @@
+// Tests for genre names and the genre tone (card accent color).
 import { describe, expect, it } from 'vitest'
 import { genreTone, primaryGenreName } from './genres'
 

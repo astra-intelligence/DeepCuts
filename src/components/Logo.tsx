@@ -1,3 +1,4 @@
+// The Deep Cuts logo, drawn in SVG (no image file), so it's sharp at any size.
 import { useId } from 'react'
 
 // Film-strip frame: outer bar minus the inner window and 2×5 sprocket holes (even-odd fill).
@@ -14,6 +15,7 @@ type LogoProps = { className?: string }
  * DEEP use the teal gradient, CUTS the gold. The logo never changes color with the page accent.
  */
 export function Logo({ className }: LogoProps) {
+  // A unique id per logo: two logos on one page would otherwise share (and clash on) one gradient.
   const gradientId = useId()
   return (
     <svg viewBox="0 0 520 100" role="img" aria-label="Deep Cuts" className={className}>

@@ -1,3 +1,5 @@
+// "Tune my picks" (/tune): optional onboarding in three steps (genres → a favorite film → rate a
+// few films). Hidden behind the `onboarding` feature flag until the flow is reworked.
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router'
@@ -17,6 +19,7 @@ import { useTuneState } from './useTuneState'
 export function TunePage() {
   useRouteFocus()
   const [state, update] = useTuneState()
+  // The backdrop of the top film for the chosen genres, as a moody background.
   const background = useQuery(movieQueries.discover(state.genres)).data?.results[0]
   const image = imageUrl(background?.backdrop_path ?? null, 'w1280')
 
@@ -24,6 +27,7 @@ export function TunePage() {
   const main = useRef<HTMLElement>(null)
   const firstStep = useRef(true)
   useEffect(() => {
+    // Not on first arrival: useRouteFocus already handles that.
     if (firstStep.current) {
       firstStep.current = false
       return
@@ -46,6 +50,7 @@ export function TunePage() {
           className="absolute inset-0 size-full object-cover opacity-80 saturate-75"
         />
       )}
+      {/* Darkens the background so text stays readable; step 3 blurs it more heavily. */}
       <div
         className={`absolute inset-0 ${
           state.step === 3
@@ -64,6 +69,7 @@ export function TunePage() {
         <AccountChip />
       </header>
       <div className="relative z-10 mx-5 mt-1 md:mx-auto md:w-full md:max-w-xl">
+        {/* Picking a film in search here also sets it as the favorite for step 2. */}
         <MovieSearch onPick={(m: MovieSummary) => update({ favorite: m.id }, true)} />
       </div>
 
@@ -77,6 +83,7 @@ export function TunePage() {
         <p className="mb-3 text-sm font-semibold tracking-wide text-fg-muted">
           Step {state.step} of 3
         </p>
+        {/* Only the current step renders. */}
         {state.step === 1 && <GenreStep state={state} update={update} />}
         {state.step === 2 && <FavoriteStep state={state} update={update} />}
         {state.step === 3 && <RateStep state={state} update={update} />}

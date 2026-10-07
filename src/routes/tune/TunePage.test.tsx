@@ -1,3 +1,5 @@
+// Tests for the optional "Tune my picks" onboarding: hidden while its feature flag is off, and
+// (with the flag turned on) each of the three steps.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'

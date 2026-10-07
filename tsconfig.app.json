@@ -1,9 +1,11 @@
+// TypeScript settings for the app (src/). Type-checking only: Vite does the actual compiling.
 {
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "target": "es2023",
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "esnext",
+    // Types for Vite's import features and the test matchers (toBeInTheDocument…).
     "types": ["vite/client", "@testing-library/jest-dom/vitest"],
     "skipLibCheck": true,
     "moduleResolution": "bundler",
@@ -12,12 +14,17 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
+    // Strictness: catch mistakes at compile time.
     "strict": true,
+    // `list[i]` might be undefined, so code must handle it.
     "noUncheckedIndexedAccess": true,
+    // An optional property can be left out, but not set to `undefined` explicitly.
     "exactOptionalPropertyTypes": true,
     "noImplicitOverride": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    // Only TypeScript syntax that can simply be erased (no enums or namespaces), so the code also
+    // runs with Node's built-in type stripping.
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },

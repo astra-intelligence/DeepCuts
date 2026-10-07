@@ -1,3 +1,5 @@
+// Test helper: renders the real app at a URL, with its own fresh data cache, so a test can
+// navigate and click like a person would. Options swap in feature flags or a custom session.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'

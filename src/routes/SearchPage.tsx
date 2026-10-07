@@ -1,3 +1,7 @@
+// The Search page (/search, the landing page): results for the header search, with quick add.
+//
+// The header search field writes `?q=` into the URL; this page reads it and lists every match,
+// so a search can be bookmarked or shared (ADR-0014).
 import { useQuery } from '@tanstack/react-query'
 import { ToggleButton } from 'react-aria-components'
 import { useSearchParams } from 'react-router'
@@ -14,10 +18,12 @@ import { useSetTag, useTagQueries } from '../session/tagQueries'
 // ?q= is untrusted input: trimmed and capped before use (ADR-0014). The header search writes it.
 const searchParamsSchema = z.object({ q: z.string().max(100).catch('').default('') })
 
+/** The Search page. */
 export function SearchPage() {
   const [params] = useSearchParams()
   const query = searchParamsSchema.parse(Object.fromEntries(params)).q.trim()
   const { data, isFetching, isError } = useQuery(movieQueries.search(query))
+  // Like the header field, only search once there are at least two characters.
   const results = query.length >= 2 ? data?.results : undefined
 
   return (
@@ -28,6 +34,7 @@ export function SearchPage() {
         title={query ? `Results for “${query}”` : 'Find your next film'}
         lede="Open a film for details, or add it straight to Want to see."
       />
+      {/* One status line, announced to screen readers as it changes. */}
       <p role="status" className="mb-3 text-sm text-fg-muted">
         {isError
           ? 'Search is unavailable right now. Try again in a moment.'
@@ -49,6 +56,7 @@ export function SearchPage() {
   )
 }
 
+// One result: the film's link, plus an "Add to list" toggle for Want to see.
 function ResultRow({ movie }: { movie: MovieSummary }) {
   const queries = useTagQueries()
   const tags = useQuery(queries.forMovie(movie.id)).data

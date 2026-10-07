@@ -1,5 +1,7 @@
+// The small uppercase label above headings ("YOUR CORNER").
 import type { ReactNode } from 'react'
 
+// Colors an eyebrow may use. `contextual` follows the page accent (ADR-0020).
 const TONES = {
   accent: 'text-accent',
   info: 'text-info',

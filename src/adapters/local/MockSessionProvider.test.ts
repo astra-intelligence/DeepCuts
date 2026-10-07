@@ -1,3 +1,5 @@
+// Tests for the local session provider: the shared SessionProvider contract, a saved profile
+// surviving a new instance, and versionedStore's migration hook.
 import { beforeEach, expect, it } from 'vitest'
 import { sessionProviderContract } from '../sessionProvider.contract'
 import { createMockSessionProvider } from './MockSessionProvider'

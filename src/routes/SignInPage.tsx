@@ -1,3 +1,5 @@
+// The Sign-in page (/sign-in, ADR-0025): lists every sign-in method the session provider offers
+// (today only the demo account), then returns to the page sign-in started from.
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Button } from 'react-aria-components'
@@ -23,7 +25,9 @@ export function SignInPage() {
   const location = useLocation()
   const parsed = fromSchema.safeParse(location.state)
   const from = parsed.success && parsed.data.from !== '/sign-in' ? parsed.data.from : '/search'
+  // How many films the person has tagged, to reassure them their picks come along.
   const picks = new Set(useQuery(useTagQueries().all()).data?.map((r) => r.tmdbId)).size
+  // Which method is signing in right now (disables the buttons), and whether the last try failed.
   const [pending, setPending] = useState<SignInMethodId | null>(null)
   const [failed, setFailed] = useState(false)
 
@@ -31,6 +35,8 @@ export function SignInPage() {
   // page returns to where sign-in started, and `pending` stays set until it does.)
   if (session.kind === 'account' && pending === null) return <Navigate to="/account" replace />
 
+  // Signs in, then goes back where sign-in started, telling that page how many films moved
+  // (SignedInNotice shows it). On failure nothing changes and an error is shown.
   async function start(method: SignInMethodId) {
     setFailed(false)
     setPending(method)
@@ -84,6 +90,7 @@ export function SignInPage() {
           </p>
         )}
 
+        {/* One button per sign-in method. */}
         <ul className="grid gap-3">
           {signInMethods.map((m) => (
             <li key={m.id}>

@@ -1,3 +1,4 @@
+// The search field in the header of every page: type a title, pick a suggestion, open the film.
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState, type FormEvent } from 'react'
 import { ComboBox, Group, Input, ListBox, ListBoxItem, Popover } from 'react-aria-components'
@@ -27,8 +28,10 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
     const q = onSearchPage ? (params.get('q') ?? '') : ''
     return q.length <= 100 ? q : ''
   })
+  // Search only once typing pauses for 300ms, instead of on every keystroke.
   const query = useDebouncedValue(text.trim(), 300)
   const { data } = useQuery(movieQueries.search(query))
+  // Disliked films still appear, with a marker (design decision E4).
   const disliked = new Set(useQuery(useTagQueries().list('disliked')).data)
   const suggestions = query.length >= 2 ? (data?.results.slice(0, MAX_SUGGESTIONS) ?? []) : []
 
@@ -39,6 +42,7 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
     }
   }, [onSearchPage, query, params, setParams])
 
+  // Opens a film's Detail page and clears the field.
   function open(movie: MovieSummary) {
     setText('')
     onPick?.(movie)
@@ -59,11 +63,14 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
         aria-label="Find a movie to view and tag"
         items={suggestions}
         inputValue={text}
+        // Typing is capped at 100 characters, the longest query we accept.
         onInputChange={(value) => setText(value.slice(0, 100))}
         onSelectionChange={(key) => {
           const movie = suggestions.find((m) => m.id === key)
           if (movie) open(movie)
         }}
+        // Free text is allowed (it's a search, not a pick-list), the popover may be empty, and it
+        // opens as you type rather than on focus.
         allowsCustomValue
         allowsEmptyCollection
         menuTrigger="input"
@@ -81,6 +88,7 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
             placeholder="Find a movie to tag..."
             className="min-w-0 flex-1 self-stretch bg-transparent px-3 text-sm text-fg outline-none placeholder:text-fg-placeholder"
           />
+          {/* Disabled until there's something to open. */}
           <button
             type="submit"
             disabled={suggestions.length === 0}
@@ -101,6 +109,7 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
               </p>
             )}
           >
+            {/* One row per suggestion: poster, title, year · genre, and a "View details" cue. */}
             {(movie: MovieSummary) => {
               const poster = imageUrl(movie.poster_path, 'w92')
               const meta = [releaseYear(movie.release_date), primaryGenreName(movie.genre_ids)]

@@ -2,18 +2,24 @@
 // only these endpoints and parameters reach TMDB; anything else is rejected.
 import { z } from 'zod'
 
+/** A request that passed the allowlist, ready to send to TMDB. */
 export type TmdbRequest = { path: string; params: URLSearchParams }
+/** Either the cleaned-up request, or why it was refused (400 bad input, 404 unknown endpoint). */
 export type AllowlistResult = { ok: true; request: TmdbRequest } | { ok: false; status: 400 | 404 }
 
+// Shared rules for parameter values.
 const page = z.coerce.number().int().min(1).max(500)
 const id = z.coerce.number().int().positive().max(99_999_999)
 const genreList = z.string().regex(/^\d{1,6}([,|]\d{1,6}){0,9}$/)
+// Extras that may ride along on a film's details call; each at most once.
 const APPENDABLE = new Set(['release_dates', 'recommendations'])
 const appendList = z.string().refine((v) => {
   const parts = v.split(',')
   return parts.every((p) => APPENDABLE.has(p)) && new Set(parts).size === parts.length
 })
 
+// One allowed endpoint: the path pattern, its allowed parameters (strict: any other parameter is
+// refused), how to build the upstream path, and parameters we always add.
 type Route = {
   pattern: RegExp
   params: z.ZodObject
@@ -21,6 +27,7 @@ type Route = {
   fixed?: Record<string, string>
 }
 
+// Every TMDB endpoint the app may reach. Adult content is always excluded.
 const ROUTES: Route[] = [
   {
     pattern: /^search\/movie$/,
@@ -61,11 +68,15 @@ const ROUTES: Route[] = [
   },
 ]
 
-/** `subpath` is the part after `/api/tmdb/` with no leading slash or query string. */
+/**
+ * Checks a proxy request against the allowlist and returns the clean request to send upstream.
+ * `subpath` is the part after `/api/tmdb/` with no leading slash or query string.
+ */
 export function resolveTmdbRequest(subpath: string, query: URLSearchParams): AllowlistResult {
   for (const route of ROUTES) {
     const match = subpath.match(route.pattern)
     if (!match) continue
+    // A repeated parameter (?page=1&page=2) is ambiguous, so it's refused.
     const keys = [...query.keys()]
     if (new Set(keys).size !== keys.length) return { ok: false, status: 400 }
     const parsed = route.params.safeParse(Object.fromEntries(query))
@@ -76,6 +87,7 @@ export function resolveTmdbRequest(subpath: string, query: URLSearchParams): All
     } catch {
       return { ok: false, status: 400 }
     }
+    // Rebuild the query from validated values only, then add the fixed parameters.
     const params = new URLSearchParams()
     for (const [k, v] of Object.entries(parsed.data)) {
       if (v !== undefined) params.set(k, String(v))

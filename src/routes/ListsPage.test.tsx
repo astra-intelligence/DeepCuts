@@ -1,3 +1,5 @@
+// Tests for My Lists: tagged films appear under their list, `?tag=` filters, and an unknown
+// `?tag=` falls back to Want to see.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'

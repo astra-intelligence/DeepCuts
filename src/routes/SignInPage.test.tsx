@@ -1,3 +1,5 @@
+// Tests for the sign-in flow: signing in, picks moving to the account, returning to where sign-in
+// started (same-app paths only), failures, and the signed-in Account page with sign out.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'

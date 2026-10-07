@@ -1,3 +1,4 @@
+// Tests for Search: results from `?q=`, quick add to Want to see, and input validation.
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
