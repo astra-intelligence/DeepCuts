@@ -1,11 +1,17 @@
-// Feeds the scorer (ADR-0026) from the person's tags and cached TMDB details. One details call per
-// tagged film, with its recommendations appended, so Detail pages, Discover and the weights lab
-// share the cache.
+// Feeds the scorer (ADR-0026, ADR-0028) from the person's tags and cached TMDB details.
+//
+// Two passes:
+// 1. One details call per tagged film (with recommendations, keywords and directors appended)
+//    gives the candidates; the scorer ranks them.
+// 2. The top RERANK candidates get one details call each for their keywords and directors, and
+//    the scorer ranks again with them. Every call is the same cached details query the Detail
+//    page uses, so opening a recommended film afterwards costs nothing.
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { movieQueries } from '../api/queries'
 import { releaseYear, type MovieDetail, type MovieSummary } from '../api/tmdb'
 import {
   recommend,
+  type FilmDetails,
   type Pick,
   type RecommendOptions,
   type ScorerFilm,
@@ -15,15 +21,28 @@ import { useTagQueries } from './tagQueries'
 
 /** How many recent tags of each kind inform the feed (bounds the number of calls). */
 const LIMITS = { liked: 20, watchlist: 10, disliked: 10 } as const
+/** How many top candidates get their keywords and directors loaded for the re-rank (ADR-0028). */
+const RERANK = 20
 
 export interface Recommendation extends Omit<Pick, 'film'> {
   movie: MovieSummary
 }
 
+// A film's keywords and directors, from its details (empty when TMDB has none).
+function detailsOf(m: MovieDetail): FilmDetails {
+  return {
+    keywordIds: m.keywords?.keywords.map((k) => k.id) ?? [],
+    directors: (m.credits?.crew ?? [])
+      .filter((p) => p.job === 'Director')
+      .map(({ id, name }) => ({ id, name })),
+  }
+}
+
 // Converts TMDB's data (either shape) into the plain facts the scorer uses, so the scorer never
-// depends on TMDB's field names.
+// depends on TMDB's field names. Full details also carry keywords and directors.
 function toScorerFilm(m: MovieSummary | MovieDetail): ScorerFilm {
   return {
+    ...('genres' in m && detailsOf(m)),
     id: m.id,
     title: m.title,
     genreIds: 'genre_ids' in m ? m.genre_ids : m.genres.map((g) => g.id),
@@ -59,9 +78,9 @@ export function useTaste(): Taste {
     const id = ids[i]
     if (q.data && id !== undefined) byId.set(id, q.data)
   })
-  const detailsOf = (list: number[]) => list.flatMap((id) => byId.get(id) ?? [])
+  const moviesFor = (list: number[]) => list.flatMap((id) => byId.get(id) ?? [])
 
-  const likedMovies = detailsOf(liked)
+  const likedMovies = moviesFor(liked)
   // TMDB's own summaries of every candidate film, to show posters and titles for the picks.
   const summaries = new Map(
     likedMovies.flatMap((m) => (m.recommendations?.results ?? []).map((r) => [r.id, r] as const)),
@@ -71,17 +90,29 @@ export function useTaste(): Taste {
       film: toScorerFilm(m),
       recommendations: (m.recommendations?.results ?? []).map(toScorerFilm),
     })),
-    wanted: detailsOf(wanted).map(toScorerFilm),
-    disliked: detailsOf(disliked).map(toScorerFilm),
+    wanted: moviesFor(wanted).map(toScorerFilm),
+    disliked: moviesFor(disliked).map(toScorerFilm),
     excluded: new Set(tagged?.map((r) => r.tmdbId)),
   }
 
+  // Pass 2: load keywords and directors for the top candidates (default weights, so the set of
+  // films fetched doesn't change while someone drags the weights lab sliders).
+  const top = recommend(input, { limit: RERANK }).map((p) => p.film.id)
+  const topDetails = useQueries({ queries: top.map((id) => movieQueries.detail(id)) })
+  const candidateDetails = new Map<number, FilmDetails>()
+  topDetails.forEach((q, i) => {
+    const id = top[i]
+    if (q.data && id !== undefined) candidateDetails.set(id, detailsOf(q.data))
+  })
+  const reranked: TasteInput = { ...input, details: candidateDetails }
+
   return {
     hasLikes: liked.length > 0,
-    loading: details.some((q) => q.isPending),
+    // Still loading until both passes are in, so the picks don't reshuffle on screen.
+    loading: details.some((q) => q.isPending) || topDetails.some((q) => q.isPending),
     // Scoring a few hundred candidates is well under a millisecond, so it simply runs each render.
     score: (options) =>
-      recommend(input, options).flatMap(({ film, ...rest }) => {
+      recommend(reranked, options).flatMap(({ film, ...rest }) => {
         const movie = summaries.get(film.id)
         return movie ? [{ ...rest, movie }] : []
       }),

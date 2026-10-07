@@ -58,6 +58,16 @@ const PARTS: Record<ScorePart, { label: string; short: string; hint: string }> =
     short: 'Lang.',
     hint: 'Same original language as the films you liked.',
   },
+  keywords: {
+    label: 'Keyword overlap',
+    short: 'Keys',
+    hint: 'Shares story keywords with films you like (top 20 candidates only).',
+  },
+  director: {
+    label: 'Same director',
+    short: 'Dir.',
+    hint: 'Made by a director of a film you liked (top 20 candidates only).',
+  },
 }
 
 // URL values are untrusted: each must be a whole number in range, or it falls back to the default.

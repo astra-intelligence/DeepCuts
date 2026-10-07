@@ -190,7 +190,7 @@ test('liking a film tunes Discover, with a match and the reason (ADR-0026)', asy
   const deepCut = page.getByRole('slider', { name: 'Deep cut' })
   await deepCut.focus()
   await page.keyboard.press('ArrowRight')
-  await expect(page).toHaveURL(/deepCut=15/)
+  await expect(page).toHaveURL(/deepCut=13/)
   await expectNoA11yViolations(page)
   await expectNoHorizontalOverflow(page)
 })

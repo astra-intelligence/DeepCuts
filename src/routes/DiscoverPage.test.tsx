@@ -68,6 +68,12 @@ describe('discover with likes (ADR-0026)', () => {
     const feature = await screen.findByRole('link', { name: /Today’s featured deep cut/ })
     expect(feature).toHaveTextContent(/\d+% match/)
     expect(feature).toHaveTextContent('Because you liked The Thing')
+    // The re-rank loaded the top candidates' directors (ADR-0028): The Fog shares John Carpenter
+    // with The Thing, which lifts it to the featured spot.
+    expect(feature).toHaveTextContent('The Fog')
+    // Picks only appear once both passes are in, so the featured film never changes under you.
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(feature).toHaveTextContent('Directed by John Carpenter, like The Thing')
     // The liked film itself is never recommended back.
     expect(screen.queryByRole('link', { name: /^The Thing/ })).not.toBeInTheDocument()
   })

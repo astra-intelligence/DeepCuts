@@ -68,10 +68,7 @@ describe('search → detail', () => {
     await user.type(box(), 'alien')
     await screen.findByRole('option', { name: /Alien/ })
     await user.keyboard('{Enter}')
-    // Alien has no detail fixture, so the detail route reports it as not found.
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Film not found' }),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Alien' })).toBeInTheDocument()
   })
 
   it('arrow keys + Enter open the highlighted suggestion, not the first match', async () => {

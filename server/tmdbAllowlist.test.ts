@@ -33,8 +33,8 @@ describe('resolveTmdbRequest', () => {
     ['search/movie', 'query=a&api_key=leak'],
     ['discover/movie', 'with_genres=27;DROP'],
     ['discover/movie', 'sort_by=revenue.desc'],
-    ['movie/603', 'append_to_response=credits'],
-    ['movie/603', 'append_to_response=release_dates,credits'],
+    ['movie/603', 'append_to_response=videos'],
+    ['movie/603', 'append_to_response=release_dates,images'],
     ['movie/603', 'append_to_response=recommendations,recommendations'],
     ['movie/603', 'append_to_response='],
   ])('rejects bad params: %s?%s', (path, query) => {
@@ -77,11 +77,13 @@ describe('resolveTmdbRequest', () => {
 })
 
 describe('movie detail extras', () => {
-  it.each(['release_dates', 'recommendations', 'release_dates,recommendations'])(
-    'allows appending %s (ADR-0024, ADR-0026)',
-    (value) => {
-      const r = resolveTmdbRequest('movie/603', new URLSearchParams(`append_to_response=${value}`))
-      expect(r.ok && r.request.params.get('append_to_response')).toBe(value)
-    },
-  )
+  it.each([
+    'release_dates',
+    'recommendations',
+    'release_dates,recommendations',
+    'release_dates,recommendations,keywords,credits',
+  ])('allows appending %s (ADR-0024, ADR-0026, ADR-0028)', (value) => {
+    const r = resolveTmdbRequest('movie/603', new URLSearchParams(`append_to_response=${value}`))
+    expect(r.ok && r.request.params.get('append_to_response')).toBe(value)
+  })
 })

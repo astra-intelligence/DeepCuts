@@ -59,6 +59,19 @@ export const movieDetailSchema = z.object({
     .object({ results: z.array(movieSummary) })
     .optional()
     .catch(undefined),
+  // Appended to the same call for the scorer's keyword and director parts (ADR-0028). Lenient:
+  // a malformed block just means no keywords or directors for this film.
+  keywords: z
+    .object({ keywords: z.array(z.object({ id: z.number().int(), name: z.string() })) })
+    .optional()
+    .catch(undefined),
+  // The proxy trims credits to directors only (server/tmdbProxy.ts), so this stays small.
+  credits: z
+    .object({
+      crew: z.array(z.object({ id: z.number().int(), name: z.string(), job: z.string() })),
+    })
+    .optional()
+    .catch(undefined),
   // Appended to the same call for the content rating (ADR-0024).
   release_dates: z
     .object({
@@ -127,12 +140,15 @@ export const tmdb = {
   /** Films whose title matches `query`. */
   search: (query: string, page = 1, signal?: AbortSignal) =>
     get('search/movie', searchResultsSchema, { query, page: String(page) }, signal),
-  /** One film's details, plus its content ratings and recommended films in the same call. */
+  /**
+   * One film's details, plus in the same call: content ratings, recommended films, keywords and
+   * directors (one request serves Detail and the recommendation scorer, ADR-0024/0026/0028).
+   */
   movie: (id: number, signal?: AbortSignal) =>
     get(
       `movie/${id}`,
       movieDetailSchema,
-      { append_to_response: 'release_dates,recommendations' },
+      { append_to_response: 'release_dates,recommendations,keywords,credits' },
       signal,
     ),
   /** Popular, well-voted films, optionally in any of `genres` (OR). */
