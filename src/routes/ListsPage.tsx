@@ -4,13 +4,14 @@ import { Link, useSearchParams } from 'react-router'
 import { z } from 'zod'
 import { movieQueries } from '../api/queries'
 import { certification, formatRuntime, releaseYear } from '../api/tmdb'
+import { EmptyState } from '../components/EmptyState'
 import { Icon } from '../components/Icon'
+import { MovieLink } from '../components/MovieLink'
 import { PageHeading } from '../components/PageHeading'
 import { tagColor, TAGS } from '../components/tags'
 import { genreTone } from '../domain/genres'
 import { SYSTEM_TAGS, type SystemTag } from '../domain/tagRules'
 import { useTagQueries } from '../session/tagQueries'
-import { EmptyState, MovieLink } from './SearchPage'
 
 // ?tag= is untrusted; anything unknown falls back to Want to see (ADR-0014).
 const paramsSchema = z.object({ tag: z.enum(SYSTEM_TAGS).catch('watchlist').default('watchlist') })

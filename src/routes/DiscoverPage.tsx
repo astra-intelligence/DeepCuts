@@ -3,11 +3,11 @@ import { Link, useSearchParams } from 'react-router'
 import { z } from 'zod'
 import { movieQueries } from '../api/queries'
 import { imageUrl, releaseYear, type MovieSummary } from '../api/tmdb'
+import { EmptyState } from '../components/EmptyState'
 import { Icon } from '../components/Icon'
 import { PageHeading } from '../components/PageHeading'
 import { genreTone, primaryGenreName } from '../domain/genres'
 import { useTagQueries } from '../session/tagQueries'
-import { EmptyState } from './SearchPage'
 
 // ?genres= comes from "Tune my picks" (comma-separated TMDB ids); untrusted, so validated.
 const paramsSchema = z.object({
