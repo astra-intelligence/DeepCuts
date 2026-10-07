@@ -81,7 +81,7 @@ npm run invite             # in a second terminal: prints http://localhost:8788/
 
 Open the link, enter a name and press **Create passkey** (your browser or password manager stores it). Sign out, then **Sign in with a passkey**. `npm run invite -- --days 3` changes the lifetime (default 7 days); `npm run invite -- --recover <userId>` makes a recovery invite that adds a passkey to an existing account. Only a hash of each invite code is stored, so the printed link is the only copy.
 
-Sessions last 30 days and renew on use; the cookie is `__Host-dc_session` (`HttpOnly`, `Secure`, `SameSite=Lax`), and only its SHA-256 is stored. Signed-in people can rename themselves or delete their account (Account page).
+Sessions last 30 days and renew on use; the cookie is `__Host-dc_session` (`HttpOnly`, `Secure`, `SameSite=Lax`), and only its SHA-256 is stored. On plain `http://localhost` only, it's `dc_session` without `Secure`, because Safari won't keep a `Secure` cookie over http. Signed-in people can rename themselves or delete their account (Account page).
 
 | Free-plan limit (ADR-0031, as of 2026-10-07) | Value                         | When exceeded               |
 | -------------------------------------------- | ----------------------------- | --------------------------- |
