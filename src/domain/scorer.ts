@@ -28,18 +28,21 @@ export const SCORE_PARTS = ['support', 'genre', 'quality', 'deepCut', 'decade', 
 export type ScorePart = (typeof SCORE_PARTS)[number]
 export type Weights = Record<ScorePart, number>
 
-/** Provisional weights (ADR-0026); they sum to 1, so a score is always between 0 and 1. */
-export const DEFAULT_WEIGHTS: Weights = {
-  support: 0.35,
-  genre: 0.25,
-  quality: 0.15,
-  deepCut: 0.1,
-  decade: 0.1,
+/**
+ * The owner's tuned weights (ADR-0026, chosen in the weights lab 2026-10-06), as copied from the
+ * lab. Rounded to two places they add up to 1.01, so they're scaled to sum to exactly 1.
+ */
+export const DEFAULT_WEIGHTS: Weights = normalizeWeights({
+  support: 0.32,
+  genre: 0.34,
+  quality: 0.07,
+  deepCut: 0.14,
+  decade: 0.09,
   language: 0.05,
-}
+})
 
 /** Each earlier pick with the same primary genre lowers a candidate's rank by this much. */
-export const DIVERSITY_PENALTY = 0.03
+export const DIVERSITY_PENALTY = 0.05
 
 /** Scales weights to sum to 1, so any mix (e.g. from the tuning sliders) keeps scores in 0–1. */
 export function normalizeWeights(weights: Weights): Weights {

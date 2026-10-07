@@ -45,7 +45,21 @@ function input(overrides: Partial<TasteInput> = {}): TasteInput {
 describe('recommend (ADR-0026)', () => {
   it('weights sum to 1, so scores stay between 0 and 1', () => {
     const total = SCORE_PARTS.reduce((s, p) => s + DEFAULT_WEIGHTS[p], 0)
-    expect(total).toBeCloseTo(1)
+    expect(total).toBeCloseTo(1, 10)
+  })
+
+  it('defaults to the owner’s tuned weights, which the lab shows as whole numbers', () => {
+    const shown = Object.fromEntries(
+      SCORE_PARTS.map((p) => [p, Math.round(DEFAULT_WEIGHTS[p] * 100)]),
+    )
+    expect(shown).toEqual({
+      support: 32,
+      genre: 34,
+      quality: 7,
+      deepCut: 14,
+      decade: 9,
+      language: 5,
+    })
   })
 
   it('returns nothing without likes', () => {
@@ -206,7 +220,7 @@ describe('recommend (ADR-0026)', () => {
     const w = normalizeWeights({ ...ZERO, support: 3, genre: 1, quality: -2 })
     expect(w).toEqual({ ...ZERO, support: 0.75, genre: 0.25 })
     expect(normalizeWeights(ZERO)).toEqual(ZERO)
-    expect(normalizeWeights(DEFAULT_WEIGHTS).support).toBeCloseTo(0.35)
+    expect(normalizeWeights(DEFAULT_WEIGHTS).support).toBeCloseTo(DEFAULT_WEIGHTS.support)
   })
 
   it('stops at the limit', () => {
