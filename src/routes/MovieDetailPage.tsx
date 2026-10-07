@@ -38,13 +38,20 @@ export function MovieDetailPage() {
   )
 }
 
+/**
+ * "Back", shared by the top button and the one at the end of the page: the previous screen, or
+ * Search on a direct visit (which has no history entry to return to).
+ */
+function useBack() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  return () => (location.key === 'default' ? navigate('/search') : navigate(-1))
+}
+
 // Detail opens above the app shell (design v2): no tab bar; back, logo and search float on top.
 function DetailLayout({ children }: { children: ReactNode }) {
   useRouteFocus()
-  const navigate = useNavigate()
-  const location = useLocation()
-  // A direct visit has no history entry to return to, so back goes to Search instead.
-  const back = () => (location.key === 'default' ? navigate('/search') : navigate(-1))
+  const back = useBack()
   return (
     <div className="relative mx-auto min-h-svh w-full max-w-360 overflow-x-clip">
       <SkipLink />
@@ -76,6 +83,7 @@ function MovieDetail({ id }: { id: number }) {
   const providers = useQuery(movieQueries.providers(id))
   const tags = useQuery(useTagQueries().forMovie(id)).data
   const setTag = useSetTag()
+  const back = useBack()
 
   if (movie.isPending)
     return (
@@ -180,6 +188,16 @@ function MovieDetail({ id }: { id: number }) {
           {/* Attribution required for JustWatch data. */}
           <p className="mt-3 text-xs text-fg-muted">Streaming availability data from JustWatch.</p>
         </section>
+
+        {/* A second way back, right below the tags: on desktop the top back button sits in the
+            far corner, a long way from where you've just tagged the film. */}
+        <Button
+          onPress={back}
+          className="mt-6 flex min-h-11 items-center justify-center gap-2 self-start rounded-button border border-button-secondary-border bg-button-secondary-bg px-4 text-sm font-semibold text-button-secondary-fg hover:border-accent"
+        >
+          <Icon name="back" />
+          Back
+        </Button>
       </div>
     </article>
   )

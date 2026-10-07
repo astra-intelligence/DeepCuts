@@ -1,5 +1,5 @@
 // Tests for the Detail page: tag toggles follow the rules, streaming logos aren't interactive,
-// back navigation, the disliked marker in Search, and "not found" for bad ids.
+// back navigation (top and bottom buttons), the disliked marker in Search, and "not found" for bad ids.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
@@ -54,6 +54,15 @@ describe('movie detail', () => {
     await screen.findByRole('heading', { level: 1, name: 'The Thing' })
     await user.click(screen.getByRole('button', { name: 'Back to previous screen' }))
     await waitFor(() => expect(router.state.location.pathname).toBe('/search'))
+  })
+
+  it('the back button below the tags returns to the previous screen', async () => {
+    const user = userEvent.setup()
+    const { router } = renderRoute('/lists')
+    await act(() => router.navigate('/movie/1091'))
+    await screen.findByRole('heading', { level: 1, name: 'The Thing' })
+    await user.click(screen.getByRole('button', { name: 'Back' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/lists'))
   })
 
   it.each(['/movie/abc', '/movie/-1', '/movie/999'])('shows not found for %s', async (path) => {
