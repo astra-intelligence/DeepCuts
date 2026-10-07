@@ -70,7 +70,7 @@ test('invite → register → reload → sign out → sign in with the passkey',
   // Sign out (two presses), then the session is gone.
   await page.getByRole('button', { name: 'Sign out' }).click()
   await page.getByRole('button', { name: 'Yes, sign out' }).click()
-  await expect(page).toHaveURL(/\/search/)
+  await expect(page).toHaveURL(/\/discover/)
   expect((await page.request.get('/api/auth/session')).status()).toBe(401)
 
   // Sign in with the passkey: one button, no username.

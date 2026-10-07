@@ -47,7 +47,7 @@ describe('registration (ADR-0031)', () => {
 
   it('registers, carries picks over and returns to where sign-in started', async () => {
     const user = userEvent.setup()
-    const { router } = renderRoute('/search?q=thing')
+    const { router } = renderRoute('/search?q=thing', { features: { searchPage: true } })
     await user.click(await screen.findByRole('button', { name: 'Want to see The Thing' }))
     await user.click(within(screen.getByRole('banner')).getByRole('link', { name: 'Sign in' }))
     await user.click(await screen.findByRole('link', { name: 'Create an account' }))

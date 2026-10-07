@@ -108,7 +108,7 @@ describe('account settings (A2b)', () => {
     expect(api.state.signedIn?.name).toBe('Pat Key')
   })
 
-  it('deletes the account only after a confirm, then goes to Search as a guest', async () => {
+  it('deletes the account only after a confirm, then goes home as a guest', async () => {
     const user = userEvent.setup()
     const { router } = renderAccount()
     await user.click(await screen.findByRole('button', { name: 'Delete account' }))
@@ -117,7 +117,7 @@ describe('account settings (A2b)', () => {
     const confirm = screen.getByRole('button', { name: 'Yes, delete my account' })
     await waitFor(() => expect(confirm).toHaveFocus())
     await user.click(confirm)
-    await waitFor(() => expect(router.state.location.pathname).toBe('/search'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
     expect(api.state.signedIn).toBeNull()
   })
 
@@ -175,7 +175,7 @@ describe('a tag that fails to save', () => {
   it('says so on a Search result', async () => {
     refuseTagChanges()
     const user = userEvent.setup()
-    renderRoute('/search?q=thing', asPat)
+    renderRoute('/search?q=thing', { ...asPat, features: { searchPage: true } })
     await user.click(await screen.findByRole('button', { name: 'Want to see The Thing' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Your change wasn’t saved.')
   })

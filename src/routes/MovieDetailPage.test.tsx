@@ -1,5 +1,6 @@
 // Tests for the Detail page: tag toggles follow the rules, streaming logos aren't interactive,
-// back navigation (top and bottom buttons), the disliked marker in Search, and "not found" for bad ids.
+// back navigation (top and bottom buttons), the disliked marker in Search (behind its flag), and
+// "not found" for bad ids.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
@@ -87,7 +88,7 @@ describe('movie detail', () => {
 
   it('a disliked film stays in Search with a marker (ADR-0017 amendment)', async () => {
     const user = userEvent.setup()
-    const { router } = renderRoute('/movie/1091')
+    const { router } = renderRoute('/movie/1091', { features: { searchPage: true } })
     const group = await screen.findByRole('group', { name: 'Your tags' })
     await user.click(within(group).getByRole('button', { name: 'Dislike' }))
     // Detail stages tag changes until Save.
@@ -98,12 +99,12 @@ describe('movie detail', () => {
     expect(within(row).getByText('Disliked')).toBeInTheDocument()
   })
 
-  it('back returns to the previous screen, or Search on a direct visit', async () => {
+  it('back returns to the previous screen, or home (Discover) on a direct visit', async () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/1091')
     await screen.findByRole('heading', { level: 1, name: 'The Thing' })
     await user.click(screen.getByRole('button', { name: 'Back to previous screen' }))
-    await waitFor(() => expect(router.state.location.pathname).toBe('/search'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
   })
 
   it('the back button below the tags returns to the previous screen', async () => {

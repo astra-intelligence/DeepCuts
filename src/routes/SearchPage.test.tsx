@@ -1,14 +1,27 @@
-// Tests for Search: results from `?q=`, quick add to Want to see, and input validation.
+// Tests for Search: results from `?q=`, quick add to Want to see, and input validation. The page
+// is hidden behind its feature flag (2026-10-07), so most tests turn the flag on.
 import { screen, waitFor } from '@testing-library/react'
+import { act } from 'react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { renderRoute } from '../test/renderRoute'
 
+// The Search page is hidden by default (FEATURES.searchPage); these tests turn it on.
+const SEARCH_ON = { features: { searchPage: true } }
+
 describe('search → detail', () => {
   const box = () => screen.getByRole('combobox', { name: 'Find a movie to view and tag' })
 
-  it('/ lands on Search (ADR-0019 amendment)', async () => {
+  it('/ lands on Discover, and /search goes there while the Search page is hidden', async () => {
     const { router } = renderRoute('/')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Found for you' })).toBeVisible()
+    expect(router.state.location.pathname).toBe('/discover')
+    await act(() => router.navigate('/search?q=thing'))
+    expect(router.state.location.pathname).toBe('/discover')
+  })
+
+  it('/ lands on Search while its flag is on', async () => {
+    const { router } = renderRoute('/', SEARCH_ON)
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Find your next film' }),
     ).toBeInTheDocument()
@@ -17,9 +30,10 @@ describe('search → detail', () => {
 
   it('searches from the URL, lists results, and opens a film', async () => {
     const user = userEvent.setup()
-    renderRoute('/search?q=thing')
+    renderRoute('/search?q=thing', SEARCH_ON)
+    // The page is lazy-loaded, so wait for it.
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Results for “thing”' }),
+      await screen.findByRole('heading', { level: 1, name: 'Results for “thing”' }),
     ).toBeInTheDocument()
     const link = await screen.findByRole('link', { name: /The Thing.*1982 · Horror/ })
     expect(screen.getByRole('status')).toHaveTextContent('1 result')
@@ -34,7 +48,8 @@ describe('search → detail', () => {
 
   it('typing in the header search updates the Search results', async () => {
     const user = userEvent.setup()
-    renderRoute('/search')
+    renderRoute('/search', SEARCH_ON)
+    await screen.findByRole('heading', { level: 1 })
     await user.type(box(), 'alien')
     await screen.findByRole('option', { name: /Alien/ })
     // The open suggestion list hides the page from assistive tech; Escape closes it.
@@ -44,13 +59,15 @@ describe('search → detail', () => {
 
   it('keeps every keystroke when typing fast (regression)', async () => {
     const user = userEvent.setup({ delay: null })
-    renderRoute('/search')
+    renderRoute('/search', SEARCH_ON)
+    await screen.findByRole('heading', { level: 1 })
     await user.type(box(), 'the thing')
     expect(box()).toHaveValue('the thing')
   })
 
-  it('ignores over-long ?q values', () => {
-    renderRoute(`/search?q=${'x'.repeat(101)}`)
+  it('ignores over-long ?q values', async () => {
+    renderRoute(`/search?q=${'x'.repeat(101)}`, SEARCH_ON)
+    await screen.findByRole('heading', { level: 1 })
     expect(box()).toHaveValue('')
   })
 
@@ -89,7 +106,7 @@ describe('search → detail', () => {
 
   it('quick add toggles Want to see', async () => {
     const user = userEvent.setup()
-    renderRoute('/search?q=thing')
+    renderRoute('/search?q=thing', SEARCH_ON)
     const add = await screen.findByRole('button', { name: 'Want to see The Thing' })
     expect(add).toHaveAttribute('aria-pressed', 'false')
     await user.click(add)

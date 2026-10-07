@@ -1,18 +1,10 @@
 // End-to-end tests in a real browser (Playwright) at 320, 390 and 1280px: every page passes the
 // axe accessibility scan with no sideways scrolling, and the main journeys work by keyboard.
 // TMDB is never called; e2e/fixtures.ts answers every request with fixed data.
+import type { Page } from '@playwright/test'
 import { expect, expectNoA11yViolations, expectNoHorizontalOverflow, test } from './fixtures'
 
-for (const path of [
-  '/sign-in',
-  '/register',
-  '/search',
-  '/search?q=thing',
-  '/discover',
-  '/movie/1091',
-  '/lists',
-  '/account',
-]) {
+for (const path of ['/sign-in', '/register', '/discover', '/movie/1091', '/lists', '/account']) {
   test(`${path} has no axe violations and no horizontal overflow`, async ({ page }) => {
     await page.goto(path)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
@@ -21,14 +13,28 @@ for (const path of [
   })
 }
 
-test('/ redirects to Search', async ({ page }) => {
+test('/ opens Discover, and the hidden Search page redirects there (FEATURES.searchPage)', async ({
+  page,
+}) => {
   await page.goto('/')
-  await expect(page).toHaveURL(/\/search$/)
-  await expect(page.getByRole('heading', { level: 1, name: 'Find your next film' })).toBeVisible()
+  await expect(page).toHaveURL(/\/discover$/)
+  await expect(page.getByRole('heading', { level: 1, name: 'Found for you' })).toBeVisible()
+  await page.goto('/search?q=thing')
+  await expect(page).toHaveURL(/\/discover$/)
 })
 
-test('search → detail → back, keyboard only', async ({ page }) => {
-  await page.goto('/search')
+/** Tags The Thing "Want to see" on its Detail page (tags are staged until Save). */
+async function wantToSeeTheThing(page: Page) {
+  await page
+    .getByRole('group', { name: 'Your tags' })
+    .getByRole('button', { name: 'Want to see' })
+    .click()
+  await page.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByRole('status')).toContainText('Saved.')
+}
+
+test('header search → detail → back, keyboard only', async ({ page }) => {
+  await page.goto('/discover')
   const box = page.getByRole('combobox', { name: 'Find a movie to view and tag' })
   await box.focus()
   await page.keyboard.type('thing')
@@ -51,21 +57,14 @@ test('search → detail → back, keyboard only', async ({ page }) => {
   await expect(page).toHaveTitle('The Thing · Deep Cuts')
 
   await page.goBack()
-  await expect(page.getByRole('heading', { level: 1, name: 'Results for “thing”' })).toBeVisible()
-})
-
-test('search results: open a film from the list and quick-add', async ({ page }) => {
-  await page.goto('/search?q=thing')
-  const add = page.getByRole('button', { name: 'Want to see The Thing' })
-  await add.click()
-  await expect(add).toHaveAttribute('aria-pressed', 'true')
-  const box = await add.boundingBox()
-  expect(box?.height).toBeGreaterThanOrEqual(44)
+  await expect(page.getByRole('heading', { level: 1, name: 'Found for you' })).toBeVisible()
 })
 
 test('main navigation is reachable and marks the current page', async ({ page }) => {
-  await page.goto('/search')
+  await page.goto('/discover')
   const nav = page.getByRole('navigation', { name: 'Main' })
+  // Two tabs while the Search page is hidden.
+  await expect(nav.getByRole('link')).toHaveText(['Discover', 'My Lists'])
   await nav.getByRole('link', { name: 'My Lists' }).click()
   await expect(nav.getByRole('link', { name: 'My Lists' })).toHaveAttribute('aria-current', 'page')
   const box = await nav.getByRole('link', { name: 'My Lists' }).boundingBox()
@@ -131,32 +130,32 @@ test('a disliked film appears only on the Disliked list, with the tag accent', a
 test('Save my picks survives a reload; guest picks do not (ADR-0011, ADR-0022)', async ({
   page,
 }) => {
-  await page.goto('/search?q=thing')
-  await page.getByRole('button', { name: 'Want to see The Thing' }).click()
+  await page.goto('/movie/1091')
+  await wantToSeeTheThing(page)
   await page.reload()
-  await expect(page.getByRole('button', { name: 'Want to see The Thing' })).toHaveAttribute(
-    'aria-pressed',
-    'false',
-  )
+  const wanted = page
+    .getByRole('group', { name: 'Your tags' })
+    .getByRole('button', { name: 'Want to see' })
+  await expect(wanted).toHaveAttribute('aria-pressed', 'false')
 
-  await page.getByRole('button', { name: 'Want to see The Thing' }).click()
+  await wantToSeeTheThing(page)
+  // Client-side navigation keeps the in-memory guest picks (ADR-0011).
+  await page.getByRole('link', { name: 'Deep Cuts, go to Discover' }).click()
   await page.getByRole('banner').getByRole('link', { name: 'Sign in' }).click()
   await page.getByRole('link', { name: 'Keep your picks on this device' }).click()
   await page.getByRole('button', { name: 'Save my picks' }).click()
   await expect(page.getByText('Saved on this device', { exact: true })).toBeVisible()
   await expectNoA11yViolations(page)
-  await page.goto('/search?q=thing')
-  await expect(page.getByRole('button', { name: 'Want to see The Thing' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  await page.goto('/movie/1091')
+  await expect(wanted).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('sign in with the demo account, keyboard only; survives a reload; sign out (ADR-0025)', async ({
   page,
 }) => {
-  await page.goto('/search?q=thing')
-  await page.getByRole('button', { name: 'Want to see The Thing' }).click()
+  await page.goto('/movie/1091')
+  await wantToSeeTheThing(page)
+  await page.getByRole('link', { name: 'Deep Cuts, go to Discover' }).click()
   await page.getByRole('banner').getByRole('link', { name: 'Sign in' }).focus()
   await page.keyboard.press('Enter')
 
@@ -166,7 +165,7 @@ test('sign in with the demo account, keyboard only; survives a reload; sign out 
   await page.getByRole('button', { name: /Continue with a demo account/ }).focus()
   await page.keyboard.press('Enter')
 
-  await expect(page).toHaveURL(/\/search\?q=thing$/)
+  await expect(page).toHaveURL(/\/discover$/)
   await expect(page.getByText('Signed in as Mike. Your 1 pick is in your account.')).toBeVisible()
   const chip = page.getByRole('banner').getByRole('link', { name: 'Mike, open your account' })
   await expect(chip).toBeVisible()
@@ -174,10 +173,9 @@ test('sign in with the demo account, keyboard only; survives a reload; sign out 
 
   await page.reload()
   await expect(chip).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Want to see The Thing' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  // The pick moved into the account: My Lists opens on Want to see.
+  await page.goto('/lists')
+  await expect(page.getByRole('link', { name: /The Thing/ })).toBeVisible()
 
   await chip.click()
   await expect(page.getByRole('heading', { level: 1, name: 'Mike Curts' })).toBeVisible()
@@ -211,7 +209,7 @@ test('register from an invite link with the keyboard; errors pass axe; the pract
   await page.keyboard.type('Ada Lovelace')
   await page.keyboard.press('Enter')
 
-  await expect(page).toHaveURL(/\/search$/)
+  await expect(page).toHaveURL(/\/discover$/)
   await expect(page.getByText('Signed in as Ada.')).toBeVisible()
   await page.reload()
   const chip = page.getByRole('banner').getByRole('link', { name: 'Ada, open your account' })

@@ -7,12 +7,12 @@ import { describe, expect, it } from 'vitest'
 import { renderRoute } from '../../test/renderRoute'
 
 describe('tune my picks (onboarding)', () => {
-  it('is hidden while the feature flag is off: /tune goes to Search, no header link', async () => {
+  it('is hidden while the feature flag is off: /tune goes home, no header link', async () => {
     const { router } = renderRoute('/tune')
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Find your next film' }),
+      await screen.findByRole('heading', { level: 1, name: 'Found for you' }),
     ).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/search')
+    expect(router.state.location.pathname).toBe('/discover')
     expect(screen.queryByRole('link', { name: 'Tune my picks' })).not.toBeInTheDocument()
   })
 

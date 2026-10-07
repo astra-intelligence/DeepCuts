@@ -13,7 +13,7 @@ const header = () => screen.getByRole('banner')
 describe('sign in (ADR-0025)', () => {
   it('signs in from the header, carries picks over and returns to the same page', async () => {
     const user = userEvent.setup()
-    const { router } = renderRoute('/search?q=thing')
+    const { router } = renderRoute('/search?q=thing', { features: { searchPage: true } })
     await user.click(await screen.findByRole('button', { name: 'Want to see The Thing' }))
     await user.click(within(header()).getByRole('link', { name: 'Sign in' }))
 
@@ -71,10 +71,11 @@ describe('sign in (ADR-0025)', () => {
 
   it('only returns to same-app paths (history state is untrusted)', async () => {
     const user = userEvent.setup()
-    const { router } = renderRoute('/search')
+    const { router } = renderRoute('/lists')
     await act(() => router.navigate('/sign-in', { state: { from: '//evil.example' } }))
     await user.click(await screen.findByRole('button', { name: /Continue with a demo account/ }))
-    await waitFor(() => expect(router.state.location.pathname).toBe('/search'))
+    // An unsafe `from` falls back to home: Discover while the Search page is off.
+    await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
   })
 })
 
@@ -99,7 +100,7 @@ describe('signed-in account page', () => {
 
     await user.click(screen.getByRole('button', { name: 'Sign out' }))
     await user.click(screen.getByRole('button', { name: 'Yes, sign out' }))
-    await waitFor(() => expect(router.state.location.pathname).toBe('/search'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
     expect(within(header()).getByRole('link', { name: 'Sign in' })).toBeInTheDocument()
   })
 })

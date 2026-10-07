@@ -10,6 +10,7 @@ import { Button, FieldError, Form, Input, Label, TextField } from 'react-aria-co
 import { useNavigate } from 'react-router'
 import { z } from 'zod'
 import { registrationSchema } from '../adapters/SessionProvider'
+import { HOME } from '../config/features'
 import { useSession } from '../session/SessionContext'
 
 // Same field styles as the registration form.
@@ -119,7 +120,7 @@ function DeleteAccount({ deleteAccount }: { deleteAccount: () => Promise<void> }
     setPending(true)
     try {
       await deleteAccount()
-      navigate('/search')
+      navigate(HOME.path)
     } catch {
       setFailed(true)
       setPending(false)

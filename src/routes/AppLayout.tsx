@@ -9,12 +9,14 @@ import { MovieSearch } from '../components/MovieSearch'
 import { SignedInNotice } from '../components/SignedInNotice'
 import { useRouteFocus } from '../hooks/useRouteFocus'
 
-// The three tabs in the tab bar, in order.
+// The tabs in the tab bar, in order. Search only while its page is on (FEATURES.searchPage).
 const NAV: { to: string; label: string; icon: IconName }[] = [
   { to: '/discover', label: 'Discover', icon: 'home' },
-  { to: '/search', label: 'Search', icon: 'search' },
+  ...(FEATURES.searchPage ? [{ to: '/search', label: 'Search', icon: 'search' as const }] : []),
   { to: '/lists', label: 'My Lists', icon: 'list' },
 ]
+// One column per tab. Written out in full so Tailwind generates both classes.
+const NAV_COLUMNS = NAV.length === 3 ? 'grid-cols-3' : 'grid-cols-2'
 
 /**
  * "Skip to content": hidden until a keyboard user tabs to it, then jumps past the header to
@@ -96,7 +98,7 @@ export function AppLayout() {
         aria-label="Main"
         className="fixed bottom-0 left-1/2 z-20 w-full max-w-360 -translate-x-1/2 border-t border-nav-border bg-nav-bg/95 px-3.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:bottom-4 md:w-md md:rounded-nav md:border md:p-1 md:shadow-nav md:shadow-surface/80"
       >
-        <ul className="grid grid-cols-3">
+        <ul className={`grid ${NAV_COLUMNS}`}>
           {NAV.map((item) => (
             <li key={item.to}>
               <NavLink

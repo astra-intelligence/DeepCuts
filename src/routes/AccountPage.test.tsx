@@ -8,7 +8,7 @@ import { renderRoute } from '../test/renderRoute'
 describe('account (ADR-0022)', () => {
   it('Save my picks keeps guest picks on this device', async () => {
     const user = userEvent.setup()
-    const { router } = renderRoute('/search?q=thing')
+    const { router } = renderRoute('/search?q=thing', { features: { searchPage: true } })
     await user.click(await screen.findByRole('button', { name: 'Want to see The Thing' }))
     await act(() => router.navigate('/account'))
     expect(screen.getByText(/not saved yet/)).toBeInTheDocument()

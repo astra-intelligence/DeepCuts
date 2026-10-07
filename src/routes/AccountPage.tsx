@@ -10,6 +10,7 @@ import type { Account } from '../adapters/SessionProvider'
 import { Avatar } from '../components/AccountChip'
 import { Eyebrow } from '../components/Eyebrow'
 import { Icon } from '../components/Icon'
+import { HOME } from '../config/features'
 import { PageHeading } from '../components/PageHeading'
 import { useSession } from '../session/SessionContext'
 import { AccountSettings } from './AccountSettings'
@@ -118,10 +119,10 @@ function SignedOut() {
         {status}
       </p>
       <Link
-        to="/search"
+        to={HOME.path}
         className="mt-1 flex min-h-11 w-fit items-center gap-1.5 text-sm text-info"
       >
-        <Icon name="back" /> Back to Search
+        <Icon name="back" /> Back to {HOME.label}
       </Link>
     </>
   )
@@ -151,7 +152,7 @@ function SignedIn({ account }: { account: Account }) {
 
   async function confirmSignOut() {
     await signOut()
-    navigate('/search')
+    navigate(HOME.path)
   }
 
   return (

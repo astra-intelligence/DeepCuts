@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { movieQueries } from '../api/queries'
 import { certification, formatRuntime, imageUrl, providersFor, releaseYear } from '../api/tmdb'
 import { Icon } from '../components/Icon'
+import { HOME } from '../config/features'
 import { Logo } from '../components/Logo'
 import { MovieSearch } from '../components/MovieSearch'
 import { useRouteFocus } from '../hooks/useRouteFocus'
@@ -38,12 +39,12 @@ export function MovieDetailPage() {
 
 /**
  * "Back", shared by the top button and the one at the end of the page: the previous screen, or
- * Search on a direct visit (which has no history entry to return to).
+ * home on a direct visit (which has no history entry to return to).
  */
 function useBack() {
   const navigate = useNavigate()
   const location = useLocation()
-  return () => (location.key === 'default' ? navigate('/search') : navigate(-1))
+  return () => (location.key === 'default' ? navigate(HOME.path) : navigate(-1))
 }
 
 // Detail opens above the app shell (design v2): no tab bar; back, logo and search float on top.
@@ -197,8 +198,8 @@ function NotFound() {
       <h1 className="font-display text-4xl">Film not found</h1>
       <p className="mt-2 text-fg-muted">
         We couldn’t find that film.{' '}
-        <Link to="/search" className="text-info underline">
-          Search instead
+        <Link to={HOME.path} className="text-info underline">
+          Go to {HOME.label}
         </Link>
       </p>
     </div>
