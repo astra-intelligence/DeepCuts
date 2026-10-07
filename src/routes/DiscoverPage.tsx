@@ -86,13 +86,13 @@ function FeatureCard({ movie }: { movie: MovieSummary }) {
           <img
             src={poster ?? backdrop ?? undefined}
             alt=""
-            className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+            className="size-full object-cover transition-transform duration-500 group-hover:scale-102"
           />
         </picture>
       )}
       <div className="absolute inset-0 bg-linear-to-b from-transparent from-35% via-surface/40 via-60% to-surface" />
       <div className="absolute right-5 bottom-5.5 left-5">
-        <p className="mb-1 text-sm tracking-[0.12em] text-fg-muted uppercase">
+        <p className="mb-1 text-sm tracking-widest text-fg-muted uppercase">
           Today’s featured deep cut
         </p>
         <h2 className="mb-2 font-display text-4xl leading-none text-balance md:text-5xl">
@@ -129,10 +129,10 @@ function PosterCard({ movie }: { movie: MovieSummary }) {
           className="aspect-2/3 w-full rounded-md border border-b-3 border-border-control border-b-(--tone) bg-surface-overlay"
         />
       )}
-      <h3 className="mt-2 mb-1 line-clamp-3 min-h-[4.2em] text-sm leading-snug font-semibold">
+      <h3 className="mt-2 mb-1 line-clamp-3 min-h-15 text-sm leading-snug font-semibold">
         {movie.title}
       </h3>
-      <p className="min-h-[1.4em] text-sm text-fg-muted">{meta.join(' · ')}</p>
+      <p className="min-h-5 text-sm text-fg-muted">{meta.join(' · ')}</p>
       <span className="mt-auto inline-flex items-center gap-1.5 pt-2.5 text-sm font-semibold text-info">
         <Icon name="eye" className="size-4" /> View details
       </span>

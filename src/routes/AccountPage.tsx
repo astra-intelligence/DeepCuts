@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button } from 'react-aria-components'
 import { Link } from 'react-router'
+import { Eyebrow } from '../components/Eyebrow'
 import { Icon } from '../components/Icon'
 import { PageHeading } from '../components/PageHeading'
 import { useSession } from '../session/SessionContext'
@@ -47,9 +48,7 @@ export function AccountPage() {
           <span className="mb-4.5 grid size-11 place-items-center rounded-lg bg-surface-selected text-accent">
             <Icon name="bookmark" />
           </span>
-          <p className="mb-2.5 text-sm font-bold tracking-[0.15em] text-accent uppercase">
-            On this device
-          </p>
+          <Eyebrow>On this device</Eyebrow>
           <h2 id="local-heading" className="mb-2 font-display text-3xl">
             Keep your lists locally
           </h2>
@@ -77,9 +76,7 @@ export function AccountPage() {
           <span className="mb-4.5 grid size-11 place-items-center rounded-lg bg-info/12 text-info">
             <Icon name="heart" />
           </span>
-          <p className="mb-2.5 text-sm font-bold tracking-[0.15em] text-info uppercase">
-            Registration
-          </p>
+          <Eyebrow tone="info">Registration</Eyebrow>
           <h2 id="register-heading" className="mb-2 font-display text-3xl">
             Create your Deep Cuts account
           </h2>

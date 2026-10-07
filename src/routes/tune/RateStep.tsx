@@ -4,6 +4,7 @@ import { Button } from 'react-aria-components'
 import { Link, useNavigate } from 'react-router'
 import { movieQueries } from '../../api/queries'
 import { imageUrl, releaseYear } from '../../api/tmdb'
+import { Eyebrow } from '../../components/Eyebrow'
 import { Icon } from '../../components/Icon'
 import { TagToggle } from '../../components/TagToggle'
 import { TAGS } from '../../components/tags'
@@ -59,18 +60,18 @@ export function RateStep({ state, update }: StepProps) {
   const image = imageUrl(pick.backdrop_path ?? pick.poster_path, 'w1280')
   const meta = [releaseYear(pick.release_date), primaryGenreName(pick.genre_ids)].filter(Boolean)
   return (
-    <div className="mx-auto w-full max-w-3xl animate-[enter_0.4s_ease_both] md:max-w-4xl">
+    <div className="mx-auto w-full max-w-3xl animate-enter md:max-w-4xl">
       <div className="mb-2.5 flex items-end justify-between gap-3">
         <div>
-          <p className="mb-2.5 text-sm font-bold tracking-[0.15em] text-accent uppercase">
+          <Eyebrow>
             Tune your picks · {state.n} of {PICKS}
-          </p>
+          </Eyebrow>
           <h1 className="font-display text-4xl tracking-tight md:text-5xl">What do you think?</h1>
         </div>
       </div>
       <article
         aria-label={pick.title}
-        className="relative flex min-h-130 flex-col justify-end overflow-hidden rounded-lg border border-border bg-surface-raised shadow-sm md:h-[min(66svh,38.75rem)]"
+        className="relative flex min-h-130 flex-col justify-end overflow-hidden rounded-lg border border-border bg-surface-raised shadow-sm md:min-h-140"
       >
         {image && <img src={image} alt="" className="absolute inset-0 size-full object-cover" />}
         <div className="absolute inset-0 bg-linear-to-b from-transparent from-20% via-surface/30 via-45% to-surface to-70%" />

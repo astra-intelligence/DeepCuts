@@ -55,7 +55,7 @@ function DetailLayout({ children }: { children: ReactNode }) {
       >
         <Logo className="h-7 w-auto" />
       </Link>
-      <div className="absolute top-[max(5rem,calc(env(safe-area-inset-top)+4rem))] right-5 left-5 z-10 md:fixed md:top-[max(1.125rem,env(safe-area-inset-top))] md:right-auto md:left-1/2 md:w-[min(42vw,32.5rem)] md:-translate-x-1/2">
+      <div className="absolute top-[max(5rem,calc(env(safe-area-inset-top)+4rem))] right-5 left-5 z-10 md:fixed md:top-[max(1.125rem,env(safe-area-inset-top))] md:right-auto md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2">
         <MovieSearch />
       </div>
       <main id="main">{children}</main>
@@ -100,9 +100,9 @@ function MovieDetail({ id }: { id: number }) {
         <div className="absolute inset-0 hidden bg-linear-to-b from-surface/60 via-transparent via-20% md:block" />
       </div>
 
-      <div className="relative z-1 -mt-12 flex flex-col px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:mt-0 md:ml-auto md:min-h-svh md:w-[min(100%,36rem)] md:justify-center md:pt-24 md:pr-13 md:pb-10 md:pl-6">
+      <div className="relative z-1 -mt-12 flex flex-col px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:mt-0 md:ml-auto md:min-h-svh md:w-full md:max-w-xl md:justify-center md:pt-24 md:pr-13 md:pb-10 md:pl-6">
         <h1
-          className={`font-display tracking-tight text-balance [overflow-wrap:anywhere] ${titleSize(m.title)}`}
+          className={`font-display tracking-tight text-balance wrap-anywhere ${titleSize(m.title)}`}
         >
           {m.title}
         </h1>
@@ -134,7 +134,7 @@ function MovieDetail({ id }: { id: number }) {
         <section aria-labelledby="where-to-watch" className="mt-4">
           <h2
             id="where-to-watch"
-            className="mb-2.5 text-sm font-bold tracking-[0.12em] text-fg-muted uppercase"
+            className="mb-2.5 text-sm font-bold tracking-widest text-fg-muted uppercase"
           >
             Where to watch ({REGION})
           </h2>

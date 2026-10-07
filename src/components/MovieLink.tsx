@@ -32,7 +32,7 @@ export function MovieLink({
         />
       )}
       <span className="flex min-w-0 flex-col gap-1.5">
-        <strong className="font-semibold [overflow-wrap:anywhere]">{movie.title}</strong>
+        <strong className="font-semibold wrap-anywhere">{movie.title}</strong>
         <small className="text-sm text-fg-muted">
           {meta.join(' · ')}
           {disliked && <span className="ml-2 text-tag-disliked">Disliked</span>}

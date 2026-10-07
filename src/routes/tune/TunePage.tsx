@@ -62,15 +62,15 @@ export function TunePage() {
         </Link>
         <SignInLink />
       </header>
-      <div className="relative z-10 mx-5 mt-1 md:mx-auto md:w-[min(46vw,33.75rem)]">
+      <div className="relative z-10 mx-5 mt-1 md:mx-auto md:w-full md:max-w-xl">
         <MovieSearch onPick={(m: MovieSummary) => update({ favorite: m.id }, true)} />
       </div>
 
       <main
         id="main"
         ref={main}
-        className={`relative z-2 flex min-h-[calc(100svh-8rem)] flex-col justify-end px-5 pt-[7vh] pb-5 md:mx-auto md:justify-center md:px-10 md:py-[3vh] ${
-          state.step === 3 ? 'md:w-full' : 'md:w-[min(100%,42.5rem)]'
+        className={`relative z-2 flex min-h-[calc(100svh-8rem)] flex-col justify-end px-5 pt-16 pb-5 md:mx-auto md:justify-center md:px-10 md:py-6 ${
+          state.step === 3 ? 'md:w-full' : 'md:w-full md:max-w-2xl'
         }`}
       >
         <p className="mb-3 text-sm font-semibold tracking-wide text-fg-muted">
