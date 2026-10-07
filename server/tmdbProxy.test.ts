@@ -3,7 +3,7 @@
 // requests, and never leaks the token or upstream errors to the browser.
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { describe, expect, it, vi } from 'vitest'
-import { createTmdbMiddleware } from './tmdbProxy'
+import { createTmdbMiddleware, trimCredits } from './tmdbProxy'
 
 function call(
   url: string,
@@ -92,5 +92,34 @@ describe('TMDB proxy middleware', () => {
     const c = call('/api/tmdb/movie/1', { upstream: new Error('timeout') })
     await c.run()
     expect(c.res.statusCode).toBe(504)
+  })
+})
+
+describe('trimCredits (ADR-0028)', () => {
+  it('keeps only directors from appended credits, and drops the cast', () => {
+    const body = {
+      id: 1091,
+      title: 'The Thing',
+      credits: {
+        cast: [{ id: 1, name: 'Kurt Russell' }],
+        crew: [
+          { id: 11770, name: 'John Carpenter', job: 'Director', department: 'Directing' },
+          { id: 2, name: 'Dean Cundey', job: 'Director of Photography' },
+          null,
+        ],
+      },
+    }
+    expect(trimCredits(body)).toEqual({
+      id: 1091,
+      title: 'The Thing',
+      credits: { crew: [{ id: 11770, name: 'John Carpenter', job: 'Director' }] },
+    })
+  })
+
+  it('passes other bodies through unchanged, and empties malformed credits', () => {
+    const search = { page: 1, results: [] }
+    expect(trimCredits(search)).toBe(search)
+    expect(trimCredits(null)).toBeNull()
+    expect(trimCredits({ credits: 'odd' })).toEqual({ credits: { crew: [] } })
   })
 })

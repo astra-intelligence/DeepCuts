@@ -45,8 +45,15 @@ export function DiscoverPage() {
   // Use the scorer's picks when there are likes and the scorer has (or is still finding) picks;
   // otherwise fall back to popular films so the page is never empty.
   const usePicks = tuned.hasLikes && (tuned.loading || tuned.recommendations.length > 0)
+  // While the scorer is still loading (both passes, ADR-0028), show nothing rather than early
+  // picks that would reshuffle when the re-rank arrives.
   const items: Item[] = usePicks
-    ? tuned.recommendations.map((r) => ({ movie: r.movie, match: r.match, because: r.because }))
+    ? (tuned.loading ? [] : tuned.recommendations).map((r) => ({
+        movie: r.movie,
+        match: r.match,
+        because: r.because,
+        ...(r.sameDirector && { sameDirector: r.sameDirector }),
+      }))
     : (popular.data?.results ?? []).filter((m) => !excluded?.has(m.id)).map((movie) => ({ movie }))
   const loading = usePicks ? tuned.loading : popular.isPending
   // The first film is featured; the rest fill the grid.
@@ -109,6 +116,8 @@ interface Item {
   movie: MovieSummary
   match?: number
   because?: string[]
+  /** Set when it shares a director with a film you liked (ADR-0028). */
+  sameDirector?: { director: string; liked: string }
 }
 
 /** "Because you liked Alien and The Thing" */
@@ -167,6 +176,12 @@ function FeatureCard({ item }: { item: Item }) {
         </h2>
         <span className="block text-sm text-fg-muted">{meta.join(' · ')}</span>
         <Because titles={item.because} />
+        {item.sameDirector && (
+          <span className="mt-1 block text-sm text-fg-muted">
+            Directed by {item.sameDirector.director}, like{' '}
+            <cite className="text-fg not-italic">{item.sameDirector.liked}</cite>
+          </span>
+        )}
         <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-info">
           <Icon name="eye" className="size-4" /> View details
         </span>

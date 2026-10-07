@@ -38,7 +38,16 @@ function pickOf(picks: Pick[], id: number): Pick {
   return pick
 }
 
-const ZERO = { support: 0, genre: 0, quality: 0, deepCut: 0, decade: 0, language: 0 }
+const ZERO = {
+  support: 0,
+  genre: 0,
+  quality: 0,
+  deepCut: 0,
+  decade: 0,
+  language: 0,
+  keywords: 0,
+  director: 0,
+}
 
 function input(overrides: Partial<TasteInput> = {}): TasteInput {
   return { liked: [], wanted: [], disliked: [], excluded: new Set(), ...overrides }
@@ -50,18 +59,22 @@ describe('recommend (ADR-0026)', () => {
     expect(total).toBeCloseTo(1, 10)
   })
 
-  it('defaults to the owner’s tuned weights, which the lab shows as whole numbers', () => {
+  it('keeps the owner’s tuned weights in proportion, plus the v1.1 parts (ADR-0028)', () => {
     const shown = Object.fromEntries(
       SCORE_PARTS.map((p) => [p, Math.round(DEFAULT_WEIGHTS[p] * 100)]),
     )
     expect(shown).toEqual({
-      support: 32,
-      genre: 34,
-      quality: 7,
-      deepCut: 14,
-      decade: 9,
-      language: 5,
+      support: 26,
+      genre: 28,
+      quality: 6,
+      deepCut: 12,
+      decade: 7,
+      language: 4,
+      keywords: 12,
+      director: 4,
     })
+    // The six tuned parts keep their ratios: genre is still 34/32 of support.
+    expect(DEFAULT_WEIGHTS.genre / DEFAULT_WEIGHTS.support).toBeCloseTo(34 / 32)
   })
 
   it('returns nothing without likes', () => {
@@ -223,6 +236,67 @@ describe('recommend (ADR-0026)', () => {
     expect(w).toEqual({ ...ZERO, support: 0.75, genre: 0.25 })
     expect(normalizeWeights(ZERO)).toEqual(ZERO)
     expect(normalizeWeights(DEFAULT_WEIGHTS).support).toBeCloseTo(DEFAULT_WEIGHTS.support)
+  })
+
+  it('scores keyword overlap against liked, wanted and disliked keywords (ADR-0028)', () => {
+    const CABIN = 1
+    const SNOW = 2
+    const SPACE = 3
+    const liked = film({ keywordIds: [CABIN, SNOW] })
+    const close = film()
+    const partial = film()
+    const opposite = film()
+    const unknown = film()
+    const picks = recommend(
+      input({
+        liked: [{ film: liked, recommendations: [close, partial, opposite, unknown] }],
+        disliked: [film({ keywordIds: [SPACE] })],
+        details: new Map([
+          [close.id, { keywordIds: [CABIN, SNOW], directors: [] }],
+          [partial.id, { keywordIds: [CABIN, 99], directors: [] }],
+          [opposite.id, { keywordIds: [SPACE], directors: [] }],
+        ]),
+      }),
+    )
+    expect(pickOf(picks, close.id).parts.keywords).toBe(1)
+    expect(pickOf(picks, partial.id).parts.keywords).toBe(0.5)
+    // A disliked keyword never goes below zero; no loaded details scores zero.
+    expect(pickOf(picks, opposite.id).parts.keywords).toBe(0)
+    expect(pickOf(picks, unknown.id).parts.keywords).toBe(0)
+  })
+
+  it('scores a shared director and says who and which liked film (ADR-0028)', () => {
+    const carpenter = { id: 11770, name: 'John Carpenter' }
+    const liked = film({ title: 'The Thing', directors: [carpenter] })
+    const same = film()
+    const other = film()
+    const picks = recommend(
+      input({
+        liked: [{ film: liked, recommendations: [same, other] }],
+        details: new Map([
+          [same.id, { keywordIds: [], directors: [{ id: 1, name: 'Someone' }, carpenter] }],
+          [other.id, { keywordIds: [], directors: [{ id: 2, name: 'Someone Else' }] }],
+        ]),
+      }),
+    )
+    expect(pickOf(picks, same.id).parts.director).toBe(1)
+    expect(pickOf(picks, same.id).sameDirector).toEqual({
+      director: 'John Carpenter',
+      liked: 'The Thing',
+    })
+    expect(pickOf(picks, other.id).parts.director).toBe(0)
+    expect(pickOf(picks, other.id).sameDirector).toBeUndefined()
+  })
+
+  it('without details, ranks exactly as v1 did (the re-rank only adds to the top candidates)', () => {
+    const recs = Array.from({ length: 8 }, (_, i) =>
+      film({ popularity: 5 + i * 40, voteAverage: 6 + i * 0.3 }),
+    )
+    const taste = input({ liked: [{ film: film(), recommendations: recs }] })
+    const v1Only = normalizeWeights({ ...DEFAULT_WEIGHTS, keywords: 0, director: 0 })
+    expect(recommend(taste).map((p) => p.film.id)).toEqual(
+      recommend(taste, { weights: v1Only }).map((p) => p.film.id),
+    )
   })
 
   it('stops at the limit', () => {
