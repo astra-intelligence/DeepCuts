@@ -1,5 +1,9 @@
 [
   ["color-fg-default", "color-surface-default", 4.5],
+  ["color-fg-default", "color-surface-glow", 4.5],
+  ["color-fg-muted", "color-surface-glow", 4.5],
+  ["color-fg-placeholder", "color-surface-glow", 4.5],
+  ["color-accent-default", "color-surface-glow", 4.5],
   ["color-fg-default", "color-surface-raised", 4.5],
   ["color-fg-default", "color-surface-overlay", 4.5],
   ["color-fg-muted", "color-surface-default", 4.5],
