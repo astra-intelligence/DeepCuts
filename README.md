@@ -30,18 +30,21 @@ CI also runs `npm audit`, gitleaks and CodeQL. Actions are pinned by SHA.
 
 ## Other scripts
 
-| Command                 | What it does                                                                         |
-| ----------------------- | ------------------------------------------------------------------------------------ |
-| `npm run dev`           | Dev server at http://localhost:5173 (builds the tokens first)                        |
-| `npm run build`         | Production build into `dist/`                                                        |
-| `npm run preview`       | Serves `dist/` at http://localhost:4173 with the production security headers         |
-| `npm run analyze`       | Production build plus a treemap of the bundle at `build/bundle-report.html`          |
-| `npm run e2e`           | Playwright browser tests against a fresh production build                            |
-| `npm run ci:local`      | Exactly what GitHub CI runs; run before opening a PR                                 |
-| `npm run tokens`        | Builds the design tokens (`tokens/`) into CSS, the Tailwind theme, JS and Figma JSON |
-| `npm run tokens:ramps`  | Regenerates the color ramps in `tokens/primitive/hues.json`                          |
-| `npm run tokens:review` | Builds `build/token-review.html`, a page for reviewing the palette                   |
-| `npm run format`        | Formats every file with Prettier                                                     |
+| Command                  | What it does                                                                                  |
+| ------------------------ | --------------------------------------------------------------------------------------------- |
+| `npm run dev`            | Dev server at http://localhost:5173 (builds the tokens first)                                 |
+| `npm run build`          | Production build into `dist/`                                                                 |
+| `npm run preview`        | Serves `dist/` at http://localhost:4173 with the production security headers                  |
+| `npm run analyze`        | Production build plus a treemap of the bundle at `build/bundle-report.html`                   |
+| `npm run storybook`      | Storybook at http://localhost:6006: every shared component, in each state, with an a11y panel |
+| `npm run storybook:test` | Builds Storybook and checks every story with axe (a CI gate)                                  |
+| `npm run icons`          | Regenerates the favicon, app icons and manifest from the brand tokens                         |
+| `npm run e2e`            | Playwright browser tests against a fresh production build                                     |
+| `npm run ci:local`       | Exactly what GitHub CI runs; run before opening a PR                                          |
+| `npm run tokens`         | Builds the design tokens (`tokens/`) into CSS, the Tailwind theme, JS and Figma JSON          |
+| `npm run tokens:ramps`   | Regenerates the color ramps in `tokens/primitive/hues.json`                                   |
+| `npm run tokens:review`  | Builds `build/token-review.html`, a page for reviewing the palette                            |
+| `npm run format`         | Formats every file with Prettier                                                              |
 
 ## Configuration
 

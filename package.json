@@ -32,6 +32,7 @@
     "design:starter": "npm run tokens && node scripts/design-starter.mjs",
     "tokens:ramps": "node scripts/generate-ramps.mjs && npm run tokens",
     "tokens:review": "npm run tokens && node scripts/token-review.mjs",
+    "icons": "npm run tokens && node scripts/generate-icons.mjs",
     "ci:local": "bash scripts/ci-local.sh",
     "check:bundle": "node scripts/check-bundle-size.mjs"
   },
@@ -72,6 +73,7 @@
     "prettier": "^3.9.9",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "rollup-plugin-visualizer": "^7.1.1",
+    "storybook": "^10.6.1",
     "style-dictionary": "5.6.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
