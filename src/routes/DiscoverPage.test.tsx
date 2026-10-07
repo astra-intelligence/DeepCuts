@@ -40,6 +40,31 @@ describe('discover', () => {
 
   it.each(['?genres=27;DROP', '?genres='])('ignores %s', async (qs) => {
     renderRoute(`/discover${qs}`)
-    expect(await screen.findByText('Popular films worth staying up for.')).toBeInTheDocument()
+    expect(await screen.findByText(/^Popular films worth staying up for\./)).toBeInTheDocument()
+  })
+})
+
+describe('discover with likes (ADR-0026)', () => {
+  it('ranks films recommended by your likes, with a real match and the reason', async () => {
+    const user = userEvent.setup()
+    const { router } = renderRoute('/movie/1091')
+    const group = await screen.findByRole('group', { name: 'Your tags' })
+    await user.click(within(group).getByRole('button', { name: 'Like' }))
+    await waitFor(() =>
+      expect(within(group).getByRole('button', { name: 'Like' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      ),
+    )
+    await act(() => router.navigate('/discover'))
+
+    expect(
+      await screen.findByText('Picked from the films you liked, beyond the obvious.'),
+    ).toBeInTheDocument()
+    const feature = await screen.findByRole('link', { name: /Today’s featured deep cut/ })
+    expect(feature).toHaveTextContent(/\d+% match/)
+    expect(feature).toHaveTextContent('Because you liked The Thing')
+    // The liked film itself is never recommended back.
+    expect(screen.queryByRole('link', { name: /^The Thing/ })).not.toBeInTheDocument()
   })
 })

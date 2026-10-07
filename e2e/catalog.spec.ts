@@ -163,3 +163,20 @@ test('sign in with the demo account, keyboard only; survives a reload; sign out 
   await expect(page.getByRole('banner').getByRole('link', { name: 'Sign in' })).toBeVisible()
   await expectNoHorizontalOverflow(page)
 })
+
+test('liking a film tunes Discover, with a match and the reason (ADR-0026)', async ({ page }) => {
+  await page.goto('/movie/1091')
+  const like = page
+    .getByRole('group', { name: 'Your tags' })
+    .getByRole('button', { name: 'Like', exact: true })
+  await like.click()
+  await expect(like).toHaveAttribute('aria-pressed', 'true')
+  // Client-side navigation keeps the in-memory guest picks (ADR-0011).
+  await page.getByRole('link', { name: 'Deep Cuts, go to Discover' }).click()
+  await expect(page.getByText('Picked from the films you liked, beyond the obvious.')).toBeVisible()
+  const feature = page.getByRole('link', { name: /Today’s featured deep cut/ })
+  await expect(feature).toContainText(/\d+% match/)
+  await expect(feature).toContainText('Because you liked The Thing')
+  await expectNoA11yViolations(page)
+  await expectNoHorizontalOverflow(page)
+})
