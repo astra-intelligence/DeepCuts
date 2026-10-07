@@ -1,6 +1,6 @@
 // Tests for the local session provider: the shared SessionProvider contract, a saved profile
-// surviving a new instance, a stale demo account name being refreshed, and versionedStore's
-// migration hook.
+// surviving a new instance, a stale demo account name being refreshed, registration never
+// storing the email or password, and versionedStore's migration hook.
 import { beforeEach, expect, it } from 'vitest'
 import { sessionProviderContract } from '../sessionProvider.contract'
 import { createMockSessionProvider } from './MockSessionProvider'
@@ -29,6 +29,21 @@ it('a demo account saved under an old name comes back with the current name', as
     kind: 'account',
     account: { id: 'demo', name: 'Mike Curts', method: 'demo' },
   })
+})
+
+it('registration stores only the name, never the email or password (ADR-0030)', async () => {
+  await createMockSessionProvider().register({
+    name: 'Ada',
+    email: 'ada@example.com',
+    password: 'correct horse battery',
+  })
+  // Everything this provider wrote to the browser, as one string.
+  const stored = Object.keys(localStorage)
+    .map((k) => `${k}=${localStorage.getItem(k)}`)
+    .join('\n')
+  expect(stored).toContain('Ada')
+  expect(stored).not.toContain('ada@example.com')
+  expect(stored).not.toContain('correct horse battery')
 })
 
 it('versionedStore runs the migration hook before validating', () => {

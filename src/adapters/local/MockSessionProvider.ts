@@ -1,12 +1,14 @@
 // The MVP session provider (ADR-0013, ADR-0025), running entirely in this browser.
 //
 // "Save my picks" stores a profile on this device; "sign in" offers only a clearly labelled demo
-// account. No password, no email, no network. When real sign-in methods are chosen, a new
+// account. Registration (ADR-0030) makes a practice account: the form's email and password are
+// validated and then dropped, never stored. No network. When real sign-in methods are chosen, a new
 // provider implements the same SessionProvider interface and the screens don't change.
 import { z } from 'zod'
 import {
   accountSchema,
   displayNameSchema,
+  registrationSchema,
   type Account,
   type Session,
   type SessionProvider,
@@ -70,6 +72,17 @@ export function createMockSessionProvider(storage?: Storage): SessionProvider {
       profile.remove()
       account.save(DEMO_ACCOUNT)
       return { kind: 'account', account: DEMO_ACCOUNT }
+    },
+    async register(details) {
+      // parse() throws a ZodError for invalid details; the form shows them before getting here.
+      const { name } = registrationSchema.parse(details)
+      // Only the name is kept. The email and password exist only to rehearse the real form; a
+      // browser-only "account" has no safe place to keep a password, so it never stores one.
+      // One fixed id: registering again on this device returns to the same practice lists.
+      const practice: Account = { id: 'practice', name, method: 'practice' }
+      profile.remove()
+      account.save(practice)
+      return { kind: 'account', account: practice }
     },
     async signOut() {
       // Forget who's signed in. The account's own tag list stays stored for next time.
