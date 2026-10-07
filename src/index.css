@@ -121,6 +121,27 @@
   background-blend-mode: screen, screen, normal, multiply, normal;
 }
 
+/* "Sky rise" (design approved 2026-10-07): the backdrop of the app shell pages. A vertical glow of
+   the `surface-glow` token rises from the bottom of the window and is gone by 500px up, so the
+   header, headings and the top of the feed sit on plain ink. Fine film grain on top gives the
+   flat ink some texture (SVG noise as a data URI, which the CSP allows; its alpha is baked in at
+   5.4%). Used on a fixed layer, so it stays pinned to the window while the page scrolls. */
+@utility page-backdrop {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.75 0 0 0 0 0.8 0 0 0 0 0.78 0 0 0 0.054 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")
+      0 0 / 160px 160px,
+    linear-gradient(
+      to top,
+      color-mix(in srgb, var(--color-surface-glow) 80%, transparent) 0,
+      color-mix(in srgb, var(--color-surface-glow) 30%, transparent) 260px,
+      transparent 500px
+    );
+  /* High-contrast modes get the plain system background instead. */
+  @media (forced-colors: active) {
+    background: none;
+  }
+}
+
 /* Gentle entrance for onboarding steps (`animate-enter`); disabled by the reduced-motion rule above. */
 @theme {
   @keyframes enter {

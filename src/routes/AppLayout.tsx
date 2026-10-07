@@ -41,6 +41,9 @@ export function AppLayout() {
     // Bottom padding keeps the last content clear of the fixed tab bar (and the iPhone home bar).
     <div className="mx-auto min-h-dvh w-full max-w-360 overflow-x-clip pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-28">
       <SkipLink />
+      {/* The "Sky rise" backdrop (index.css → page-backdrop): pinned to the whole window, behind
+          everything, and purely decorative. */}
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 page-backdrop" />
       {/* Header and search stay pinned to the top while the page scrolls.
           Below `lg`: two rows (logo + account, then a full-width search). From `lg`: one row with
           the search centred between logo and account, which halves the header's height on desktop.
