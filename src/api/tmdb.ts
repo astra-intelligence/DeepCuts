@@ -123,6 +123,11 @@ export class TmdbError extends Error {
 
 // Fetches one proxy path, throws on an error status, and validates the JSON with `schema`.
 // `signal` lets TanStack Query cancel requests that are no longer needed.
+//
+// A 200 that isn't the JSON we expect is treated as an upstream error (502) too. On Cloudflare,
+// once the daily Function quota runs out, Pages skips the proxy ("fail open") and answers
+// `/api/tmdb/*` with the app's index.html and a 200 (ADR-0029, Stage 4 H8). The screens then show
+// their usual "can't reach movie data" state instead of crashing.
 async function get<T>(
   path: string,
   schema: z.ZodType<T>,
@@ -132,7 +137,10 @@ async function get<T>(
   const qs = params ? `?${new URLSearchParams(params)}` : ''
   const res = await fetch(`/api/tmdb/${path}${qs}`, signal ? { signal } : {})
   if (!res.ok) throw new TmdbError(res.status)
-  return schema.parse(await res.json())
+  if (!res.headers.get('Content-Type')?.includes('application/json')) throw new TmdbError(502)
+  const parsed = schema.safeParse(await res.json().catch(() => undefined))
+  if (!parsed.success) throw new TmdbError(502)
+  return parsed.data
 }
 
 /** The TMDB calls the app makes. Each returns validated data. */

@@ -1,0 +1,37 @@
+// The per-client rate limit in front of the Pages Functions (ADR-0029, Stage 4 H4). The Function
+// asks the rate-limit Worker (workers/rate-limit/) over a service binding; over the limit, the
+// client gets a short 429 and the request goes no further.
+import { json } from './tmdbCore.ts'
+
+/** The rate-limit Worker as the Function sees it through the service binding (an RPC stub). */
+export type RateLimiterBinding = { check(key: string): Promise<{ allowed: boolean }> }
+
+/** How long a limited client should wait, in seconds: the limiter's whole period. */
+const RETRY_AFTER_SECONDS = 60
+
+/**
+ * Checks the client against the limit. Returns a 429 response when they're over it, or `null`
+ * to carry on.
+ *
+ * The key is the client's IP from `CF-Connecting-IP`, which Cloudflare sets and a client can't
+ * forge. It's passed to the limiter and nowhere else: never logged, never stored.
+ *
+ * **Fails open.** If the limiter is missing or errors, the request is allowed. A limiter outage
+ * shouldn't take the app down, and cost is already capped elsewhere: on Workers Free, requests
+ * past the daily quota are refused, never billed (ADR-0024, ADR-0029).
+ */
+export async function rateLimit(
+  request: Request,
+  limiter: RateLimiterBinding | undefined,
+): Promise<Response | null> {
+  if (!limiter) return null
+  // Locally (`wrangler pages dev`) the header may be absent; everyone then shares one bucket.
+  const key = request.headers.get('CF-Connecting-IP') ?? 'unknown'
+  try {
+    const { allowed } = await limiter.check(key)
+    if (allowed) return null
+  } catch {
+    return null
+  }
+  return json(429, { error: 'rate_limited' }, { 'Retry-After': String(RETRY_AFTER_SECONDS) })
+}

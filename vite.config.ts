@@ -5,33 +5,14 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { defineConfig, loadEnv } from 'vite'
+import { baseHeaders, contentSecurityPolicy } from './server/securityHeaders.ts'
 import { tmdbProxy } from './server/tmdbProxy.ts'
 
-// Security headers (ADR-0008). CSP is applied to `vite preview` (the production build);
-// the dev server needs inline scripts for React Fast Refresh, so it gets the other headers only.
-// HSTS is omitted because localhost is plain HTTP; it belongs on the post-MVP host.
-const baseHeaders = {
-  'X-Content-Type-Options': 'nosniff',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'microphone=(self), camera=(), geolocation=(), payment=()',
-  'X-Frame-Options': 'DENY',
-}
-
-// Content-Security-Policy: the browser may only load scripts, styles and fonts from this app,
-// images from this app or TMDB's image host, and may not be framed by other sites.
-// Exported so the E2E security test checks the exact same policy.
-export const contentSecurityPolicy = [
-  "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self'",
-  "img-src 'self' data: https://image.tmdb.org",
-  "connect-src 'self'",
-  "font-src 'self'",
-  "object-src 'none'",
-  "base-uri 'none'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-].join('; ')
+// Security headers (ADR-0008), defined once in server/securityHeaders.ts. CSP is applied to
+// `vite preview` (the production build); the dev server needs inline scripts for React Fast
+// Refresh, so it gets the other headers only. HSTS is for the hosted app only (localhost is HTTP).
+// Re-exported so the E2E security test checks the exact same values.
+export { baseHeaders, contentSecurityPolicy }
 
 export default defineConfig(({ mode }) => ({
   // TMDB_READ_TOKEN is read without the VITE_ prefix, so it never reaches the bundle (ADR-0013).
@@ -83,7 +64,7 @@ export default defineConfig(({ mode }) => ({
     // `npm run coverage` fails if tests cover less than these minimums.
     coverage: {
       provider: 'v8',
-      include: ['src/**/*.{ts,tsx}', 'server/**/*.ts'],
+      include: ['src/**/*.{ts,tsx}', 'server/**/*.ts', 'functions/**/*.ts'],
       exclude: [
         'src/main.tsx',
         'src/**/*.test.{ts,tsx}',
@@ -92,6 +73,7 @@ export default defineConfig(({ mode }) => ({
         // Storybook stories are documentation, checked by the Storybook a11y gate instead.
         'src/**/*.stories.tsx',
         'server/**/*.test.ts',
+        'server/**/*.contract.ts',
       ],
       thresholds: {
         lines: 80,

@@ -8,10 +8,13 @@ on:
 # Least privilege: jobs can read the code and nothing else unless they ask for more.
 permissions:
   contents: read
+# Every job has `timeout-minutes`, so a hung step (e.g. a stalled browser download) fails in
+# minutes instead of running for GitHub's 6-hour default.
 jobs:
   # Lint, types, contrast, unit tests with coverage, build, and dependency checks.
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       # Actions are pinned to exact commits (the comment names the version), so a tampered tag
       # can't change what runs. Dependabot keeps them current.
@@ -31,6 +34,7 @@ jobs:
   # Browser tests (Playwright) against the production build, at three screen widths.
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -40,9 +44,12 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e
+      # The security checks again, on Cloudflare's real runtime (wrangler pages dev), locally.
+      - run: npm run e2e:cf
   # Storybook: builds it and checks every story with axe (ADR-0007, ADR-0010).
   storybook:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -55,6 +62,7 @@ jobs:
   # Scans the whole git history for committed secrets (API keys, tokens).
   gitleaks:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     # On pull requests the action lists the PR's commits, which needs read access to PRs.
     permissions:
       contents: read

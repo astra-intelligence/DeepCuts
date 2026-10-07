@@ -40,25 +40,44 @@ CI also runs `npm audit`, gitleaks and CodeQL. Actions are pinned by SHA.
 | `npm run storybook:test` | Builds Storybook and checks every story with axe (a CI gate)                                  |
 | `npm run icons`          | Regenerates the favicon, app icons and manifest from the brand tokens                         |
 | `npm run e2e`            | Playwright browser tests against a fresh production build                                     |
+| `npm run e2e:cf`         | The security E2E tests against the Cloudflare runtime (`preview:cf`)                          |
+| `npm run preview:cf`     | Serves `dist/` on Cloudflare's runtime locally (see Hosting below)                            |
 | `npm run ci:local`       | Exactly what GitHub CI runs; run before opening a PR                                          |
 | `npm run tokens`         | Builds the design tokens (`tokens/`) into CSS, the Tailwind theme, JS and Figma JSON          |
 | `npm run tokens:ramps`   | Regenerates the color ramps in `tokens/primitive/hues.json`                                   |
 | `npm run tokens:review`  | Builds `build/token-review.html`, a page for reviewing the palette                            |
 | `npm run format`         | Formats every file with Prettier                                                              |
 
+## Hosting (opt-in)
+
+The app is ready to host on **Cloudflare Pages** (ADR-0029), but it is **not deployed**, and nothing here runs a deploy for you. Local development needs no Cloudflare account.
+
+**Try the hosted runtime locally:** `npm run build && npm run preview:cf` serves the app at http://localhost:8788 with the real Pages Function (the TMDB proxy), the rate-limit Worker, the generated `_headers` and SPA routing. For the TMDB token, copy `.dev.vars.example` to `.dev.vars` (git-ignored); if it's missing, Wrangler falls back to `.env.local`.
+
+| Free-plan limit (ADR-0029, as of 2026-10-07) | Value                          | When exceeded                                                                    |
+| -------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------- |
+| Static asset requests                        | Unlimited                      | —                                                                                |
+| Function + Worker requests (shared)          | 100,000 / day, reset 00:00 UTC | The API is skipped (fail open); search shows "can't reach movie data"; no charge |
+| CPU time per request                         | 10 ms                          | Request errors                                                                   |
+| Per-client API rate limit (ours)             | 60 requests / 60 s             | 429 `rate_limited`                                                               |
+
+> ⚠️ **Never upgrade the Cloudflare account to Workers Paid and never add a payment method.** On the Free plan, going over a limit fails; on Paid, it bills (ADR-0024).
+
+**Going live** is a manual owner step: follow [docs/hosting/go-live-checklist.md](docs/hosting/go-live-checklist.md). The deploy command, `DEEP_CUTS_DEPLOY=1 npm run deploy`, refuses to run without that flag.
+
 ## Configuration
 
 Most config files explain themselves in comments. These formats can't hold comments, so they're described here:
 
-| File                | What it sets                                                                                                                   |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `package.json`      | Dependencies and the scripts above. `engines` limits Node to 24 LTS or 26+, enforced by `.npmrc`                               |
-| `package-lock.json` | The exact dependency versions; CI installs exactly these (`npm ci`). Regenerate on Node 24 only                                |
-| `.nvmrc`            | The Node version (`24`); `nvm use` picks it up, and CI reads it too                                                            |
-| `.prettierrc.json`  | Code formatting: single quotes, no semicolons, 100-character lines, and Tailwind class sorting (using `src/index.css`'s theme) |
-| `.prettierignore`   | Files Prettier skips: build output, generated files, the lockfile and docs                                                     |
+| File                | What it sets                                                                                                                                                                                                                                                            |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `package.json`      | Dependencies and the scripts above. `engines` limits Node to 24 LTS or 26+, enforced by `.npmrc`. `overrides` lifts Wrangler's local runtime (miniflare) from `sharp` 0.35.4 to the patched 0.35.5 (a high-severity librsvg CVE); remove it once Wrangler ships the fix |
+| `package-lock.json` | The exact dependency versions; CI installs exactly these (`npm ci`). Regenerate on Node 24 only                                                                                                                                                                         |
+| `.nvmrc`            | The Node version (`24`); `nvm use` picks it up, and CI reads it too                                                                                                                                                                                                     |
+| `.prettierrc.json`  | Code formatting: single quotes, no semicolons, 100-character lines, and Tailwind class sorting (using `src/index.css`'s theme)                                                                                                                                          |
+| `.prettierignore`   | Files Prettier skips: build output, generated files, the lockfile and docs                                                                                                                                                                                              |
 
-Other config: `vite.config.ts` (dev server, build, security headers, unit tests), `playwright.config.ts` (E2E), `eslint.config.js` (lint rules), `tsconfig*.json` (TypeScript), `sd.config.mjs` (design tokens), `.github/` (CI, CodeQL, Dependabot), `.githooks/pre-commit` (local secret scan).
+Other config: `vite.config.ts` (dev server, build, unit tests), `server/securityHeaders.ts` (the security headers, for every runtime), `wrangler.toml` + `workers/rate-limit/wrangler.toml` (Cloudflare Pages and the rate-limit Worker, no secrets), `playwright.config.ts` / `playwright.cf.config.ts` (E2E), `eslint.config.js` (lint rules), `tsconfig*.json` (TypeScript), `sd.config.mjs` (design tokens), `.github/` (CI, CodeQL, Dependabot), `.githooks/pre-commit` (local secret scan).
 
 ## Docs
 

@@ -1,0 +1,36 @@
+// TypeScript settings for code that runs on Cloudflare's Workers runtime (ADR-0029): the Pages
+// Functions here, the rate-limit Worker (../workers/) and the shared server code they import.
+// Type-checking only; Wrangler bundles the code. `tsc -b` checks it via the root tsconfig.json.
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.functions.tsbuildinfo",
+    "target": "es2023",
+    // No DOM and no Node: the Workers runtime has its own globals, from workers-types.
+    "lib": ["ES2023"],
+    "types": ["@cloudflare/workers-types"],
+    "skipLibCheck": true,
+    "strict": true,
+
+    /* Bundler mode */
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": [
+    ".",
+    "../workers",
+    "../server/tmdbCore.ts",
+    "../server/rateLimit.ts",
+    "../server/securityHeaders.ts",
+    "../server/pagesFunction.test.ts"
+  ]
+}
