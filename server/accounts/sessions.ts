@@ -4,31 +4,56 @@
 // Cookie: `__Host-dc_session` with `HttpOnly; Secure; SameSite=Lax; Path=/`. The `__Host-` prefix
 // makes the browser refuse it unless it's Secure, has Path=/ and no Domain, so no subdomain can
 // set or overwrite it. Sessions last 30 days and are renewed when less than half remains.
+//
+// Local exception: on plain `http://localhost` the cookie is `dc_session` without `Secure`.
+// Safari won't store a Secure cookie over http, even on localhost (Chrome and Firefox will), and
+// `__Host-` requires Secure. The real site is always https, so it always gets the strict cookie.
 import type { D1Like, D1Stmt } from './d1.ts'
 import { randomToken, sha256Hex } from './crypto.ts'
 
-/** The session cookie's name. */
+/** The session cookie's name on the real (https) site. */
 export const SESSION_COOKIE = '__Host-dc_session'
+/** The session cookie's name on plain `http://localhost` (see the file header). */
+export const LOCAL_SESSION_COOKIE = 'dc_session'
 /** How long a session lasts: 30 days (owner decision, 2026-10-07). */
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
 /** A session is renewed once less than this much of it remains. */
 const RENEW_BELOW_MS = SESSION_TTL_MS / 2
 
+/** Whether the request is to plain http on this machine (`npm run preview:accounts`). */
+function isLocalHttp(request: Request): boolean {
+  const { protocol, hostname } = new URL(request.url)
+  return protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(hostname)
+}
+
+/** The cookie's name and attributes for this request: strict everywhere but local http. */
+function cookieFor(request: Request) {
+  return isLocalHttp(request)
+    ? { name: LOCAL_SESSION_COOKIE, attrs: 'Path=/; HttpOnly; SameSite=Lax' }
+    : { name: SESSION_COOKIE, attrs: 'Path=/; HttpOnly; Secure; SameSite=Lax' }
+}
+
 /** The `Set-Cookie` value that stores session id `id` for the full lifetime. */
-export function sessionCookie(id: string): string {
-  return `${SESSION_COOKIE}=${id}; Max-Age=${SESSION_TTL_MS / 1000}; Path=/; HttpOnly; Secure; SameSite=Lax`
+export function sessionCookie(request: Request, id: string): string {
+  const { name, attrs } = cookieFor(request)
+  return `${name}=${id}; Max-Age=${SESSION_TTL_MS / 1000}; ${attrs}`
 }
 
 /** The `Set-Cookie` value that deletes the session cookie. */
-export const clearedSessionCookie = `${SESSION_COOKIE}=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax`
+export function clearedSessionCookie(request: Request): string {
+  const { name, attrs } = cookieFor(request)
+  return `${name}=; Max-Age=0; ${attrs}`
+}
 
 /** The session id from the request's cookies, or null. Malformed values are ignored. */
 export function readSessionId(request: Request): string | null {
+  // Only the name this request would set, so a local cookie never counts on the real site.
+  const { name: expected } = cookieFor(request)
   for (const part of (request.headers.get('Cookie') ?? '').split(';')) {
     const [name, ...rest] = part.trim().split('=')
     const value = rest.join('=')
     // 32 random bytes as base64url are always 43 characters.
-    if (name === SESSION_COOKIE && /^[\w-]{43}$/.test(value)) return value
+    if (name === expected && /^[\w-]{43}$/.test(value)) return value
   }
   return null
 }
@@ -39,6 +64,7 @@ export function readSessionId(request: Request): string | null {
  */
 export async function newSession(
   db: D1Like,
+  request: Request,
   userId: string,
   now: number,
 ): Promise<{ statement: D1Stmt; cookie: string }> {
@@ -46,7 +72,7 @@ export async function newSession(
   const statement = db
     .prepare('INSERT INTO sessions (id_hash, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)')
     .bind(await sha256Hex(id), userId, now + SESSION_TTL_MS, now)
-  return { statement, cookie: sessionCookie(id) }
+  return { statement, cookie: sessionCookie(request, id) }
 }
 
 /** The signed-in user, plus a renewed cookie to send when the session was extended. */
@@ -82,7 +108,7 @@ export async function currentUser(
       .prepare('UPDATE sessions SET expires_at = ? WHERE id_hash = ?')
       .bind(now + SESSION_TTL_MS, hash)
       .run()
-    renewedCookie = sessionCookie(id)
+    renewedCookie = sessionCookie(request, id)
   }
   return { id: row.id, name: row.name, renewedCookie }
 }

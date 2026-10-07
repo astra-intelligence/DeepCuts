@@ -2,8 +2,9 @@
 // provider, registration drops the "practice" notice and explains a refused invite on its field;
 // sign-in offers the passkey first; the Account page renames and deletes a passkey account. The
 // accounts API is the MSW fake, and the device's passkey prompt is stubbed.
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { http, HttpResponse } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createCloudflareSessionProvider } from '../adapters/cloudflare/CloudflareSessionProvider'
 import type { Session } from '../adapters/SessionProvider'
@@ -143,5 +144,35 @@ describe('account settings (A2b)', () => {
     await screen.findByText('Signed in with the demo account')
     expect(screen.queryByRole('button', { name: 'Delete account' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Save name' })).not.toBeInTheDocument()
+  })
+})
+
+describe('a tag that fails to save', () => {
+  // The server refuses the change, as it did in Safari before the local cookie fix (401).
+  const refuseTagChanges = () =>
+    server.use(
+      http.put('/api/tags', () => HttpResponse.json({ error: 'signed_out' }, { status: 401 })),
+    )
+  const asPat = { sessionProvider: createCloudflareSessionProvider(), initialSession: PAT }
+
+  it('says so on the Detail page, and the button stays off', async () => {
+    refuseTagChanges()
+    const user = userEvent.setup()
+    renderRoute('/movie/1091', asPat)
+    const group = await screen.findByRole('group', { name: 'Your tags' })
+    await user.click(within(group).getByRole('button', { name: 'Like' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Your change wasn’t saved.')
+    expect(within(group).getByRole('button', { name: 'Like' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+  })
+
+  it('says so on a Search result', async () => {
+    refuseTagChanges()
+    const user = userEvent.setup()
+    renderRoute('/search?q=thing', asPat)
+    await user.click(await screen.findByRole('button', { name: 'Want to see The Thing' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Your change wasn’t saved.')
   })
 })

@@ -26,7 +26,7 @@ export async function getSession(request: Request, env: AccountsEnv, now = Date.
 /** `POST /api/auth/sign-out`: deletes the session row and clears the cookie. Always succeeds. */
 export async function signOut(request: Request, env: AccountsEnv) {
   await endSession(env.DB, request)
-  return json(200, { ok: true }, { ...NO_STORE, 'Set-Cookie': clearedSessionCookie })
+  return json(200, { ok: true }, { ...NO_STORE, 'Set-Cookie': clearedSessionCookie(request) })
 }
 
 /** The rename body: the same name rule as registration. */
@@ -59,5 +59,5 @@ export async function deleteAccount(request: Request, env: AccountsEnv, now = Da
     db.prepare('DELETE FROM invites WHERE user_id = ?').bind(user.id),
     db.prepare('DELETE FROM users WHERE id = ?').bind(user.id),
   ])
-  return json(200, { ok: true }, { ...NO_STORE, 'Set-Cookie': clearedSessionCookie })
+  return json(200, { ok: true }, { ...NO_STORE, 'Set-Cookie': clearedSessionCookie(request) })
 }

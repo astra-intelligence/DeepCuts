@@ -194,7 +194,7 @@ export async function registerVerify(request: Request, env: AccountsEnv, now = D
   }
 
   const recovering = invite.userId !== null
-  const session = await newSession(env.DB, challenge.userId, now)
+  const session = await newSession(env.DB, request, challenge.userId, now)
   const db = env.DB
   try {
     await db.batch([
@@ -308,7 +308,7 @@ export async function authenticateVerify(request: Request, env: AccountsEnv, now
     return fail(400, 'verification_failed')
   }
 
-  const session = await newSession(env.DB, passkey.user_id, now)
+  const session = await newSession(env.DB, request, passkey.user_id, now)
   await env.DB.batch([
     env.DB.prepare(
       'UPDATE passkeys SET counter = ?, last_used_at = ? WHERE credential_id = ?',

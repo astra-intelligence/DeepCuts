@@ -12,6 +12,7 @@ import { certification, formatRuntime, imageUrl, providersFor, releaseYear } fro
 import { Icon } from '../components/Icon'
 import { Logo } from '../components/Logo'
 import { MovieSearch } from '../components/MovieSearch'
+import { TagSaveError } from '../components/TagSaveError'
 import { TagToggle } from '../components/TagToggle'
 import { TAGS } from '../components/tags'
 import { useRouteFocus } from '../hooks/useRouteFocus'
@@ -148,6 +149,7 @@ function MovieDetail({ id }: { id: number }) {
             />
           ))}
         </div>
+        {setTag.isError && <TagSaveError className="mt-2" />}
 
         <section aria-labelledby="where-to-watch" className="mt-4">
           <h2

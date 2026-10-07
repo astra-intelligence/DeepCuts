@@ -4,11 +4,11 @@
 // migrations (server/testing/fakeD1.ts) and a software passkey that really signs
 // (server/testing/softAuthenticator.ts), through the same `/api` guard Pages uses.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createClient, ORIGIN } from '../testing/api'
+import { createClient, LOCAL_ORIGIN, ORIGIN } from '../testing/api'
 import { createFakeD1, type FakeD1 } from '../testing/fakeD1'
 import { createSoftAuthenticator } from '../testing/softAuthenticator'
 import { inviteInsertSql, makeInvite } from './invites'
-import { SESSION_COOKIE } from './sessions'
+import { LOCAL_SESSION_COOKIE, SESSION_COOKIE } from './sessions'
 
 const DAY = 24 * 60 * 60 * 1000
 let db: FakeD1
@@ -33,10 +33,16 @@ type Client = ReturnType<typeof createClient>
 type Soft = Awaited<ReturnType<typeof createSoftAuthenticator>>
 
 /** The whole sign-up flow: options, the device creates a passkey, verify. */
-async function register(client: Client, soft: Soft, code: string, name = 'Mike Curts') {
+async function register(
+  client: Client,
+  soft: Soft,
+  code: string,
+  name = 'Mike Curts',
+  origin = ORIGIN,
+) {
   const options = await client.call('POST', '/api/auth/register/options', { name, invite: code })
   if (options.status !== 200) return options
-  const response = await soft.create(options.body.options, ORIGIN)
+  const response = await soft.create(options.body.options, origin)
   return client.call('POST', '/api/auth/register/verify', {
     challengeId: options.body.challengeId,
     response,
@@ -75,6 +81,38 @@ describe('registration (A2)', () => {
     for (const attr of ['HttpOnly', 'Secure', 'SameSite=Lax', 'Path=/', 'Max-Age=2592000'])
       expect(cookie).toContain(attr)
     expect(cookie).not.toMatch(/Domain=/i)
+  })
+
+  it('on local http, uses a cookie without Secure that Safari will keep, and it works', async () => {
+    const client = createClient(env, { base: LOCAL_ORIGIN })
+    const soft = await createSoftAuthenticator()
+    const res = await register(client, soft, await invite(), 'Mike Curts', LOCAL_ORIGIN)
+    const cookie = res.response.headers.get('Set-Cookie') ?? ''
+    expect(cookie).toMatch(new RegExp(`^${LOCAL_SESSION_COOKIE}=[\\w-]{43};`))
+    for (const attr of ['HttpOnly', 'SameSite=Lax', 'Path=/', 'Max-Age=2592000'])
+      expect(cookie).toContain(attr)
+    expect(cookie).not.toContain('Secure')
+    expect((await client.call('GET', '/api/auth/session')).status).toBe(200)
+    expect((await client.call('PUT', '/api/tags', { tmdbId: 603, tag: 'liked' })).status).toBe(200)
+    // Sign-out clears the same cookie.
+    const out = await client.call('POST', '/api/auth/sign-out')
+    expect(out.response.headers.get('Set-Cookie')).toMatch(
+      new RegExp(`^${LOCAL_SESSION_COOKIE}=; Max-Age=0;`),
+    )
+  })
+
+  it('never accepts the local cookie name on the real site', async () => {
+    const local = createClient(env, { base: LOCAL_ORIGIN })
+    await register(
+      local,
+      await createSoftAuthenticator(),
+      await invite(),
+      'Mike Curts',
+      LOCAL_ORIGIN,
+    )
+    const real = createClient(env)
+    real.jar.set(LOCAL_SESSION_COOKIE, local.jar.get(LOCAL_SESSION_COOKIE) ?? '')
+    expect((await real.call('GET', '/api/auth/session')).status).toBe(401)
   })
 
   it('stores no raw invite code or session id anywhere', async () => {
