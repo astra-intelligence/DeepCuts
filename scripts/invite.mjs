@@ -26,7 +26,9 @@ const { values } = parseArgs({
 const remote = values.remote
 const base = values.base ?? (remote ? undefined : 'http://localhost:8788')
 if (!base) {
-  console.error('✗ --remote needs --base https://<your-subdomain> so the link points at the live site.')
+  console.error(
+    '✗ --remote needs --base https://<your-subdomain> so the link points at the live site.',
+  )
   process.exit(1)
 }
 
