@@ -159,9 +159,7 @@ function SignedIn({ account }: { account: Account }) {
         <Avatar name={account.name} large />
         <div>
           <h1 className="font-display text-3xl leading-tight">{account.name}</h1>
-          <p className="text-sm text-fg-muted">
-            {SIGNED_IN_WITH[account.method]}
-          </p>
+          <p className="text-sm text-fg-muted">{SIGNED_IN_WITH[account.method]}</p>
         </div>
       </div>
 
