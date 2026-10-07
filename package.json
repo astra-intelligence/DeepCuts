@@ -12,6 +12,7 @@
     "build": "tsc -b && vite build && node scripts/generate-headers.mjs",
     "preview": "vite preview",
     "preview:cf": "node scripts/preview-cf.mjs",
+    "preview:accounts": "VITE_ACCOUNTS=cloudflare npm run build && npm run db:migrate:local && npm run preview:cf",
     "deploy": "node scripts/deploy.mjs",
     "db:migrate:local": "wrangler d1 migrations apply deep-cuts --local",
     "invite": "node scripts/invite.mjs",
