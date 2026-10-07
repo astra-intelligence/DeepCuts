@@ -1,5 +1,5 @@
 // The minimal layout for the account pages outside the main shell: Sign in (ADR-0025) and
-// Create an account (ADR-0030). A Back button, the logo and one narrow column; no search band
+// Create an account (ADR-0031). A Back button, the logo and one narrow column; no search band
 // or tab bar, so nothing competes with the form.
 import type { ReactNode } from 'react'
 import { Button } from 'react-aria-components'

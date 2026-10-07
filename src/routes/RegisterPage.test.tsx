@@ -1,6 +1,6 @@
-// Tests for registration (ADR-0030): every field validated at once with focus on the first
-// problem, a valid form making a practice account that keeps the person's picks, the honest
-// "practice" label, failures, and the links between Sign in and Create an account.
+// Tests for registration (ADR-0031): every field validated at once with focus on the first
+// problem, the invite link filling in the code (then leaving the URL), a valid form making a
+// practice account that keeps the person's picks, the honest "practice" label, and failures.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
@@ -8,43 +8,39 @@ import { createMockSessionProvider } from '../adapters/local/MockSessionProvider
 import type { SessionProvider } from '../adapters/SessionProvider'
 import { renderRoute } from '../test/renderRoute'
 
-const PASSWORD = 'correct horse battery'
+const INVITE = 'AAAAAAAAAAAAAAAAAAAAAA'
 
-// Fills the three fields; any of them can be overridden (an empty string leaves it blank).
+// Fills both fields; either can be overridden (an empty string leaves it blank).
 async function fill(
   user: ReturnType<typeof userEvent.setup>,
-  { name = 'Ada Lovelace', email = 'ada@example.com', password = PASSWORD } = {},
+  { name = 'Ada Lovelace', invite = INVITE } = {},
 ) {
   // The page is lazy-loaded: wait for it before typing.
   await screen.findByRole('heading', { level: 1, name: 'Create an account' })
   if (name) await user.type(screen.getByRole('textbox', { name: 'Name' }), name)
-  if (email) await user.type(screen.getByRole('textbox', { name: 'Email' }), email)
-  if (password) await user.type(screen.getByLabelText('Password'), password)
+  if (invite) await user.type(screen.getByRole('textbox', { name: 'Invite code' }), invite)
 }
 
-describe('registration (ADR-0030)', () => {
+describe('registration (ADR-0031)', () => {
   it('says it is practice only, never a real account', async () => {
     renderRoute('/register')
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Create an account' }),
     ).toBeInTheDocument()
-    expect(screen.getByText(/No real account is created/)).toBeInTheDocument()
+    expect(screen.getByText(/No passkey or real account is created/)).toBeInTheDocument()
   })
 
   it('shows every problem at once and focuses the first one', async () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/register')
-    await fill(user, { name: '', email: 'ada@', password: 'too short' })
-    await user.click(screen.getByRole('button', { name: 'Create account' }))
+    await fill(user, { name: '', invite: 'not-a-code' })
+    await user.click(screen.getByRole('button', { name: 'Create passkey' }))
 
     const name = screen.getByRole('textbox', { name: 'Name' })
     await waitFor(() => expect(name).toHaveFocus())
     expect(name).toHaveAccessibleDescription(/Enter your name\./)
-    expect(screen.getByRole('textbox', { name: 'Email' })).toHaveAccessibleDescription(
-      'Enter an email address like name@example.com.',
-    )
-    expect(screen.getByLabelText('Password')).toHaveAccessibleDescription(
-      /Use at least 15 characters\./,
+    expect(screen.getByRole('textbox', { name: 'Invite code' })).toHaveAccessibleDescription(
+      /That code isn’t right\. Check your invite link\./,
     )
     expect(router.state.location.pathname).toBe('/register')
   })
@@ -58,7 +54,7 @@ describe('registration (ADR-0030)', () => {
 
     expect(await screen.findByText(/Your 1 unsaved pick comes with your new account/)).toBeVisible()
     await fill(user)
-    await user.click(screen.getByRole('button', { name: 'Create account' }))
+    await user.click(screen.getByRole('button', { name: 'Create passkey' }))
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/search'))
     expect(router.state.location.search).toBe('?q=thing')
@@ -73,13 +69,10 @@ describe('registration (ADR-0030)', () => {
     )
   })
 
-  it('shows and hides the password', async () => {
-    const user = userEvent.setup()
-    renderRoute('/register')
-    const password = await screen.findByLabelText('Password')
-    expect(password).toHaveAttribute('type', 'password')
-    await user.click(screen.getByRole('button', { name: 'Show password' }))
-    expect(password).toHaveAttribute('type', 'text')
+  it('fills in the code from an invite link, then removes it from the URL', async () => {
+    const { router } = renderRoute(`/register?invite=${INVITE}`)
+    expect(await screen.findByRole('textbox', { name: 'Invite code' })).toHaveValue(INVITE)
+    await waitFor(() => expect(router.state.location.search).toBe(''))
   })
 
   it('shows an error and changes nothing when registration fails', async () => {
@@ -90,7 +83,7 @@ describe('registration (ADR-0030)', () => {
     }
     const { router } = renderRoute('/register', { sessionProvider: failing })
     await fill(user)
-    await user.click(screen.getByRole('button', { name: 'Create account' }))
+    await user.click(screen.getByRole('button', { name: 'Create passkey' }))
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Registration didn’t finish. Nothing was changed.',
     )

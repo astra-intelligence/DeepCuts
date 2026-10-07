@@ -1,24 +1,18 @@
-// The registration page (/register, ADR-0030): the fields a real account will need (name, email,
-// password), validated with Zod, laid out plainly until the owner designs it.
+// The registration page (/register, ADR-0031): sign-up is by invitation, and the account's key
+// is a passkey (fingerprint, face or device PIN), so the form only asks for a name and the invite
+// code. The layout is plain until the owner designs it.
 //
-// No backend exists yet (ADR-0003 deferred), so submitting makes a *practice* account on this
-// device. The page says so, and the session provider keeps only the name: the email and password
-// are checked, then discarded. Like sign-in, the person's picks move into the new account and the
-// page returns to where sign-in started.
+// An invite link (`/register?invite=…`) fills the code in, then the code is removed from the
+// address bar so it doesn't linger in history or get shared by copying the URL.
+//
+// The passkey and the server checks arrive with the accounts stage (Cloudflare D1). Until then the
+// local mock makes a *practice* account on this device, keeps only the name, and the page says so.
+// Like sign-in, the person's picks move into the new account and the page returns to where
+// sign-in started.
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import {
-  Button,
-  FieldError,
-  Form,
-  Group,
-  Input,
-  Label,
-  Text,
-  TextField,
-  ToggleButton,
-} from 'react-aria-components'
-import { Link, Navigate, useNavigate } from 'react-router'
+import { Button, FieldError, Form, Input, Label, Text, TextField } from 'react-aria-components'
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { z } from 'zod'
 import { registrationSchema } from '../adapters/SessionProvider'
 import { Eyebrow } from '../components/Eyebrow'
@@ -39,7 +33,7 @@ const fieldBox =
 const inputClass =
   'min-w-0 flex-1 self-stretch bg-transparent px-3 text-base text-fg outline-none placeholder:text-fg-placeholder'
 
-/** The registration page (ADR-0030): name, email and password, then a practice account. */
+/** The registration page (ADR-0031): a name and an invite code, then a passkey. */
 export function RegisterPage() {
   useRouteFocus()
   const { session, register } = useSession()
@@ -53,8 +47,16 @@ export function RegisterPage() {
   const [attempt, setAttempt] = useState(0)
   const [pending, setPending] = useState(false)
   const [failed, setFailed] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
+
+  // The invite code from the link, read once on arrival (the field's starting value).
+  const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [linkInvite] = useState(() => searchParams.get('invite') ?? '')
+  // Then take it out of the address bar, keeping the `from` state that says where to return.
+  useEffect(() => {
+    if (searchParams.has('invite')) setSearchParams({}, { replace: true, state: location.state })
+  }, [searchParams, setSearchParams, location.state])
 
   // After a rejected submit, put the cursor in the first field that needs fixing (its error
   // message is read out with it, through aria-describedby).
@@ -100,8 +102,8 @@ export function RegisterPage() {
 
       {/* ADR-0025's rule: a mock must never pass for a real account. */}
       <p className="rounded-container border border-dashed border-border-control p-3 text-sm text-fg-muted">
-        <strong className="text-fg">Practice registration.</strong> No real account is created. Your
-        name is kept on this device; your email and password are checked, then discarded.
+        <strong className="text-fg">Practice registration.</strong> No passkey or real account is
+        created yet. Your name is kept on this device; the invite code is checked, then discarded.
       </p>
 
       {failed && (
@@ -135,44 +137,19 @@ export function RegisterPage() {
         </TextField>
 
         <TextField
-          name="email"
-          type="email"
+          name="invite"
           isRequired
-          autoComplete="email"
-          inputMode="email"
+          defaultValue={linkInvite}
+          autoComplete="off"
           className="group grid gap-1.5"
         >
-          <Label className="text-sm font-semibold">Email</Label>
+          <Label className="text-sm font-semibold">Invite code</Label>
           <div className={fieldBox}>
-            {/* No auto-capitalising or spell-check on phones: they'd mangle an address. */}
+            {/* No auto-capitalising or spell-check on phones: they'd change the code. */}
             <Input className={inputClass} autoCapitalize="none" spellCheck={false} />
           </div>
-          <FieldError className="text-sm text-fg-danger" />
-        </TextField>
-
-        <TextField
-          name="password"
-          type={showPassword ? 'text' : 'password'}
-          isRequired
-          autoComplete="new-password"
-          className="group grid gap-1.5"
-        >
-          <Label className="text-sm font-semibold">Password</Label>
-          {/* A show/hide toggle instead of a "confirm password" field: people can check what
-              they typed without typing it twice. */}
-          <Group className={fieldBox}>
-            <Input className={inputClass} autoCapitalize="none" spellCheck={false} />
-            <ToggleButton
-              isSelected={showPassword}
-              onChange={setShowPassword}
-              aria-label="Show password"
-              className="m-1 min-h-10 rounded-button px-3 text-sm font-semibold text-info"
-            >
-              Show
-            </ToggleButton>
-          </Group>
           <Text slot="description" className="text-sm text-fg-muted">
-            At least 15 characters. A few unrelated words work well.
+            Deep Cuts is invite-only for now. Your invite link fills this in.
           </Text>
           <FieldError className="text-sm text-fg-danger" />
         </TextField>
@@ -182,8 +159,12 @@ export function RegisterPage() {
           isPending={pending}
           className="flex min-h-12 w-full items-center justify-center rounded-button bg-button-primary-bg text-sm font-semibold text-button-primary-fg hover:bg-button-primary-bg/85 data-pending:opacity-70"
         >
-          Create account
+          Create passkey
         </Button>
+        <p className="text-sm text-fg-muted">
+          Your device asks for your fingerprint, face or PIN. That passkey is how you’ll sign in: no
+          password.
+        </p>
       </Form>
       <p role="status" className="text-sm text-fg-muted empty:hidden">
         {pending ? 'Creating your account…' : ''}
@@ -201,6 +182,11 @@ export function RegisterPage() {
         <Link to="/sign-in" state={{ from }} className="text-info underline">
           Sign in
         </Link>
+        . No invite?{' '}
+        <Link to="/sign-in" state={{ from }} className="text-info underline">
+          Try the demo
+        </Link>
+        .
       </p>
     </AuthLayout>
   )

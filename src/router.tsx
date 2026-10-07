@@ -49,7 +49,7 @@ export function createRoutes(features: Features = FEATURES): RouteObject[] {
     },
     // Sign-in has its own minimal layout: back, logo and the methods (ADR-0025).
     { path: '/sign-in', lazy: signIn, errorElement: <RouteError /> },
-    // Registration shares that layout (AuthLayout, ADR-0030).
+    // Registration shares that layout (AuthLayout, ADR-0031).
     { path: '/register', lazy: register, errorElement: <RouteError /> },
     // Detail has its own full-bleed layout without the tab bar (design v2).
     { path: '/movie/:id', lazy: detail, errorElement: <RouteError /> },

@@ -1,5 +1,5 @@
 // The Sign-in page (/sign-in, ADR-0025): lists every sign-in method the session provider offers
-// (today only the demo account), links to registration (ADR-0030), then returns to the page
+// (today only the demo account), links to registration (ADR-0031), then returns to the page
 // sign-in started from.
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -89,8 +89,8 @@ export function SignInPage() {
       </p>
 
       <p className="rounded-container border border-dashed border-border-control p-3 text-sm text-fg-muted">
-        <strong className="text-fg">More ways to sign in are coming.</strong> Google, GitHub, an
-        emailed code or a passkey will appear here once they’re chosen.
+        <strong className="text-fg">Passkey sign-in is coming.</strong> Invited people will sign in
+        with their fingerprint, face or device PIN (ADR-0031).
       </p>
 
       <p className="text-sm text-fg-muted">

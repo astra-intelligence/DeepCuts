@@ -168,27 +168,27 @@ test('sign in with the demo account, keyboard only; survives a reload; sign out 
   await expectNoHorizontalOverflow(page)
 })
 
-test('register with the keyboard; errors pass axe; the practice account survives a reload (ADR-0030)', async ({
+test('register from an invite link with the keyboard; errors pass axe; the practice account survives a reload (ADR-0031)', async ({
   page,
 }) => {
-  await page.goto('/sign-in')
-  await page.getByRole('link', { name: 'Create an account' }).click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Create an account' })).toBeFocused()
-
-  // Submitting empty shows every error and puts the cursor in the first field.
-  await page.getByRole('button', { name: 'Create account' }).focus()
+  // Submitting with no invite shows the errors and puts the cursor in the first field.
+  await page.goto('/register')
+  await expect(page.getByRole('heading', { level: 1, name: 'Create an account' })).toBeVisible()
+  await page.getByRole('button', { name: 'Create passkey' }).focus()
   await page.keyboard.press('Enter')
-  const name = page.getByRole('textbox', { name: 'Name' })
-  await expect(name).toBeFocused()
-  await expect(page.getByText('Enter your email address.')).toBeVisible()
+  await expect(page.getByRole('textbox', { name: 'Name' })).toBeFocused()
+  await expect(page.getByText('Enter the code from your invite link.')).toBeVisible()
   await expectNoA11yViolations(page)
   await expectNoHorizontalOverflow(page)
 
+  // An invite link fills in the code, then the code leaves the address bar.
+  await page.goto('/register?invite=AAAAAAAAAAAAAAAAAAAAAA')
+  await expect(page.getByRole('textbox', { name: 'Invite code' })).toHaveValue(
+    'AAAAAAAAAAAAAAAAAAAAAA',
+  )
+  await expect(page).toHaveURL(/\/register$/)
+  await page.getByRole('textbox', { name: 'Name' }).focus()
   await page.keyboard.type('Ada Lovelace')
-  await page.keyboard.press('Tab')
-  await page.keyboard.type('ada@example.com')
-  await page.keyboard.press('Tab')
-  await page.keyboard.type('correct horse battery')
   await page.keyboard.press('Enter')
 
   await expect(page).toHaveURL(/\/search$/)

@@ -175,7 +175,7 @@ function SignedIn({ account }: { account: Account }) {
             {films} {films === 1 ? 'film' : 'films'} tagged across Seen it, Want to see, Like and
             Dislike.
           </p>
-          {/* Every account is a practice one today (ADR-0025, ADR-0030), so this always shows. */}
+          {/* Every account is a practice one today (ADR-0025, ADR-0031), so this always shows. */}
           {(account.method === 'demo' || account.method === 'practice') && (
             <p className="text-sm text-fg-muted">
               Practice account: lists are kept on this device. A real account will sync them between
