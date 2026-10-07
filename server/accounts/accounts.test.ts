@@ -196,14 +196,21 @@ describe('WebAuthn checks (A2)', () => {
     expect(res).toMatchObject({ status: 400, body: { error: 'verification_failed' } })
   })
 
-  it('requires user verification (fingerprint, face or PIN)', async () => {
-    const res = await register(
-      createClient(env),
-      await createSoftAuthenticator({ userVerified: false }),
-      await invite(),
-    )
-    expect(res).toMatchObject({ status: 400, body: { error: 'verification_failed' } })
-    expect(db.rows('users')).toEqual([])
+  it('accepts a passkey without user verification (preferred, not required)', async () => {
+    const client = createClient(env)
+    const soft = await createSoftAuthenticator({ userVerified: false })
+    expect(await register(client, soft, await invite())).toMatchObject({ status: 200 })
+    expect((await signIn(client, soft)).status).toBe(200)
+  })
+
+  it('asks devices for user verification when they can', async () => {
+    const reg = await createClient(env).call('POST', '/api/auth/register/options', {
+      name: 'Mike Curts',
+      invite: await invite(),
+    })
+    expect(reg.body.options.authenticatorSelection.userVerification).toBe('preferred')
+    const auth = await createClient(env).call('POST', '/api/auth/authenticate/options')
+    expect(auth.body.options.userVerification).toBe('preferred')
   })
 
   it('refuses a passkey whose signature counter went backwards (cloned)', async () => {

@@ -138,8 +138,9 @@ export async function registerOptions(request: Request, env: AccountsEnv, now = 
       transports: parseTransports(p.transports),
     })),
     // A discoverable credential, so sign-in needs no username. User verification (fingerprint,
-    // face or PIN) is required: a passkey alone, without its owner, isn't enough.
-    authenticatorSelection: { residentKey: 'required', userVerification: 'required' },
+    // face or PIN) is only preferred: devices that can will still ask, but it isn't enforced,
+    // because accounts are test-only invites (owner decision, 2026-10-07).
+    authenticatorSelection: { residentKey: 'required', userVerification: 'preferred' },
   })
 
   const challengeId = randomToken(16)
@@ -183,7 +184,8 @@ export async function registerVerify(request: Request, env: AccountsEnv, now = D
       expectedChallenge: challenge.challenge,
       expectedOrigin: origin,
       expectedRPID: rpID,
-      requireUserVerification: true,
+      // Preferred, not required (see registerOptions).
+      requireUserVerification: false,
     })
     if (!result.verified) return fail(400, 'verification_failed')
     credential = result.registrationInfo.credential
@@ -249,7 +251,7 @@ export async function registerVerify(request: Request, env: AccountsEnv, now = D
  */
 export async function authenticateOptions(request: Request, env: AccountsEnv, now = Date.now()) {
   const { rpID } = relyingParty(request)
-  const options = await generateAuthenticationOptions({ rpID, userVerification: 'required' })
+  const options = await generateAuthenticationOptions({ rpID, userVerification: 'preferred' })
   const challengeId = randomToken(16)
   await env.DB.prepare(
     `INSERT INTO challenges (id, challenge, kind, expires_at) VALUES (?, ?, 'authenticate', ?)`,
@@ -289,7 +291,8 @@ export async function authenticateVerify(request: Request, env: AccountsEnv, now
       expectedChallenge: challenge.challenge,
       expectedOrigin: origin,
       expectedRPID: rpID,
-      requireUserVerification: true,
+      // Preferred, not required (see registerOptions).
+      requireUserVerification: false,
       credential: {
         id: passkey.credential_id,
         // D1 may return a BLOB as an ArrayBuffer or a number array; both become bytes here.
