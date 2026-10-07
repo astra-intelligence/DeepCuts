@@ -16,6 +16,7 @@ const weights = async () => ({ Component: (await import('./routes/WeightsPage'))
 const lists = async () => ({ Component: (await import('./routes/ListsPage')).ListsPage })
 const account = async () => ({ Component: (await import('./routes/AccountPage')).AccountPage })
 const signIn = async () => ({ Component: (await import('./routes/SignInPage')).SignInPage })
+const register = async () => ({ Component: (await import('./routes/RegisterPage')).RegisterPage })
 const detail = async () => ({
   Component: (await import('./routes/MovieDetailPage')).MovieDetailPage,
 })
@@ -48,6 +49,8 @@ export function createRoutes(features: Features = FEATURES): RouteObject[] {
     },
     // Sign-in has its own minimal layout: back, logo and the methods (ADR-0025).
     { path: '/sign-in', lazy: signIn, errorElement: <RouteError /> },
+    // Registration shares that layout (AuthLayout, ADR-0030).
+    { path: '/register', lazy: register, errorElement: <RouteError /> },
     // Detail has its own full-bleed layout without the tab bar (design v2).
     { path: '/movie/:id', lazy: detail, errorElement: <RouteError /> },
     // Optional onboarding, also outside the tab-bar shell (ADR-0019 amendment).

@@ -125,6 +125,12 @@ function SignedOut() {
   )
 }
 
+// The line under the account name, per kind of account.
+const SIGNED_IN_WITH: Record<Account['method'], string> = {
+  demo: 'Signed in with the demo account',
+  practice: 'Practice account, made on this device',
+}
+
 // Signed in: who you are, how many films you've tagged, and sign out.
 function SignedIn({ account }: { account: Account }) {
   const { signOut } = useSession()
@@ -154,7 +160,7 @@ function SignedIn({ account }: { account: Account }) {
         <div>
           <h1 className="font-display text-3xl leading-tight">{account.name}</h1>
           <p className="text-sm text-fg-muted">
-            {account.method === 'demo' ? 'Signed in with the demo account' : 'Signed in'}
+            {SIGNED_IN_WITH[account.method]}
           </p>
         </div>
       </div>
@@ -171,9 +177,10 @@ function SignedIn({ account }: { account: Account }) {
             {films} {films === 1 ? 'film' : 'films'} tagged across Seen it, Want to see, Like and
             Dislike.
           </p>
-          {account.method === 'demo' && (
+          {/* Every account is a practice one today (ADR-0025, ADR-0030), so this always shows. */}
+          {(account.method === 'demo' || account.method === 'practice') && (
             <p className="text-sm text-fg-muted">
-              Demo account: lists are kept on this device. A real account will sync them between
+              Practice account: lists are kept on this device. A real account will sync them between
               devices.
             </p>
           )}

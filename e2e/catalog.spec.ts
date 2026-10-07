@@ -5,6 +5,7 @@ import { expect, expectNoA11yViolations, expectNoHorizontalOverflow, test } from
 
 for (const path of [
   '/sign-in',
+  '/register',
   '/search',
   '/search?q=thing',
   '/discover',
@@ -165,6 +166,37 @@ test('sign in with the demo account, keyboard only; survives a reload; sign out 
   await page.getByRole('button', { name: 'Yes, sign out' }).click()
   await expect(page.getByRole('banner').getByRole('link', { name: 'Sign in' })).toBeVisible()
   await expectNoHorizontalOverflow(page)
+})
+
+test('register with the keyboard; errors pass axe; the practice account survives a reload (ADR-0030)', async ({
+  page,
+}) => {
+  await page.goto('/sign-in')
+  await page.getByRole('link', { name: 'Create an account' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Create an account' })).toBeFocused()
+
+  // Submitting empty shows every error and puts the cursor in the first field.
+  await page.getByRole('button', { name: 'Create account' }).focus()
+  await page.keyboard.press('Enter')
+  const name = page.getByRole('textbox', { name: 'Name' })
+  await expect(name).toBeFocused()
+  await expect(page.getByText('Enter your email address.')).toBeVisible()
+  await expectNoA11yViolations(page)
+  await expectNoHorizontalOverflow(page)
+
+  await page.keyboard.type('Ada Lovelace')
+  await page.keyboard.press('Tab')
+  await page.keyboard.type('ada@example.com')
+  await page.keyboard.press('Tab')
+  await page.keyboard.type('correct horse battery')
+  await page.keyboard.press('Enter')
+
+  await expect(page).toHaveURL(/\/search$/)
+  await expect(page.getByText('Signed in as Ada.')).toBeVisible()
+  await page.reload()
+  const chip = page.getByRole('banner').getByRole('link', { name: 'Ada, open your account' })
+  await chip.click()
+  await expect(page.getByText('Practice account, made on this device')).toBeVisible()
 })
 
 test('liking a film tunes Discover, with a match and the reason (ADR-0026)', async ({ page }) => {

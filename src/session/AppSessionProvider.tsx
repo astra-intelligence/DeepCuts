@@ -80,6 +80,9 @@ export function AppSessionProvider({
       async signIn(method) {
         return { moved: await moveTo(await provider.signIn(method)) }
       },
+      async register(details) {
+        return { moved: await moveTo(await provider.register(details)) }
+      },
       async signOut() {
         // The account keeps its lists; the device returns to an empty guest session.
         setGuestTags(createInMemoryTagRepository())

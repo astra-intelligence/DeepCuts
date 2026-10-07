@@ -4,7 +4,12 @@
 // Screens never pick a store themselves: a guest gets the in-memory store, a saved profile or
 // account gets its own localStorage store. AppSessionProvider fills this context.
 import { createContext, useContext } from 'react'
-import type { Session, SignInMethod, SignInMethodId } from '../adapters/SessionProvider'
+import type {
+  Registration,
+  Session,
+  SignInMethod,
+  SignInMethodId,
+} from '../adapters/SessionProvider'
 import type { TagRepository } from '../adapters/TagRepository'
 
 /** What `useSession()` gives a component. */
@@ -18,6 +23,8 @@ export interface SessionValue {
   createProfile(displayName?: string): Promise<void>
   /** Moves the current picks into the account. Resolves with how many films moved. */
   signIn(method: SignInMethodId): Promise<{ moved: number }>
+  /** Creates an account from the registration form, then moves picks in like sign-in does. */
+  register(details: Registration): Promise<{ moved: number }>
   /** Back to an empty guest session; the account keeps its lists. */
   signOut(): Promise<void>
 }

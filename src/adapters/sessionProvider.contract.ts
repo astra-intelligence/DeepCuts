@@ -51,6 +51,26 @@ export function sessionProviderContract(name: string, make: () => SessionProvide
       expect(await make().getSession()).toEqual({ kind: 'guest' })
     })
 
+    it('registers an account that survives a reload, and signs out to guest (ADR-0030)', async () => {
+      const provider = make()
+      const session = await provider.register({
+        name: '  Ada Lovelace ',
+        email: 'ada@example.com',
+        password: 'correct horse battery',
+      })
+      expect(session).toMatchObject({ kind: 'account', account: { name: 'Ada Lovelace' } })
+      expect(await make().getSession()).toEqual(session)
+      expect(await provider.signOut()).toEqual({ kind: 'guest' })
+    })
+
+    it('rejects invalid registration details', async () => {
+      const valid = { name: 'Ada', email: 'ada@example.com', password: 'correct horse battery' }
+      await expect(make().register({ ...valid, name: '  ' })).rejects.toThrow()
+      await expect(make().register({ ...valid, email: 'ada@' })).rejects.toThrow()
+      await expect(make().register({ ...valid, password: 'too short' })).rejects.toThrow()
+      expect(await make().getSession()).toEqual({ kind: 'guest' })
+    })
+
     it('rejects a method it does not offer', async () => {
       // @ts-expect-error -- a method id the provider doesn't know
       await expect(make().signIn('carrier-pigeon')).rejects.toThrow()
