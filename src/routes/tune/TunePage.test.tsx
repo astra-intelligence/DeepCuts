@@ -5,9 +5,18 @@ import { describe, expect, it } from 'vitest'
 import { renderRoute } from '../../test/renderRoute'
 
 describe('tune my picks (onboarding)', () => {
+  it('is hidden while the feature flag is off: /tune goes to Search, no header link', async () => {
+    const { router } = renderRoute('/tune')
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Find your next film' }),
+    ).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/search')
+    expect(screen.queryByRole('link', { name: 'Tune my picks' })).not.toBeInTheDocument()
+  })
+
   it('step 1: choose genres, then continue with focus on the new heading', async () => {
     const user = userEvent.setup()
-    const { router } = renderRoute('/tune')
+    const { router } = renderRoute('/tune', { features: { onboarding: true } })
     expect(screen.getByText('Step 1 of 3')).toBeInTheDocument()
     const cont = screen.getByRole('button', { name: 'Continue' })
     expect(cont).toBeDisabled()
@@ -21,7 +30,7 @@ describe('tune my picks (onboarding)', () => {
 
   it('step 2: a favorite picked in search survives the trip to Detail and back', async () => {
     const user = userEvent.setup()
-    const { router } = renderRoute('/tune?step=2&genres=27')
+    const { router } = renderRoute('/tune?step=2&genres=27', { features: { onboarding: true } })
     expect(screen.getByRole('button', { name: /Find my taste/ })).toBeDisabled()
     await user.type(screen.getByRole('combobox', { name: 'Find a movie to view and tag' }), 'thing')
     await user.click(await screen.findByRole('option', { name: /The Thing/ }))
@@ -34,7 +43,7 @@ describe('tune my picks (onboarding)', () => {
 
   it('step 3: rate cards, never skip after a dislike, finish on Discover', async () => {
     const user = userEvent.setup()
-    const { router } = renderRoute('/tune?step=3&genres=27')
+    const { router } = renderRoute('/tune?step=3&genres=27', { features: { onboarding: true } })
     const card = await screen.findByRole('article', { name: 'The Thing' })
     expect(screen.getByText('Tune your picks · 1 of 3')).toBeInTheDocument()
     const tags = within(card).getByRole('group', { name: 'Your tags for The Thing' })
@@ -54,7 +63,7 @@ describe('tune my picks (onboarding)', () => {
   })
 
   it('step 3 skips the favorite and anything already disliked', async () => {
-    renderRoute('/tune?step=3&favorite=1091')
+    renderRoute('/tune?step=3&favorite=1091', { features: { onboarding: true } })
     expect(await screen.findByRole('article', { name: 'Alien' })).toBeInTheDocument()
   })
 })

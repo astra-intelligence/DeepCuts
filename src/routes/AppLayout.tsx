@@ -1,4 +1,5 @@
 import { Link, NavLink, Outlet } from 'react-router'
+import { FEATURES } from '../config/features'
 import { Icon, type IconName } from '../components/Icon'
 import { Logo } from '../components/Logo'
 import { MovieSearch } from '../components/MovieSearch'
@@ -53,14 +54,16 @@ export function AppLayout() {
             <Logo className="h-7 w-auto" />
           </Link>
           <div className="flex items-center gap-2">
-            <Link
-              to="/tune"
-              aria-label="Tune my picks"
-              title="Tune my picks"
-              className="grid size-11 place-items-center rounded-lg border border-border-control bg-surface-raised text-accent hover:border-accent hover:bg-surface-selected"
-            >
-              <Icon name="heart" />
-            </Link>
+            {FEATURES.onboarding && (
+              <Link
+                to="/tune"
+                aria-label="Tune my picks"
+                title="Tune my picks"
+                className="grid size-11 place-items-center rounded-lg border border-border-control bg-surface-raised text-accent hover:border-accent hover:bg-surface-selected"
+              >
+                <Icon name="heart" />
+              </Link>
+            )}
             <SignInLink />
           </div>
         </header>

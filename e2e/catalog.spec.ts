@@ -7,7 +7,6 @@ for (const path of [
   '/movie/1091',
   '/lists',
   '/account',
-  '/tune',
 ]) {
   test(`${path} has no axe violations and no horizontal overflow`, async ({ page }) => {
     await page.goto(path)
