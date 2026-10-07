@@ -10,7 +10,6 @@ export type AllowlistResult = { ok: true; request: TmdbRequest } | { ok: false; 
 // Shared rules for parameter values.
 const page = z.coerce.number().int().min(1).max(500)
 const id = z.coerce.number().int().positive().max(99_999_999)
-const genreList = z.string().regex(/^\d{1,6}([,|]\d{1,6}){0,9}$/)
 // Extras that may ride along on a film's details call; each at most once.
 const APPENDABLE = new Set(['release_dates', 'recommendations', 'keywords', 'credits'])
 const appendList = z.string().refine((v) => {
@@ -37,9 +36,8 @@ const ROUTES: Route[] = [
   },
   {
     pattern: /^discover\/movie$/,
+    // No genre filters: taste comes only from tagged films, never declared genres (ADR-0032).
     params: z.strictObject({
-      with_genres: genreList.optional(),
-      without_genres: genreList.optional(),
       page: page.optional(),
       sort_by: z
         .enum(['popularity.desc', 'vote_average.desc', 'primary_release_date.desc'])
@@ -60,6 +58,13 @@ const ROUTES: Route[] = [
     pattern: /^movie\/(\d+)\/watch\/providers$/,
     params: z.strictObject({}),
     path: (m) => `movie/${id.parse(m[1])}/watch/providers`,
+  },
+  {
+    // A film series ("Friday the 13th Collection"): its films become scorer candidates when you
+    // liked one of them (ADR-0032).
+    pattern: /^collection\/(\d+)$/,
+    params: z.strictObject({}),
+    path: (m) => `collection/${id.parse(m[1])}`,
   },
   {
     pattern: /^genre\/movie\/list$/,

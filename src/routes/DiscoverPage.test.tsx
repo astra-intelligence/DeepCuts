@@ -43,15 +43,13 @@ describe('discover', () => {
     expect(screen.queryByRole('link', { name: /The Thing/ })).not.toBeInTheDocument()
   })
 
-  it('tunes to ?genres= and ignores malformed values', async () => {
-    renderRoute('/discover?genres=27,53')
-    expect(await screen.findByText('Tuned to the genres you picked.')).toBeInTheDocument()
-  })
-
-  it.each(['?genres=27;DROP', '?genres='])('ignores %s', async (qs) => {
-    renderRoute(`/discover${qs}`)
-    expect(await screen.findByText(/^Popular films worth staying up for\./)).toBeInTheDocument()
-  })
+  it.each(['?genres=27,53', '?genres=27;DROP', '?genres='])(
+    'ignores %s: favourite genres are gone (ADR-0032)',
+    async (qs) => {
+      renderRoute(`/discover${qs}`)
+      expect(await screen.findByText(/^Popular films worth staying up for\./)).toBeInTheDocument()
+    },
+  )
 })
 
 describe('discover with likes (ADR-0026)', () => {
@@ -85,5 +83,27 @@ describe('discover with likes (ADR-0026)', () => {
     expect(halloween).toHaveTextContent('Director: John Carpenter')
     // The liked film itself is never recommended back.
     expect(screen.queryByRole('link', { name: /^The Thing/ })).not.toBeInTheDocument()
+  })
+})
+
+describe('discover with a liked film in a series (ADR-0032)', () => {
+  it('suggests the released sequels, but not an undated announced one', async () => {
+    const user = userEvent.setup()
+    const { router } = renderRoute('/movie/4488')
+    const group = await screen.findByRole('group', { name: 'Your tags' })
+    await user.click(within(group).getByRole('button', { name: 'Like' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await screen.findByText(/^Saved\./)
+    await act(() => router.navigate('/discover'))
+
+    // TMDB recommends nothing for it here, so both picks come from the series.
+    const feature = await screen.findByRole('link', { name: /Today’s featured deep cut/ })
+    expect(feature).toHaveTextContent('Because you liked Friday the 13th')
+    const titles = screen
+      .getAllByRole('link', { name: /Friday the 13th Part/ })
+      .map((l) => l.textContent)
+    expect(titles.join(' ')).toMatch(/Part 2/)
+    expect(titles.join(' ')).toMatch(/Part III/)
+    expect(screen.queryByText(/Announced/)).not.toBeInTheDocument()
   })
 })

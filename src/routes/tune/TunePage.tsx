@@ -1,5 +1,6 @@
-// "Tune my picks" (/tune): optional onboarding in three steps (genres → a favorite film → rate a
-// few films). Hidden behind the `onboarding` feature flag until the flow is reworked.
+// "Tune my picks" (/tune): optional onboarding in two steps (a favorite film → rate a few
+// films). It used to start by asking for favourite genres; ADR-0032 removed that, so taste comes
+// only from tagged films. Hidden behind the `onboarding` feature flag until the flow is reworked.
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router'
@@ -11,16 +12,15 @@ import { useRouteFocus } from '../../hooks/useRouteFocus'
 import { AccountChip } from '../../components/AccountChip'
 import { SkipLink } from '../AppLayout'
 import { FavoriteStep } from './FavoriteStep'
-import { GenreStep } from './GenreStep'
 import { RateStep } from './RateStep'
 import { useTuneState } from './useTuneState'
 
-/** "Tune my picks": optional three-step onboarding outside the tab-bar shell (ADR-0019). */
+/** "Tune my picks": optional two-step onboarding outside the tab-bar shell (ADR-0019). */
 export function TunePage() {
   useRouteFocus()
   const [state, update] = useTuneState()
-  // The backdrop of the top film for the chosen genres, as a moody background.
-  const background = useQuery(movieQueries.discover(state.genres)).data?.results[0]
+  // The backdrop of the top popular film, as a moody background.
+  const background = useQuery(movieQueries.discover()).data?.results[0]
   const image = imageUrl(background?.backdrop_path ?? null, 'w1280')
 
   // Each step change moves focus to its heading, instead of a page-wide live region.
@@ -50,10 +50,10 @@ export function TunePage() {
           className="absolute inset-0 size-full object-cover opacity-80 saturate-75"
         />
       )}
-      {/* Darkens the background so text stays readable; step 3 blurs it more heavily. */}
+      {/* Darkens the background so text stays readable; step 2 blurs it more heavily. */}
       <div
         className={`absolute inset-0 ${
-          state.step === 3
+          state.step === 2
             ? 'bg-surface/80 backdrop-blur-sm'
             : 'bg-linear-to-b from-surface/10 via-surface/70 via-55% to-surface to-90% md:bg-radial md:from-surface/50 md:via-surface/80 md:to-surface'
         }`}
@@ -69,7 +69,7 @@ export function TunePage() {
         <AccountChip />
       </header>
       <div className="relative z-10 mx-5 mt-1 md:mx-auto md:w-full md:max-w-xl">
-        {/* Picking a film in search here also sets it as the favorite for step 2. */}
+        {/* Picking a film in search here also sets it as the favorite for step 1. */}
         <MovieSearch onPick={(m: MovieSummary) => update({ favorite: m.id }, true)} />
       </div>
 
@@ -77,16 +77,15 @@ export function TunePage() {
         id="main"
         ref={main}
         className={`relative z-2 flex min-h-[calc(100svh-8rem)] flex-col justify-end px-5 pt-16 pb-5 md:mx-auto md:justify-center md:px-10 md:py-6 ${
-          state.step === 3 ? 'md:w-full' : 'md:w-full md:max-w-2xl'
+          state.step === 2 ? 'md:w-full' : 'md:w-full md:max-w-2xl'
         }`}
       >
         <p className="mb-3 text-sm font-semibold tracking-wide text-fg-muted">
-          Step {state.step} of 3
+          Step {state.step} of 2
         </p>
         {/* Only the current step renders. */}
-        {state.step === 1 && <GenreStep state={state} update={update} />}
-        {state.step === 2 && <FavoriteStep state={state} update={update} />}
-        {state.step === 3 && <RateStep state={state} update={update} />}
+        {state.step === 1 && <FavoriteStep state={state} update={update} />}
+        {state.step === 2 && <RateStep state={state} update={update} />}
       </main>
     </div>
   )

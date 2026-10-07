@@ -31,7 +31,10 @@ describe('resolveTmdbRequest', () => {
     ['search/movie', 'query=a&page=501'],
     ['search/movie', 'query=a&query=b'],
     ['search/movie', 'query=a&api_key=leak'],
-    ['discover/movie', 'with_genres=27;DROP'],
+    // Genre filters were removed with favourite genres (ADR-0032).
+    ['discover/movie', 'with_genres=27'],
+    ['discover/movie', 'without_genres=27'],
+    ['collection/9735', 'page=1'],
     ['discover/movie', 'sort_by=revenue.desc'],
     ['movie/603', 'append_to_response=videos'],
     ['movie/603', 'append_to_response=release_dates,images'],
@@ -45,6 +48,8 @@ describe('resolveTmdbRequest', () => {
     'account',
     'movie/abc',
     'movie/603/credits',
+    'collection/abc',
+    'collection/9735/images',
     'movie/603/../../account',
     '../3/account',
     'search/person',
@@ -58,16 +63,14 @@ describe('resolveTmdbRequest', () => {
     ['movie/603', 'movie/603'],
     ['movie/603/watch/providers', 'movie/603/watch/providers'],
     ['genre/movie/list', 'genre/movie/list'],
+    ['collection/9735', 'collection/9735'],
   ])('allows %s', (path, expected) => {
     const r = resolveTmdbRequest(path, q())
     expect(r.ok && r.request.path).toBe(expected)
   })
 
-  it('allows discover with genres and sort', () => {
-    const r = resolveTmdbRequest(
-      'discover/movie',
-      q('with_genres=27,53&sort_by=vote_average.desc&vote_count.gte=50'),
-    )
+  it('allows discover with sort', () => {
+    const r = resolveTmdbRequest('discover/movie', q('sort_by=vote_average.desc&vote_count.gte=50'))
     expect(r.ok && r.request.params.get('include_adult')).toBe('false')
   })
 

@@ -113,7 +113,7 @@ describe('certification', () => {
 })
 
 describe('discover', () => {
-  it('asks the allowlisted endpoint for popular films in any of the genres', async () => {
+  it('asks the allowlisted endpoint for popular films, with no genre filter (ADR-0032)', async () => {
     let url: URL | undefined
     server.use(
       http.get('/api/tmdb/discover/movie', ({ request }) => {
@@ -121,10 +121,21 @@ describe('discover', () => {
         return HttpResponse.json({ page: 1, total_pages: 1, total_results: 0, results: [] })
       }),
     )
-    await tmdb.discover([27, 53])
-    expect(url?.searchParams.get('with_genres')).toBe('27|53')
+    await tmdb.discover()
     expect(url?.searchParams.get('sort_by')).toBe('popularity.desc')
-    await tmdb.discover([])
     expect(url?.searchParams.has('with_genres')).toBe(false)
+  })
+})
+
+describe('collections (ADR-0032)', () => {
+  it('reads a series and its films', async () => {
+    const series = await tmdb.collection(9735)
+    expect(series.name).toBe('Friday the 13th Collection')
+    expect(series.parts.map((p) => p.title)).toContain('Friday the 13th Part 2')
+  })
+
+  it('treats a malformed series link on a film as no series', () => {
+    const movie = movieDetailSchema.parse({ ...movieFixture, belongs_to_collection: 'nope' })
+    expect(movie.belongs_to_collection).toBeNull()
   })
 })

@@ -1,4 +1,4 @@
-// Onboarding step 3: tag a few popular films from your genres, one card at a time.
+// Onboarding step 2: tag a few popular films, one card at a time.
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useEffectEvent } from 'react'
 import { Button } from 'react-aria-components'
@@ -15,11 +15,11 @@ import { Prompt } from './Prompt'
 import { primary } from './styles'
 import { PICKS, type StepProps } from './useTuneState'
 
-/** Step 3: rate a few films with the four tags, then finish on Discover. */
+/** Step 2: rate a few films with the four tags, then finish on Discover. */
 export function RateStep({ state, update }: StepProps) {
   const navigate = useNavigate()
   const queries = useTagQueries()
-  const results = useQuery(movieQueries.discover(state.genres)).data?.results
+  const results = useQuery(movieQueries.discover()).data?.results
   const excluded = useQuery(queries.feedExclusions()).data
   const setTag = useSetTag()
   // The card is tracked by film id, so tagging it (even Dislike) never shifts the sequence.
@@ -39,11 +39,11 @@ export function RateStep({ state, update }: StepProps) {
   }, [pinId])
 
   // Next card, skipping disliked films; after PICKS cards (or when none are left), finish on
-  // Discover, tuned to the chosen genres.
+  // Discover.
   function next() {
     const after = pool.findIndex((m, i) => i > current && !excluded?.has(m.id))
     if (state.n >= PICKS || after === -1) {
-      navigate(state.genres.length ? `/discover?genres=${state.genres.join(',')}` : '/discover')
+      navigate('/discover')
     } else {
       update({ pick: pool[after]?.id, n: state.n + 1 }, true)
     }

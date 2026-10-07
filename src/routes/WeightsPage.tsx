@@ -34,17 +34,17 @@ const toPercent = (n: number) => Math.round(n * 100)
 // The URL key for the genre-variety slider (the scorer's diversity penalty).
 const DIVERSITY_KEY = 'diversity'
 
-// Plain-language names for the six score parts: slider label, short table header, and hint.
+// Plain-language names for the score parts: slider label, short table header, and hint.
 const PARTS: Record<ScorePart, { label: string; short: string; hint: string }> = {
   support: {
     label: 'Recommended by your likes',
     short: 'Likes',
-    hint: 'How many of your liked films recommend it.',
+    hint: 'How many of your liked films recommend it, or share its series.',
   },
   genre: {
     label: 'Genre fit',
     short: 'Genre',
-    hint: 'Genres you like count up; genres you dislike count down.',
+    hint: 'Genres you like count up; genres you dislike count down a little, never out.',
   },
   quality: {
     label: 'Rating',
@@ -67,6 +67,16 @@ const PARTS: Record<ScorePart, { label: string; short: string; hint: string }> =
     label: 'Same director',
     short: 'Dir.',
     hint: 'Made by a director of a film you liked (top 20 candidates only).',
+  },
+  writer: {
+    label: 'Same writer',
+    short: 'Wri.',
+    hint: 'Written by a writer of a film you liked (top 20 candidates only).',
+  },
+  series: {
+    label: 'Same series',
+    short: 'Ser.',
+    hint: 'Part of a series you liked a film from, e.g. a sequel.',
   },
 }
 

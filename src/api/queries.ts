@@ -17,13 +17,19 @@ export const movieQueries = {
       enabled: query.trim().length >= 2,
       staleTime: HOUR,
     }),
-  /** Popular films, optionally limited to genres. */
-  discover: (genres: readonly number[] = []) =>
+  /** Popular films (Discover without likes, and onboarding). */
+  discover: () =>
     queryOptions({
-      // Sorted so [27, 53] and [53, 27] share one cache entry.
-      queryKey: ['tmdb', 'discover', [...genres].sort((a, b) => a - b)],
-      queryFn: ({ signal }) => tmdb.discover(genres, signal),
+      queryKey: ['tmdb', 'discover'],
+      queryFn: ({ signal }) => tmdb.discover(signal),
       staleTime: HOUR,
+    }),
+  /** A film series' films, for the scorer's series candidates (ADR-0032). */
+  collection: (id: number) =>
+    queryOptions({
+      queryKey: ['tmdb', 'collection', id],
+      queryFn: ({ signal }) => tmdb.collection(id, signal),
+      staleTime: 24 * HOUR,
     }),
   /** One film's details (also feeds the recommendation scorer, ADR-0026). */
   detail: (id: number) =>

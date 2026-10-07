@@ -31,21 +31,26 @@ describe('weights lab (ADR-0026)', () => {
   it('shows a labelled, described slider per part and the ranked picks', async () => {
     await likeThenOpen('/discover/weights')
     const support = await screen.findByRole('slider', { name: 'Recommended by your likes' })
-    expect(support).toHaveValue('26')
-    expect(support).toHaveAccessibleDescription('How many of your liked films recommend it.')
-    expect(screen.getAllByRole('slider')).toHaveLength(9)
+    expect(support).toHaveValue('22')
+    expect(support).toHaveAccessibleDescription(
+      'How many of your liked films recommend it, or share its series.',
+    )
+    // Ten score parts (ADR-0032) plus genre variety.
+    expect(screen.getAllByRole('slider')).toHaveLength(11)
+    expect(screen.getByRole('slider', { name: 'Same writer' })).toHaveValue('5')
+    expect(screen.getByRole('slider', { name: 'Same series' })).toHaveValue('7')
 
     const table = await screen.findByRole('table')
     const rows = within(table).getAllByRole('row').slice(1)
     expect(rows.length).toBeGreaterThan(0)
     // At the defaults nothing has moved.
     for (const row of rows) expect(row).toHaveTextContent(/^1?\d.*–\d+%/)
-    expect(screen.getByText(/support: 0\.26/)).toBeInTheDocument()
+    expect(screen.getByText(/support: 0\.22/)).toBeInTheDocument()
   })
 
   it('keeps settings in the URL, scales them to 100%, and ignores bad values', async () => {
     await likeThenOpen(
-      '/discover/weights?support=50&genre=50&quality=0&deepCut=0&decade=0&language=0&keywords=0&director=0&diversity=999',
+      '/discover/weights?support=50&genre=50&quality=0&deepCut=0&decade=0&language=0&keywords=0&director=0&writer=0&series=0&diversity=999',
     )
     expect(await screen.findByRole('slider', { name: 'Genre fit' })).toHaveValue('50')
     // Out-of-range diversity falls back to the default 5.
@@ -70,7 +75,7 @@ describe('weights lab (ADR-0026)', () => {
 
   it('warns when every weight is zero', async () => {
     await likeThenOpen(
-      '/discover/weights?support=0&genre=0&quality=0&deepCut=0&decade=0&language=0&keywords=0&director=0',
+      '/discover/weights?support=0&genre=0&quality=0&deepCut=0&decade=0&language=0&keywords=0&director=0&writer=0&series=0',
     )
     expect(await screen.findByRole('alert')).toHaveTextContent('Every weight is at zero')
   })

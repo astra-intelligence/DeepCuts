@@ -137,6 +137,39 @@ export const candidateDetailFixtures = Object.fromEntries(
   ]),
 )
 
+// A liked film in a series, and the series itself (ADR-0032): liking Friday the 13th brings in its
+// released sequels as candidates. TMDB recommends nothing for it here, so any pick must come from
+// the series. The undated entry is an announced film and must stay out.
+const f13Summary = (id: number, title: string, release_date: string) => ({
+  id,
+  title,
+  release_date,
+  overview: '',
+  poster_path: null,
+  backdrop_path: null,
+  genre_ids: [27],
+  popularity: 12,
+  vote_average: 6,
+  vote_count: 1500,
+  original_language: 'en',
+})
+export const friday13Fixture = {
+  ...f13Summary(4488, 'Friday the 13th', '1980-05-09'),
+  genres: [{ id: 27, name: 'Horror' }],
+  belongs_to_collection: { id: 9735, name: 'Friday the 13th Collection' },
+  recommendations: { results: [] },
+}
+export const collectionFixture = {
+  id: 9735,
+  name: 'Friday the 13th Collection',
+  parts: [
+    f13Summary(4488, 'Friday the 13th', '1980-05-09'),
+    f13Summary(9725, 'Friday the 13th Part 2', '1981-04-30'),
+    f13Summary(9728, 'Friday the 13th Part III', '1982-08-13'),
+    f13Summary(999001, 'Friday the 13th: Announced', ''),
+  ],
+}
+
 export const providersFixture = {
   results: {
     US: {

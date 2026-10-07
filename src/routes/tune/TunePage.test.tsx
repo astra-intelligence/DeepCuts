@@ -1,5 +1,5 @@
 // Tests for the optional "Tune my picks" onboarding: hidden while its feature flag is off, and
-// (with the flag turned on) each of the three steps.
+// (with the flag turned on) each of the two steps. No genre step since ADR-0032.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
@@ -16,23 +16,18 @@ describe('tune my picks (onboarding)', () => {
     expect(screen.queryByRole('link', { name: 'Tune my picks' })).not.toBeInTheDocument()
   })
 
-  it('step 1: choose genres, then continue with focus on the new heading', async () => {
-    const user = userEvent.setup()
-    const { router } = renderRoute('/tune', { features: { onboarding: true } })
-    expect(await screen.findByText('Step 1 of 3')).toBeInTheDocument()
-    const cont = screen.getByRole('button', { name: 'Continue' })
-    expect(cont).toBeDisabled()
-    await user.click(screen.getByRole('button', { name: 'Horror' }))
-    expect(screen.getByRole('button', { name: 'Horror' })).toHaveAttribute('aria-pressed', 'true')
-    await user.click(cont)
-    const h1 = await screen.findByRole('heading', { level: 1, name: 'What’s your favorite movie?' })
-    await waitFor(() => expect(h1).toHaveFocus())
-    expect(router.state.location.search).toBe('?step=2&genres=27')
+  it('starts with a favorite film, never asks for genres, and ignores old genre links', async () => {
+    renderRoute('/tune?genres=27', { features: { onboarding: true } })
+    expect(await screen.findByText('Step 1 of 2')).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'What’s your favorite movie?' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Horror' })).not.toBeInTheDocument()
   })
 
-  it('step 2: a favorite picked in search survives the trip to Detail and back', async () => {
+  it('step 1: a favorite picked in search survives the trip to Detail and back', async () => {
     const user = userEvent.setup()
-    const { router } = renderRoute('/tune?step=2&genres=27', { features: { onboarding: true } })
+    const { router } = renderRoute('/tune?step=1', { features: { onboarding: true } })
     expect(await screen.findByRole('button', { name: /Find my taste/ })).toBeDisabled()
     await user.type(screen.getByRole('combobox', { name: 'Find a movie to view and tag' }), 'thing')
     await user.click(await screen.findByRole('option', { name: /The Thing/ }))
@@ -41,11 +36,16 @@ describe('tune my picks (onboarding)', () => {
     expect(await screen.findByText('Your pick')).toBeInTheDocument()
     expect(screen.getByText('The Thing')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Find my taste/ })).toBeEnabled()
+    // Continuing moves focus to the next step's heading.
+    await user.click(screen.getByRole('button', { name: /Find my taste/ }))
+    const h1 = await screen.findByRole('heading', { level: 1, name: 'What do you think?' })
+    await waitFor(() => expect(h1).toHaveFocus())
+    expect(router.state.location.search).toContain('step=2')
   })
 
-  it('step 3: rate cards, never skip after a dislike, finish on Discover', async () => {
+  it('step 2: rate cards, never skip after a dislike, finish on Discover', async () => {
     const user = userEvent.setup()
-    const { router } = renderRoute('/tune?step=3&genres=27', { features: { onboarding: true } })
+    const { router } = renderRoute('/tune?step=2', { features: { onboarding: true } })
     const card = await screen.findByRole('article', { name: 'The Thing' })
     expect(screen.getByText('Tune your picks · 1 of 3')).toBeInTheDocument()
     const tags = within(card).getByRole('group', { name: 'Your tags for The Thing' })
@@ -61,11 +61,11 @@ describe('tune my picks (onboarding)', () => {
     expect(screen.getByText('Tune your picks · 2 of 3')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Next film' }))
     await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
-    expect(router.state.location.search).toBe('?genres=27')
+    expect(router.state.location.search).toBe('')
   })
 
-  it('step 3 skips the favorite and anything already disliked', async () => {
-    renderRoute('/tune?step=3&favorite=1091', { features: { onboarding: true } })
+  it('step 2 skips the favorite and anything already disliked', async () => {
+    renderRoute('/tune?step=2&favorite=1091', { features: { onboarding: true } })
     expect(await screen.findByRole('article', { name: 'Alien' })).toBeInTheDocument()
   })
 })
