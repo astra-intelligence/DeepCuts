@@ -41,37 +41,41 @@ export function AppLayout() {
     // Bottom padding keeps the last content clear of the fixed tab bar (and the iPhone home bar).
     <div className="mx-auto min-h-dvh w-full max-w-360 overflow-x-clip pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-28">
       <SkipLink />
-      {/* Header and search stay pinned to the top while the page scrolls. */}
-      <div className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur-lg">
-        <header className="flex min-h-16 items-center justify-between gap-2.5 px-5 pt-[max(0.625rem,env(safe-area-inset-top))] pb-2 md:px-8">
-          <Link
-            to="/discover"
-            aria-label="Deep Cuts, go to Discover"
-            className="inline-flex min-h-11 items-center"
-          >
-            <Logo className="h-7 w-auto" />
-          </Link>
-          <div className="flex items-center gap-2">
-            {/* "Tune my picks" onboarding is hidden behind a feature flag for now. */}
-            {FEATURES.onboarding && (
-              <Link
-                to="/tune"
-                aria-label="Tune my picks"
-                title="Tune my picks"
-                className="grid size-11 place-items-center rounded-container border border-border-control bg-surface-raised text-accent hover:border-accent hover:bg-surface-selected"
-              >
-                <Icon name="heart" />
-              </Link>
-            )}
-            <AccountChip />
-          </div>
-        </header>
-        <div className="px-5 py-3 md:px-8 md:pb-5">
-          <div className="mx-auto max-w-7xl">
-            <MovieSearch />
-          </div>
+      {/* Header and search stay pinned to the top while the page scrolls.
+          Phones: two rows (logo + account, then a full-width search). From `md`: one row with the
+          search centred between logo and account, which halves the header's height on desktop.
+          The DOM order (logo, search, account) is the desktop reading order; on phones `order-last`
+          moves the search to its own row, so keyboard focus goes logo → search → account there. */}
+      <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-x-2.5 gap-y-5 border-b border-border bg-surface/95 px-5 pt-[max(0.625rem,env(safe-area-inset-top))] pb-3 backdrop-blur-lg md:flex-nowrap md:gap-x-6 md:px-8 md:pt-[max(0.75rem,env(safe-area-inset-top))]">
+        {/* 46px tall on phones, matching the old 64px first row minus its padding, so the phone
+            layout is pixel-identical to before; the usual 44px from `md`. */}
+        <Link
+          to="/discover"
+          aria-label="Deep Cuts, go to Discover"
+          className="inline-flex min-h-11.5 shrink-0 items-center md:min-h-11"
+        >
+          <Logo className="h-7 w-auto md:h-8" />
+        </Link>
+        {/* Grows to fill the row up to a readable width; the auto margins then centre it.
+            `min-w-0` lets it shrink below the input's built-in width (else it overflows at 320px). */}
+        <div className="order-last min-w-0 basis-full md:order-none md:mx-auto md:max-w-md md:flex-1 md:basis-auto lg:max-w-lg">
+          <MovieSearch />
         </div>
-      </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {/* "Tune my picks" onboarding is hidden behind a feature flag for now. */}
+          {FEATURES.onboarding && (
+            <Link
+              to="/tune"
+              aria-label="Tune my picks"
+              title="Tune my picks"
+              className="grid size-11 place-items-center rounded-container border border-border-control bg-surface-raised text-accent hover:border-accent hover:bg-surface-selected"
+            >
+              <Icon name="heart" />
+            </Link>
+          )}
+          <AccountChip />
+        </div>
+      </header>
 
       <main id="main" className="mx-auto w-full max-w-7xl px-5 pt-5 pb-3 md:pt-6">
         <SignedInNotice />

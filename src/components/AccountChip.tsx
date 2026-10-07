@@ -25,8 +25,15 @@ export function AccountChip() {
   }
   return (
     // Remember where sign-in started, so it can return there.
-    <Link to="/sign-in" state={{ from: pathname + search }} className={chip}>
-      <span className="grid size-9 place-items-center rounded-control bg-surface-overlay text-fg-muted">
+    // Phones keep the quiet chip. From `md` the header has room to spare, so signing in becomes
+    // the one filled call to action next to the search, with the icon inline instead of in a tile.
+    // Same 44px height either way, so signing in doesn't shift the header.
+    <Link
+      to="/sign-in"
+      state={{ from: pathname + search }}
+      className={`${chip} md:gap-1.5 md:border-transparent md:bg-button-primary-bg md:pr-4 md:pl-3.5 md:text-button-primary-fg md:hover:bg-button-primary-bg/85`}
+    >
+      <span className="grid size-9 place-items-center rounded-control bg-surface-overlay text-fg-muted md:size-auto md:bg-transparent md:text-inherit">
         <Icon name="user" />
       </span>
       Sign in
