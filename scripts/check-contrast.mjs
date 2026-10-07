@@ -15,14 +15,39 @@ const ratio = (a, b) => {
   return (hi + 0.05) / (lo + 0.05)
 }
 
+/** `a` and `b` mixed in sRGB with `weight` of `a`, as CSS `color-mix(in srgb, a w%, b)` does. */
+const mix = (a, weight, b) =>
+  '#' +
+  [0, 2, 4]
+    .map((i) => {
+      const [x, y] = [a, b].map((h) => parseInt(h.replace('#', '').slice(i, i + 2), 16))
+      return Math.round(x * weight + y * (1 - weight))
+        .toString(16)
+        .padStart(2, '0')
+    })
+    .join('')
+
+/**
+ * A pair side is a token name, or `{ "mix": [token, weight, token] }` for a color the page mixes
+ * at runtime (e.g. the genre sticker's face, index.css `sticker-face`). Returns [label, hex].
+ */
+const resolve = (side) => {
+  if (typeof side === 'string') return [side, tokens[side]]
+  const [a, weight, b] = side.mix
+  const label = `mix(${a} ${weight * 100}%, ${b})`
+  return [label, tokens[a] && tokens[b] ? mix(tokens[a], weight, tokens[b]) : undefined]
+}
+
 let failed = 0
-for (const [fg, bg, min] of pairs) {
-  if (!tokens[fg] || !tokens[bg]) {
+for (const [fgSide, bgSide, min] of pairs) {
+  const [fg, fgHex] = resolve(fgSide)
+  const [bg, bgHex] = resolve(bgSide)
+  if (!fgHex || !bgHex) {
     console.error(`✗ unknown token in pair: ${fg} / ${bg}`)
     failed++
     continue
   }
-  const r = ratio(tokens[fg], tokens[bg])
+  const r = ratio(fgHex, bgHex)
   const ok = r >= min
   if (!ok) failed++
   console.log(`${ok ? '✓' : '✗'} ${fg} on ${bg}: ${r.toFixed(2)} (min ${min})`)

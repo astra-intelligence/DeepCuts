@@ -90,61 +90,61 @@
         "$value": "{color.teal.400}"
       },
       "action": {
-        "$value": "{color.orange.300}"
+        "$value": "{color.orange.600}"
       },
       "adventure": {
-        "$value": "{color.lime.300}"
+        "$value": "{color.lime.600}"
       },
       "animation": {
-        "$value": "{color.gold.300}"
+        "$value": "{color.gold.600}"
       },
       "comedy": {
-        "$value": "{color.gold.300}"
+        "$value": "{color.gold.600}"
       },
       "crime": {
-        "$value": "{color.indigo.300}"
+        "$value": "{color.indigo.600}"
       },
       "documentary": {
-        "$value": "{color.green.300}"
+        "$value": "{color.green.600}"
       },
       "drama": {
-        "$value": "{color.sky.300}"
+        "$value": "{color.sky.600}"
       },
       "family": {
-        "$value": "{color.lime.300}"
+        "$value": "{color.lime.600}"
       },
       "fantasy": {
-        "$value": "{color.violet.300}"
+        "$value": "{color.violet.600}"
       },
       "history": {
-        "$value": "{color.green.300}"
+        "$value": "{color.green.600}"
       },
       "horror": {
-        "$value": "{color.violet.300}"
+        "$value": "{color.violet.600}"
       },
       "music": {
-        "$value": "{color.magenta.300}"
+        "$value": "{color.magenta.600}"
       },
       "mystery": {
-        "$value": "{color.indigo.300}"
+        "$value": "{color.indigo.600}"
       },
       "romance": {
-        "$value": "{color.magenta.300}"
+        "$value": "{color.magenta.600}"
       },
       "science-fiction": {
-        "$value": "{color.cyan.300}"
+        "$value": "{color.cyan.600}"
       },
       "thriller": {
-        "$value": "{color.orange.300}"
+        "$value": "{color.orange.600}"
       },
       "tv-movie": {
-        "$value": "{color.sky.300}"
+        "$value": "{color.sky.600}"
       },
       "war": {
-        "$value": "{color.orange.300}"
+        "$value": "{color.orange.600}"
       },
       "western": {
-        "$value": "{color.gold.300}"
+        "$value": "{color.gold.600}"
       }
     },
     "print": {
