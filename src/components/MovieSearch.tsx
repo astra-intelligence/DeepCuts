@@ -9,7 +9,8 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { useTagQueries } from '../session/tagQueries'
 import { Icon } from './Icon'
 
-const MAX_SUGGESTIONS = 8
+// Four, as in the design: the list never needs to scroll, even at 320px (axe scrollable-region-focusable).
+const MAX_SUGGESTIONS = 4
 
 /**
  * The persistent search (design v2) shown on every page: an accessible combobox whose suggestions
