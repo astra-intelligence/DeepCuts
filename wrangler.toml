@@ -1,0 +1,12 @@
+# Cloudflare Pages project config (ADR-0029, Stage 4 H3). Committed, so it must never hold a
+# secret: TMDB_READ_TOKEN is an encrypted Pages secret in production and comes from `.dev.vars`
+# (git-ignored) locally.
+name = "deep-cuts"
+pages_build_output_dir = "dist"
+# Fixed so the runtime's behavior only changes when this date is moved on purpose.
+compatibility_date = "2026-10-01"
+
+# The rate-limit Worker (workers/rate-limit/), called by the Functions before any other work.
+[[services]]
+binding = "RATE_LIMITER"
+service = "deep-cuts-rate-limit"

@@ -28,9 +28,29 @@ describe('tmdb client', () => {
     await expect(tmdb.movie(999)).rejects.toEqual(new TmdbError(404))
   })
 
-  it('rejects responses that do not match the schema', async () => {
+  it('rejects responses that do not match the schema as an upstream error', async () => {
     server.use(http.get('/api/tmdb/movie/:id', () => HttpResponse.json({ id: 'nope' })))
-    await expect(tmdb.movie(1)).rejects.toThrow()
+    await expect(tmdb.movie(1)).rejects.toEqual(new TmdbError(502))
+  })
+
+  // Stage 4 H8: when the Function quota runs out, Pages "fails open" and serves index.html.
+  it('treats an HTML page with status 200 as an upstream error, not a crash', async () => {
+    server.use(
+      http.get('/api/tmdb/search/movie', () =>
+        HttpResponse.html('<!doctype html><title>Deep Cuts</title>'),
+      ),
+    )
+    await expect(tmdb.search('thing')).rejects.toEqual(new TmdbError(502))
+  })
+
+  it('treats a JSON content type with a broken body as an upstream error', async () => {
+    server.use(
+      http.get(
+        '/api/tmdb/movie/:id',
+        () => new HttpResponse('{oops', { headers: { 'Content-Type': 'application/json' } }),
+      ),
+    )
+    await expect(tmdb.movie(1)).rejects.toEqual(new TmdbError(502))
   })
 
   it('drops image paths that are not plain TMDB file names', async () => {

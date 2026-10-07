@@ -27,9 +27,12 @@
     "vite.config.ts",
     "playwright.config.ts",
     "playwright.storybook.config.ts",
+    "playwright.cf.config.ts",
     "server",
     "e2e",
     "storybook-tests",
     ".storybook"
-  ]
+  ],
+  // Runs against Workers globals (caches.default), so functions/tsconfig.json checks it instead.
+  "exclude": ["server/pagesFunction.test.ts"]
 }

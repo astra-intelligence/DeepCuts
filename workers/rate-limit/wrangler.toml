@@ -1,0 +1,15 @@
+# The rate-limit Worker (ADR-0029, Stage 4 H4). Bound to the Pages project as RATE_LIMITER.
+# No secrets belong in this file; it is committed.
+name = "deep-cuts-rate-limit"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+# No public URL: the Pages Function reaches this Worker only through its service binding.
+workers_dev = false
+preview_urls = false
+
+# Cloudflare's built-in rate limiter (free on Workers Free). Counts are per key, per location, and
+# kept only in memory. 60 requests per 60 s per client is a first guess (owner open question).
+[[ratelimits]]
+name = "API_LIMITER"
+namespace_id = "1001"
+simple = { limit = 60, period = 60 }

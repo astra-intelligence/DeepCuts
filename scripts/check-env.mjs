@@ -1,4 +1,6 @@
-// Vite inlines every VITE_* value into public JS, so secret-looking VITE_ names are banned. ADR-0001, ADR-0008.
+// Vite inlines every VITE_* value into public JS, so secret-looking VITE_ names are banned; and local
+// secret files (.env*, .dev.vars) must never be tracked by git. ADR-0001, ADR-0008, ADR-0029.
+import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -11,7 +13,8 @@ const walk = (dir) =>
 
 const files = [
   ...walk('src'),
-  ...readdirSync('.').filter((f) => f.startsWith('.env')),
+  // `.dev.vars` is wrangler's local env file (ADR-0029); the same rule applies to it.
+  ...readdirSync('.').filter((f) => f.startsWith('.env') || f.startsWith('.dev.vars')),
   'vite.config.ts',
   'index.html',
 ].filter(existsSync)
@@ -22,5 +25,16 @@ for (const file of files) {
     console.error(`${file}: secret-looking public env var ${m[0]}`)
     problems++
   }
+}
+
+// Local secret files must never be tracked by git, even if someone force-adds one past .gitignore.
+const tracked = execFileSync('git', ['ls-files', '.env', '.env.*', '.dev.vars', '.dev.vars.*'], {
+  encoding: 'utf8',
+})
+  .split('\n')
+  .filter((f) => f && !f.endsWith('.example'))
+for (const file of tracked) {
+  console.error(`${file}: local secrets file is tracked by git; remove it (git rm --cached)`)
+  problems++
 }
 process.exit(problems ? 1 : 0)
