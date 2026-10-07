@@ -12,6 +12,7 @@ The source of truth for this repo is the files in it, not chat history.
 - The owner approves every technology and design choice. Propose options with a recommendation; never decide alone.
 - `npm run verify` must pass before every commit. It runs lint, typecheck, contrast, coverage, build and the dist secret check.
 - Tokens follow Brad Frost's tiers (ADR-0027); the Tailwind theme is generated from them, so a class name is a token name. Use component tokens where they exist (`bg-card-bg`, `rounded-button`), else semantic ones (`text-fg-muted`, `rounded-container`). Raw colors and the raw radius/shadow scale fail lint. Change tokens in `tokens/`, never `src/styles/`.
+- Comment generously so the owner can read the code. Every new file starts with a short header saying what it is for and how it fits (with its ADR). Every exported function, component, hook and type gets a doc comment in plain language. Inside, comment each step of non-obvious logic and the _why_ behind rules, numbers and workarounds. Skip comments that only repeat the code.
 - Browser storage only in `src/adapters/local/`. No `dangerouslySetInnerHTML`. Validate external data with Zod.
 - Secrets never go in `VITE_*` vars.
 - Responsive, mobile-first (ADR-0021): base styles target 390px; enhance with `md:`/`lg:`; no horizontal overflow at 320px.
