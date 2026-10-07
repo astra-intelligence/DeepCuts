@@ -66,11 +66,23 @@ export const ROUTES = {
   ],
 } as const
 
-/** Where the tests pretend the app is served from. */
-export const ORIGIN = 'http://localhost:8788'
+/**
+ * Where the tests pretend the app is served from: https, like the real site, so the strict
+ * `__Host-` cookie is what's tested. Local http gets a relaxed cookie (server/accounts/sessions.ts).
+ */
+export const ORIGIN = 'https://deep-cuts.test'
+/** The `npm run preview:accounts` address, for the local-cookie tests. */
+export const LOCAL_ORIGIN = 'http://localhost:8788'
 
-/** One test client: a browser with its own cookies. */
-export function createClient(env: Env, { origin = ORIGIN }: { origin?: string | null } = {}) {
+/**
+ * One test client: a browser with its own cookies.
+ * @param base - The site the requests go to.
+ * @param origin - The `Origin` header (null: none); defaults to `base`, as a browser would send.
+ */
+export function createClient(
+  env: Env,
+  { base = ORIGIN, origin = base }: { base?: string; origin?: string | null } = {},
+) {
   const jar = new Map<string, string>()
 
   /** Sends one request; returns the status, the parsed body and the raw response. */
@@ -79,7 +91,7 @@ export function createClient(env: Env, { origin = ORIGIN }: { origin?: string | 
     if (origin) headers.Origin = origin
     if (body !== undefined) headers['Content-Type'] = 'application/json'
     if (jar.size) headers.Cookie = [...jar].map(([k, v]) => `${k}=${v}`).join('; ')
-    const request = new Request(ORIGIN + path, {
+    const request = new Request(base + path, {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
