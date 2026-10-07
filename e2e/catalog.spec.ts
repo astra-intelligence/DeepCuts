@@ -191,3 +191,28 @@ test('liking a film tunes Discover, with a match and the reason (ADR-0026)', asy
   await expectNoA11yViolations(page)
   await expectNoHorizontalOverflow(page)
 })
+
+test('tag and genre colors reach the page (runtime CSS variables, ADR-0020/0027)', async ({
+  page,
+}) => {
+  await page.goto('/movie/1091')
+  // tagColor() and genreTone() build `var(--color-…)` at runtime, which Tailwind can't see in
+  // the source; the generated theme must still emit every one.
+  const missing = await page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement)
+    const names = ['seen', 'watchlist', 'liked', 'disliked'].map((t) => `--color-tag-${t}`)
+    names.push('--color-genre', '--color-genre-horror', '--color-genre-drama')
+    return names.filter((n) => !root.getPropertyValue(n).trim())
+  })
+  expect(missing).toEqual([])
+  // Each unselected toggle's icon wears its tag color, not the button's muted text color.
+  const group = page.getByRole('group', { name: 'Your tags' })
+  for (const name of ['Seen it', 'Want to see', 'Like', 'Dislike']) {
+    const button = group.getByRole('button', { name, exact: true })
+    const [text, icon] = await button.evaluate((b) => [
+      getComputedStyle(b).color,
+      getComputedStyle(b.querySelector('svg') as Element).color,
+    ])
+    expect(icon, name).not.toBe(text)
+  }
+})
