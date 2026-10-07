@@ -29,5 +29,31 @@ export function sessionProviderContract(name: string, make: () => SessionProvide
     it('rejects an over-long name', async () => {
       await expect(make().createProfile('x'.repeat(41))).rejects.toThrow()
     })
+
+    it('offers at least one sign-in method, each with a label and description', () => {
+      const methods = make().signInMethods()
+      expect(methods.length).toBeGreaterThan(0)
+      for (const m of methods) {
+        expect(m.label).not.toBe('')
+        expect(m.description).not.toBe('')
+      }
+    })
+
+    it('signs in with an offered method, survives a reload, and signs out to guest (ADR-0025)', async () => {
+      const provider = make()
+      await provider.createProfile()
+      const method = provider.signInMethods()[0]
+      if (!method) throw new Error('no sign-in method offered')
+      const session = await provider.signIn(method.id)
+      expect(session.kind).toBe('account')
+      expect(await make().getSession()).toEqual(session)
+      expect(await provider.signOut()).toEqual({ kind: 'guest' })
+      expect(await make().getSession()).toEqual({ kind: 'guest' })
+    })
+
+    it('rejects a method it does not offer', async () => {
+      // @ts-expect-error -- a method id the provider doesn't know
+      await expect(make().signIn('carrier-pigeon')).rejects.toThrow()
+    })
   })
 }

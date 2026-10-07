@@ -4,6 +4,8 @@ import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createLocalTagRepository } from '../adapters/local/LocalTagRepository'
 import { createMockSessionProvider } from '../adapters/local/MockSessionProvider'
+
+const accountTags = () => createLocalTagRepository(undefined, undefined, 'account-demo-tags')
 import { AppSessionProvider } from './AppSessionProvider'
 import { useSession } from './SessionContext'
 import { useSetTag, useTagQueries } from './tagQueries'
@@ -33,6 +35,7 @@ const renderHarness = () => renderHook(useHarness, { wrapper })
 beforeEach(async () => {
   await createMockSessionProvider().signOut()
   await createLocalTagRepository().clear()
+  await accountTags().clear()
 })
 afterEach(() => vi.restoreAllMocks())
 
@@ -69,6 +72,50 @@ describe('session', () => {
     await act(() => result.current.signOut())
     expect(result.current.session).toEqual({ kind: 'guest' })
     await waitFor(() => expect(result.current.liked).toEqual([]))
+  })
+
+  it('signing in moves guest picks into the account and reports how many (ADR-0025)', async () => {
+    const { result } = renderHarness()
+    await act(() => result.current.setTag.mutateAsync({ tmdbId: 5, tag: 'liked', on: true }))
+    await act(() => result.current.setTag.mutateAsync({ tmdbId: 6, tag: 'seen', on: true }))
+    let moved = -1
+    await act(async () => {
+      moved = (await result.current.signIn('demo')).moved
+    })
+    expect(moved).toBe(2)
+    expect(result.current.session).toMatchObject({
+      kind: 'account',
+      account: { name: 'Alex Rivera' },
+    })
+    expect(await accountTags().list('liked')).toEqual([5])
+    await waitFor(() => expect(result.current.liked).toEqual([5]))
+  })
+
+  it('signing in from a device profile moves its picks and retires the profile store', async () => {
+    const { result } = renderHarness()
+    await act(() => result.current.createProfile())
+    await act(() => result.current.setTag.mutateAsync({ tmdbId: 7, tag: 'liked', on: true }))
+    await act(() => result.current.signIn('demo'))
+    expect(await createLocalTagRepository().exportAll()).toEqual([])
+    expect(await accountTags().list('liked')).toEqual([7])
+  })
+
+  it('the account keeps its lists through sign out and back in', async () => {
+    const { result } = renderHarness()
+    await act(() => result.current.signIn('demo'))
+    await act(() => result.current.setTag.mutateAsync({ tmdbId: 8, tag: 'liked', on: true }))
+    await act(() => result.current.signOut())
+    await waitFor(() => expect(result.current.liked).toEqual([]))
+    await act(() => result.current.signIn('demo'))
+    await waitFor(() => expect(result.current.liked).toEqual([8]))
+  })
+
+  it('saving twice keeps the picks (regression: a same-store move must not clear them)', async () => {
+    const { result } = renderHarness()
+    await act(() => result.current.createProfile())
+    await act(() => result.current.setTag.mutateAsync({ tmdbId: 9, tag: 'liked', on: true }))
+    await act(() => result.current.createProfile())
+    await waitFor(() => expect(result.current.liked).toEqual([9]))
   })
 
   it('useSession outside the provider fails loudly', () => {
