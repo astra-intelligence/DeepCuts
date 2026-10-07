@@ -38,3 +38,5 @@ test-results
 playwright-report
 src/styles/theme.css
 src/styles/theme-dark.css
+storybook-static
+*storybook.log

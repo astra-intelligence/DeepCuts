@@ -17,4 +17,5 @@ step 'npm audit';              npm audit --audit-level=high
 step 'format';                 npm run format:check
 step 'verify';                 npm run verify
 step 'e2e (no TMDB token)';    npm run e2e
+step 'storybook a11y';         npm run storybook:test
 printf '\n✓ Everything CI runs passed locally.\n'

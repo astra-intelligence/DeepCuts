@@ -12,7 +12,7 @@ import tseslint from 'typescript-eslint'
 const storageMsg = 'Browser storage is only allowed in src/adapters/local/ (ADR-0013).'
 
 export default defineConfig([
-  globalIgnores(['dist', 'build', 'coverage']),
+  globalIgnores(['dist', 'build', 'coverage', 'storybook-static']),
   // All TypeScript: recommended JS rules, strict TypeScript rules, React hooks rules, fast-refresh
   // safety, and strict accessibility (jsx-a11y).
   {
