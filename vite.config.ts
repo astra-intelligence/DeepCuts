@@ -62,6 +62,8 @@ export default defineConfig(({ mode }) => ({
         'src/**/*.test.{ts,tsx}',
         'src/**/*.contract.ts',
         'src/test/**',
+        // Storybook stories are documentation, checked by the Storybook a11y gate instead.
+        'src/**/*.stories.tsx',
         'server/**/*.test.ts',
       ],
       thresholds: {

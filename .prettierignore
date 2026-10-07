@@ -7,3 +7,4 @@ docs
 .claude
 test-results
 playwright-report
+storybook-static
