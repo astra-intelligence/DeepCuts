@@ -18,7 +18,10 @@ for (const story of stories) {
   test(`${story.title} › ${story.name} has no axe violations`, async ({ page }) => {
     // Images from TMDB's CDN aren't needed to check accessibility; don't fetch them.
     await page.route('https://image.tmdb.org/**', (route) => route.abort())
-    await page.goto(`/iframe.html?id=${story.id}&viewMode=story`)
+    // `a11y.manual` stops the a11y addon's own automatic axe run after each render. Left on, it
+    // races this check in the same page and fails it at random with "Axe is already running".
+    // This gate is the check; the addon's panel still runs on demand in the Storybook UI.
+    await page.goto(`/iframe.html?id=${story.id}&viewMode=story&globals=a11y.manual:!true`)
     await expect(page.locator('#storybook-root > *').first()).toBeVisible()
     const results = await new AxeBuilder({ page })
       .include('#storybook-root')
