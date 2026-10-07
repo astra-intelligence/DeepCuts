@@ -3,6 +3,7 @@
 // headers, and the unit-test runner (Vitest reads its settings from `test` below).
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+import { visualizer } from 'rollup-plugin-visualizer'
 import { defineConfig, loadEnv } from 'vite'
 import { tmdbProxy } from './server/tmdbProxy.ts'
 
@@ -34,7 +35,14 @@ export const contentSecurityPolicy = [
 
 export default defineConfig(({ mode }) => ({
   // TMDB_READ_TOKEN is read without the VITE_ prefix, so it never reaches the bundle (ADR-0013).
-  plugins: [react(), tailwindcss(), tmdbProxy(loadEnv(mode, process.cwd(), '').TMDB_READ_TOKEN)],
+  plugins: [
+    react(),
+    tailwindcss(),
+    tmdbProxy(loadEnv(mode, process.cwd(), '').TMDB_READ_TOKEN),
+    // `npm run analyze` only: a treemap of what's in the bundle, at build/bundle-report.html.
+    mode === 'analyze' &&
+      visualizer({ filename: 'build/bundle-report.html', gzipSize: true, template: 'treemap' }),
+  ],
   server: { headers: baseHeaders },
   preview: { headers: { ...baseHeaders, 'Content-Security-Policy': contentSecurityPolicy } },
   // Fonts are never inlined as data: URIs, which the CSP's font-src 'self' would block.
@@ -42,6 +50,25 @@ export default defineConfig(({ mode }) => ({
   build: {
     sourcemap: false,
     assetsInlineLimit: (file: string) => (/\.(woff2?|ttf|otf)$/.test(file) ? false : undefined),
+    // Libraries go into three stable files that only change when a library is upgraded, so a
+    // returning visitor keeps them cached across app updates. Pages are split by the router.
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: 'react',
+              test: /node_modules[\\/](react|react-dom|scheduler|react-router)[\\/]/,
+            },
+            {
+              name: 'react-aria',
+              test: /node_modules[\\/](react-aria|react-aria-components|react-stately|@react-aria|@react-stately|@react-types|@internationalized|@swc)[\\/]/,
+            },
+            { name: 'data', test: /node_modules[\\/](zod|@tanstack)[\\/]/ },
+          ],
+        },
+      },
+    },
   },
   // Unit tests (Vitest): a simulated browser (jsdom), shared setup, and which files are tests.
   test: {

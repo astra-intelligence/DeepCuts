@@ -34,9 +34,9 @@ describe('my lists', () => {
     expect(router.state.location.search).toBe('?tag=seen')
   })
 
-  it('falls back to Want to see for an unknown ?tag=', () => {
+  it('falls back to Want to see for an unknown ?tag=', async () => {
     renderRoute('/lists?tag=hidden')
-    const lists = screen.getByRole('navigation', { name: 'Lists' })
+    const lists = await screen.findByRole('navigation', { name: 'Lists' })
     expect(within(lists).getByRole('link', { name: /Want to see/ })).toHaveAttribute(
       'aria-current',
       'true',

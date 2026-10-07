@@ -24,7 +24,9 @@ async function likeThenOpen(path: string, options: Parameters<typeof renderRoute
 describe('weights lab (ADR-0026)', () => {
   it('asks for likes first when there are none', async () => {
     renderRoute('/discover/weights')
-    expect(screen.getByRole('heading', { level: 1, name: 'Tune the weights' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Tune the weights' }),
+    ).toBeInTheDocument()
     expect(screen.getByText(/Like a few films first/)).toBeInTheDocument()
     expect(screen.queryByRole('slider')).not.toBeInTheDocument()
   })

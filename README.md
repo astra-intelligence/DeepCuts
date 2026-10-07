@@ -24,6 +24,7 @@ npm run dev
 | `npm run check:contrast` | Every semantic token pair meets WCAG 2.2 AA                                                  |
 | `npm run coverage`       | Vitest + Testing Library, ≥ 80% lines                                                        |
 | `npm run check:dist`     | No token in the built bundle                                                                 |
+| `npm run check:bundle`   | The build stays within its size budget (first visit ≤ 230 kB gzipped)                        |
 
 CI also runs `npm audit`, gitleaks and CodeQL. Actions are pinned by SHA.
 
@@ -34,6 +35,7 @@ CI also runs `npm audit`, gitleaks and CodeQL. Actions are pinned by SHA.
 | `npm run dev`           | Dev server at http://localhost:5173 (builds the tokens first)                        |
 | `npm run build`         | Production build into `dist/`                                                        |
 | `npm run preview`       | Serves `dist/` at http://localhost:4173 with the production security headers         |
+| `npm run analyze`       | Production build plus a treemap of the bundle at `build/bundle-report.html`          |
 | `npm run e2e`           | Playwright browser tests against a fresh production build                            |
 | `npm run ci:local`      | Exactly what GitHub CI runs; run before opening a PR                                 |
 | `npm run tokens`        | Builds the design tokens (`tokens/`) into CSS, the Tailwind theme, JS and Figma JSON |

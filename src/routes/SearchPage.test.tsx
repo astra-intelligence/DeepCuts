@@ -57,6 +57,8 @@ describe('search → detail', () => {
   it('picking an autocomplete suggestion opens the film', async () => {
     const user = userEvent.setup()
     renderRoute('/lists')
+    // My Lists loads its code on demand; wait for the page (and its header search) to appear.
+    await screen.findByRole('heading', { level: 1, name: 'My Lists' })
     await user.type(box(), 'thing')
     await user.click(await screen.findByRole('option', { name: /The Thing/ }))
     expect(await screen.findByRole('heading', { level: 1, name: 'The Thing' })).toBeInTheDocument()
@@ -65,6 +67,8 @@ describe('search → detail', () => {
   it('Enter (Find) opens the best match', async () => {
     const user = userEvent.setup()
     renderRoute('/lists')
+    // My Lists loads its code on demand; wait for the page (and its header search) to appear.
+    await screen.findByRole('heading', { level: 1, name: 'My Lists' })
     await user.type(box(), 'alien')
     await screen.findByRole('option', { name: /Alien/ })
     await user.keyboard('{Enter}')
@@ -77,6 +81,8 @@ describe('search → detail', () => {
   it('arrow keys + Enter open the highlighted suggestion, not the first match', async () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/lists')
+    // My Lists loads its code on demand; wait for the page (and its header search) to appear.
+    await screen.findByRole('heading', { level: 1, name: 'My Lists' })
     await user.type(box(), 'a') // too short to search
     await user.type(box(), 'l')
     await screen.findByRole('option', { name: /Alien/ })

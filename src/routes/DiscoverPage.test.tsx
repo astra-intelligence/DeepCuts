@@ -9,7 +9,9 @@ import { renderRoute } from '../test/renderRoute'
 describe('discover', () => {
   it('shows a feature card and a poster grid', async () => {
     renderRoute('/discover')
-    expect(screen.getByRole('heading', { level: 1, name: 'Found for you' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Found for you' }),
+    ).toBeInTheDocument()
     expect(
       await screen.findByRole('link', { name: /Today’s featured deep cut.*The Thing/ }),
     ).toBeInTheDocument()
