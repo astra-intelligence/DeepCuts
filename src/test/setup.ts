@@ -5,7 +5,7 @@ import { createLocalTagRepository } from '../adapters/local/LocalTagRepository'
 import { createMockSessionProvider } from '../adapters/local/MockSessionProvider'
 import { server } from './msw/server'
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
 afterEach(async () => {
   cleanup()
   server.resetHandlers()

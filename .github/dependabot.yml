@@ -5,6 +5,15 @@ updates:
     schedule: { interval: weekly }
     groups:
       dev-dependencies: { dependency-type: development }
+    ignore:
+      # eslint-plugin-jsx-a11y doesn't support ESLint 10 yet (ADR-0009 needs it). Lift when it does.
+      - dependency-name: eslint
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@eslint/js'
+        update-types: ['version-update:semver-major']
+      # Node's type definitions follow the runtime we target (engines: node >= 24).
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
