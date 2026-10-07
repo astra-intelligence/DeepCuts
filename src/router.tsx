@@ -9,6 +9,7 @@ import { RouteError } from './routes/PlaceholderPages'
 import { SearchPage } from './routes/SearchPage'
 import { SignInPage } from './routes/SignInPage'
 import { TunePage } from './routes/tune/TunePage'
+import { WeightsPage } from './routes/WeightsPage'
 
 // Search is the landing page; onboarding (/tune) is optional (ADR-0019 amendment) and behind a
 // feature flag. While it's off, /tune redirects to Search.
@@ -21,6 +22,10 @@ export function createRoutes(features: Features = FEATURES): RouteObject[] {
       children: [
         { index: true, element: <Navigate to="/search" replace /> },
         { path: 'discover', element: <DiscoverPage /> },
+        {
+          path: 'discover/weights',
+          element: features.weightsLab ? <WeightsPage /> : <Navigate to="/discover" replace />,
+        },
         { path: 'search', element: <SearchPage /> },
         { path: 'lists', element: <ListsPage /> },
         { path: 'account', element: <AccountPage /> },

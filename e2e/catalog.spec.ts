@@ -179,4 +179,15 @@ test('liking a film tunes Discover, with a match and the reason (ADR-0026)', asy
   await expect(feature).toContainText('Because you liked The Thing')
   await expectNoA11yViolations(page)
   await expectNoHorizontalOverflow(page)
+
+  // The weights lab re-ranks the same picks live; settings go in the URL.
+  await page.getByRole('link', { name: 'Tune the weights' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Tune the weights' })).toBeVisible()
+  await expect(page.getByRole('table')).toBeVisible()
+  const deepCut = page.getByRole('slider', { name: 'Deep cut' })
+  await deepCut.focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(page).toHaveURL(/deepCut=11/)
+  await expectNoA11yViolations(page)
+  await expectNoHorizontalOverflow(page)
 })

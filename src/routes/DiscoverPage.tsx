@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router'
 import { z } from 'zod'
 import { movieQueries } from '../api/queries'
 import { imageUrl, releaseYear, type MovieSummary } from '../api/tmdb'
+import { FEATURES } from '../config/features'
 import { EmptyState } from '../components/EmptyState'
 import { Icon } from '../components/Icon'
 import { PageHeading } from '../components/PageHeading'
@@ -22,7 +23,6 @@ const paramsSchema = z.object({
 
 const WEEKDAY = new Intl.DateTimeFormat('en-US', { weekday: 'long' })
 
-// Until a scorer exists (Stage 5), Discover is TMDB-popular films minus disliked ones (ADR-0017).
 // With likes, Discover ranks films with the scorer (ADR-0026). Without likes it shows popular films
 // minus disliked ones, and says how to tune it.
 export function DiscoverPage() {
@@ -78,6 +78,14 @@ export function DiscoverPage() {
             ))}
           </ul>
         </section>
+      )}
+      {usePicks && FEATURES.weightsLab && (
+        <p className="mt-6 text-sm text-fg-muted">
+          Curious how these are ranked?{' '}
+          <Link to="/discover/weights" className="text-info underline">
+            Tune the weights
+          </Link>
+        </p>
       )}
     </>
   )

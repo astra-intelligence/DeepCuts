@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_WEIGHTS,
+  normalizeWeights,
   recommend,
   SCORE_PARTS,
   type Pick,
@@ -34,6 +35,8 @@ function pickOf(picks: Pick[], id: number): Pick {
   if (!pick) throw new Error(`no pick for film ${id}`)
   return pick
 }
+
+const ZERO = { support: 0, genre: 0, quality: 0, deepCut: 0, decade: 0, language: 0 }
 
 function input(overrides: Partial<TasteInput> = {}): TasteInput {
   return { liked: [], wanted: [], disliked: [], excluded: new Set(), ...overrides }
@@ -174,10 +177,42 @@ describe('recommend (ADR-0026)', () => {
     expect(order.indexOf(s1.id)).toBeLessThan(order.indexOf(h3.id))
   })
 
+  it('turns diversity off with a zero penalty', () => {
+    const h1 = film({ genreIds: [HORROR], voteAverage: 8 })
+    const h2 = film({ genreIds: [HORROR], voteAverage: 8 })
+    const s1 = film({ genreIds: [SCIFI], voteAverage: 7.9 })
+    const taste = input({
+      liked: [{ film: film({ genreIds: [HORROR, SCIFI] }), recommendations: [h1, h2, s1] }],
+    })
+    const ids = (penalty: number) =>
+      recommend(taste, { diversityPenalty: penalty }).map((p) => p.film.id)
+    expect(ids(0)).toEqual([h1.id, h2.id, s1.id])
+    expect(ids(0.5)).toEqual([h1.id, s1.id, h2.id])
+  })
+
+  it('ranks by whichever weights it is given', () => {
+    const famous = film({ popularity: 500, voteAverage: 8.5 })
+    const obscure = film({ popularity: 1, voteAverage: 6 })
+    const taste = input({ liked: [{ film: film(), recommendations: [famous, obscure] }] })
+    const only = (part: 'quality' | 'deepCut') =>
+      recommend(taste, {
+        weights: normalizeWeights({ ...ZERO, [part]: 1 }),
+      }).map((p) => p.film.id)
+    expect(only('quality')).toEqual([famous.id, obscure.id])
+    expect(only('deepCut')).toEqual([obscure.id, famous.id])
+  })
+
+  it('normalizes weights to sum to 1, ignoring negatives, and keeps all-zero at zero', () => {
+    const w = normalizeWeights({ ...ZERO, support: 3, genre: 1, quality: -2 })
+    expect(w).toEqual({ ...ZERO, support: 0.75, genre: 0.25 })
+    expect(normalizeWeights(ZERO)).toEqual(ZERO)
+    expect(normalizeWeights(DEFAULT_WEIGHTS).support).toBeCloseTo(0.35)
+  })
+
   it('stops at the limit', () => {
     const recs = Array.from({ length: 30 }, () => film())
     expect(
-      recommend(input({ liked: [{ film: film(), recommendations: recs }] }), DEFAULT_WEIGHTS, 5),
+      recommend(input({ liked: [{ film: film(), recommendations: recs }] }), { limit: 5 }),
     ).toHaveLength(5)
   })
 

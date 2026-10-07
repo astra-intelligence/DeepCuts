@@ -40,6 +40,21 @@ export const DEFAULT_WEIGHTS: Weights = {
 
 /** Each earlier pick with the same primary genre lowers a candidate's rank by this much. */
 export const DIVERSITY_PENALTY = 0.03
+
+/** Scales weights to sum to 1, so any mix (e.g. from the tuning sliders) keeps scores in 0–1. */
+export function normalizeWeights(weights: Weights): Weights {
+  const total = SCORE_PARTS.reduce((sum, p) => sum + Math.max(0, weights[p]), 0)
+  return Object.fromEntries(
+    SCORE_PARTS.map((p) => [p, total === 0 ? 0 : Math.max(0, weights[p]) / total]),
+  ) as Weights
+}
+
+export interface RecommendOptions {
+  /** Defaults to DEFAULT_WEIGHTS. Should sum to 1 (see normalizeWeights). */
+  weights?: Weights
+  diversityPenalty?: number
+  limit?: number
+}
 /** Votes needed before a film's own rating outweighs the average (Bayesian shrinkage). */
 const MIN_VOTES = 100
 const MEAN_RATING = 6.5
@@ -101,8 +116,11 @@ function shareOf<T>(values: readonly T[], value: T): number {
 
 export function recommend(
   input: TasteInput,
-  weights: Weights = DEFAULT_WEIGHTS,
-  limit = 20,
+  {
+    weights = DEFAULT_WEIGHTS,
+    diversityPenalty = DIVERSITY_PENALTY,
+    limit = 20,
+  }: RecommendOptions = {},
 ): Pick[] {
   const candidates = [...collectCandidates(input).values()]
   if (candidates.length === 0) return []
@@ -145,7 +163,7 @@ export function recommend(
     pool.forEach((p, i) => {
       const primary = p.film.genreIds[0]
       const repeats = primary === undefined ? 0 : (usedGenres.get(primary) ?? 0)
-      const value = p.score - DIVERSITY_PENALTY * repeats
+      const value = p.score - diversityPenalty * repeats
       if (value > bestValue) {
         best = i
         bestValue = value
