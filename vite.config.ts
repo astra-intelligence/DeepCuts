@@ -59,6 +59,8 @@ export default defineConfig(({ mode }) => ({
         lines: 80,
         // Tag rules carry the product's invariants (ADR-0010, ADR-0017).
         'src/domain/tagRules.ts': { lines: 100, branches: 100, functions: 100, statements: 100 },
+        // The recommendation scorer (ADR-0010, ADR-0026).
+        'src/domain/scorer.ts': { lines: 100, branches: 100, functions: 100, statements: 100 },
       },
     },
   },

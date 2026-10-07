@@ -8,6 +8,11 @@ export type AllowlistResult = { ok: true; request: TmdbRequest } | { ok: false; 
 const page = z.coerce.number().int().min(1).max(500)
 const id = z.coerce.number().int().positive().max(99_999_999)
 const genreList = z.string().regex(/^\d{1,6}([,|]\d{1,6}){0,9}$/)
+const APPENDABLE = new Set(['release_dates', 'recommendations'])
+const appendList = z.string().refine((v) => {
+  const parts = v.split(',')
+  return parts.every((p) => APPENDABLE.has(p)) && new Set(parts).size === parts.length
+})
 
 type Route = {
   pattern: RegExp
@@ -39,8 +44,9 @@ const ROUTES: Route[] = [
   },
   {
     pattern: /^movie\/(\d+)$/,
-    // Only release dates may be appended: the content rating, in the same call (ADR-0024).
-    params: z.strictObject({ append_to_response: z.literal('release_dates').optional() }),
+    // Only these extras may be appended, so Detail and the scorer each need one call (ADR-0024,
+    // ADR-0026): the content rating and the film's recommendations.
+    params: z.strictObject({ append_to_response: appendList.optional() }),
     path: (m) => `movie/${id.parse(m[1])}`,
   },
   {

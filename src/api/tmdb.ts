@@ -7,6 +7,14 @@ const imagePath = z
   .nullable()
   .catch(null)
 
+// Signals the recommendation scorer uses (ADR-0026). Lenient: missing or odd values become neutral.
+const signals = {
+  popularity: z.number().nonnegative().catch(0).default(0),
+  vote_average: z.number().min(0).max(10).catch(0).default(0),
+  vote_count: z.number().int().nonnegative().catch(0).default(0),
+  original_language: z.string().max(8).catch('').default(''),
+}
+
 const movieSummary = z.object({
   id: z.number().int().positive(),
   title: z.string(),
@@ -15,6 +23,7 @@ const movieSummary = z.object({
   poster_path: imagePath,
   backdrop_path: imagePath,
   genre_ids: z.array(z.number().int()).default([]),
+  ...signals,
 })
 
 export const searchResultsSchema = z.object({
@@ -34,6 +43,12 @@ export const movieDetailSchema = z.object({
   poster_path: imagePath,
   backdrop_path: imagePath,
   genres: z.array(z.object({ id: z.number().int(), name: z.string() })).default([]),
+  ...signals,
+  // Appended to the same call: the film's recommendations, the scorer's candidates (ADR-0026).
+  recommendations: z
+    .object({ results: z.array(movieSummary) })
+    .optional()
+    .catch(undefined),
   // Appended to the same call for the content rating (ADR-0024).
   release_dates: z
     .object({
@@ -95,7 +110,12 @@ export const tmdb = {
   search: (query: string, page = 1, signal?: AbortSignal) =>
     get('search/movie', searchResultsSchema, { query, page: String(page) }, signal),
   movie: (id: number, signal?: AbortSignal) =>
-    get(`movie/${id}`, movieDetailSchema, { append_to_response: 'release_dates' }, signal),
+    get(
+      `movie/${id}`,
+      movieDetailSchema,
+      { append_to_response: 'release_dates,recommendations' },
+      signal,
+    ),
   /** Popular, well-voted films, optionally in any of `genres` (OR). */
   discover: (genres: readonly number[], signal?: AbortSignal) =>
     get(
