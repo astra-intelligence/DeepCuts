@@ -42,6 +42,13 @@ export const searchResultsSchema = z.object({
   results: z.array(movieSummary),
 })
 
+/** A film series and its films, in TMDB's order (ADR-0032). */
+export const collectionSchema = z.object({
+  id: z.number().int().positive(),
+  name: z.string(),
+  parts: z.array(movieSummary).default([]),
+})
+
 /** Everything the Detail page needs about one film, from a single call. */
 export const movieDetailSchema = z.object({
   id: z.number().int().positive(),
@@ -54,6 +61,13 @@ export const movieDetailSchema = z.object({
   backdrop_path: imagePath,
   genres: z.array(z.object({ id: z.number().int(), name: z.string() })).default([]),
   ...signals,
+  // The series the film belongs to, if any ("Friday the 13th Collection"). Its films become
+  // scorer candidates when you like this one (ADR-0032). Lenient: odd data means no series.
+  belongs_to_collection: z
+    .object({ id: z.number().int().positive(), name: z.string() })
+    .nullable()
+    .optional()
+    .catch(null),
   // Appended to the same call: the film's recommendations, the scorer's candidates (ADR-0026).
   recommendations: z
     .object({ results: z.array(movieSummary) })
@@ -110,6 +124,7 @@ export const watchProvidersSchema = z.object({
 export type MovieSummary = z.infer<typeof movieSummary>
 export type SearchResults = z.infer<typeof searchResultsSchema>
 export type MovieDetail = z.infer<typeof movieDetailSchema>
+export type Collection = z.infer<typeof collectionSchema>
 export type Provider = z.infer<typeof provider>
 export type WatchProviders = z.infer<typeof watchProvidersSchema>
 
@@ -160,8 +175,8 @@ export const tmdb = {
       { append_to_response: 'release_dates,recommendations,keywords,credits' },
       signal,
     ),
-  /** Popular, well-voted films, optionally in any of `genres` (OR). */
-  discover: (genres: readonly number[], signal?: AbortSignal) =>
+  /** Popular, well-voted films (no genre filter: ADR-0032 dropped favourite genres). */
+  discover: (signal?: AbortSignal) =>
     get(
       'discover/movie',
       searchResultsSchema,
@@ -169,11 +184,12 @@ export const tmdb = {
         sort_by: 'popularity.desc',
         // Skip barely-rated films so the feed isn't full of obscure noise.
         'vote_count.gte': '200',
-        // `|` means "any of these genres" to TMDB; capped at 10 to keep the URL short.
-        ...(genres.length > 0 && { with_genres: genres.slice(0, 10).join('|') }),
       },
       signal,
     ),
+  /** A film series and its films (ADR-0032). */
+  collection: (id: number, signal?: AbortSignal) =>
+    get(`collection/${id}`, collectionSchema, undefined, signal),
   /** Where a film can be streamed, rented or bought. */
   watchProviders: (id: number, signal?: AbortSignal) =>
     get(`movie/${id}/watch/providers`, watchProvidersSchema, undefined, signal),
@@ -217,6 +233,30 @@ export function certification(movie: MovieDetail, region: string): string {
   return r?.release_dates.find((d) => d.certification)?.certification ?? ''
 }
 
+/** A credited person: TMDB's person id and name. */
+export interface CrewMember {
+  id: number
+  name: string
+}
+
+/**
+ * A film's directors and writers from its appended credits, each person once, in TMDB's order.
+ * Writers are the "Screenplay" and "Writer" credits; a film with neither falls back to "Story".
+ * Used by the Discover cards (names) and the scorer (ids, ADR-0032).
+ */
+export function crewOf(movie: MovieDetail): { directors: CrewMember[]; writers: CrewMember[] } {
+  const crew = movie.credits?.crew ?? []
+  // People with any of the given jobs, each person once.
+  const people = (...jobs: string[]) => {
+    const seen = new Set<number>()
+    return crew
+      .filter((p) => jobs.includes(p.job) && !seen.has(p.id) && (seen.add(p.id), true))
+      .map(({ id, name }) => ({ id, name }))
+  }
+  const writers = people('Screenplay', 'Writer')
+  return { directors: people('Director'), writers: writers.length ? writers : people('Story') }
+}
+
 /** A film's directors and writers by name, for the Discover cards. */
 export interface Credits {
   directors: string[]
@@ -226,18 +266,11 @@ export interface Credits {
 /** How many names each credit line shows; more would wrap a tile into a wall of text. */
 const MAX_CREDIT_NAMES = 2
 
-/**
- * The directors and writers from a film's appended credits, de-duplicated, at most two each.
- * Writers are the "Screenplay" and "Writer" credits; a film with neither falls back to "Story".
- */
+/** The directors and writers from a film's appended credits, by name, at most two each. */
 export function creditsOf(movie: MovieDetail): Credits {
-  const crew = movie.credits?.crew ?? []
-  // Names for the given jobs, in TMDB's order, each name once.
-  const names = (...jobs: string[]) =>
-    [...new Set(crew.filter((p) => jobs.includes(p.job)).map((p) => p.name))].slice(
-      0,
-      MAX_CREDIT_NAMES,
-    )
-  const writers = names('Screenplay', 'Writer')
-  return { directors: names('Director'), writers: writers.length ? writers : names('Story') }
+  const { directors, writers } = crewOf(movie)
+  // Names, each once (two people can share a name), at most MAX_CREDIT_NAMES.
+  const names = (people: CrewMember[]) =>
+    [...new Set(people.map((p) => p.name))].slice(0, MAX_CREDIT_NAMES)
+  return { directors: names(directors), writers: names(writers) }
 }

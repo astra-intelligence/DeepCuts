@@ -1,8 +1,10 @@
-// Tests for the recommendation scorer (ADR-0026), with small hand-made films: each score part,
-// exclusions, ranking, diversity, weights and determinism. The scorer must stay at 100% coverage.
+// Tests for the recommendation scorer (ADR-0026, ADR-0028, ADR-0032), with small hand-made films:
+// each score part, exclusions, series candidates, ranking, spread rules, explore slots, weights
+// and determinism. The scorer must stay at 100% coverage.
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_WEIGHTS,
+  EXPLORE_SLOTS,
   normalizeWeights,
   recommend,
   SCORE_PARTS,
@@ -15,6 +17,8 @@ const HORROR = 27
 const SCIFI = 878
 const COMEDY = 35
 const DRAMA = 18
+const WESTERN = 37
+const MUSIC = 10402
 
 let nextId = 1000
 function film(overrides: Partial<ScorerFilm> = {}): ScorerFilm {
@@ -47,6 +51,8 @@ const ZERO = {
   language: 0,
   keywords: 0,
   director: 0,
+  writer: 0,
+  series: 0,
 }
 
 function input(overrides: Partial<TasteInput> = {}): TasteInput {
@@ -59,22 +65,22 @@ describe('recommend (ADR-0026)', () => {
     expect(total).toBeCloseTo(1, 10)
   })
 
-  it('keeps the owner’s tuned weights in proportion, plus the v1.1 parts (ADR-0028)', () => {
+  it('uses the v2 weights: genre nudges, director, writer and series count (ADR-0032)', () => {
     const shown = Object.fromEntries(
       SCORE_PARTS.map((p) => [p, Math.round(DEFAULT_WEIGHTS[p] * 100)]),
     )
     expect(shown).toEqual({
-      support: 26,
-      genre: 28,
-      quality: 6,
+      support: 22,
+      genre: 15,
+      quality: 7,
       deepCut: 12,
       decade: 7,
       language: 4,
       keywords: 12,
-      director: 4,
+      director: 9,
+      writer: 5,
+      series: 7,
     })
-    // The six tuned parts keep their ratios: genre is still 34/32 of support.
-    expect(DEFAULT_WEIGHTS.genre / DEFAULT_WEIGHTS.support).toBeCloseTo(34 / 32)
   })
 
   it('returns nothing without likes', () => {
@@ -125,8 +131,9 @@ describe('recommend (ADR-0026)', () => {
       }),
     )
     expect(picks.map((p) => p.film.id)).toEqual([drama.id, comedy.id])
-    // Disliked comedy is −1 (the largest weight); Want to see drama scales to +0.5.
-    expect(picks[1]?.parts.genre).toBe(0)
+    // Disliked comedy is −1 (the largest weight) but only falls to the 0.25 floor, never 0
+    // (ADR-0032); Want to see drama scales to +0.5.
+    expect(picks[1]?.parts.genre).toBe(0.25)
     expect(picks[0]?.parts.genre).toBe(0.75)
   })
 
@@ -293,7 +300,13 @@ describe('recommend (ADR-0026)', () => {
       film({ popularity: 5 + i * 40, voteAverage: 6 + i * 0.3 }),
     )
     const taste = input({ liked: [{ film: film(), recommendations: recs }] })
-    const v1Only = normalizeWeights({ ...DEFAULT_WEIGHTS, keywords: 0, director: 0 })
+    const v1Only = normalizeWeights({
+      ...DEFAULT_WEIGHTS,
+      keywords: 0,
+      director: 0,
+      writer: 0,
+      series: 0,
+    })
     expect(recommend(taste).map((p) => p.film.id)).toEqual(
       recommend(taste, { weights: v1Only }).map((p) => p.film.id),
     )
@@ -312,5 +325,149 @@ describe('recommend (ADR-0026)', () => {
     )
     const taste = input({ liked: [{ film: film(), recommendations: recs }] })
     expect(recommend(taste).map((p) => p.film.id)).toEqual(recommend(taste).map((p) => p.film.id))
+  })
+})
+
+describe('scorer v2 (ADR-0032)', () => {
+  const carpenter = { id: 11770, name: 'John Carpenter' }
+  const hill = { id: 9, name: 'Debra Hill' }
+
+  it('adds films from a liked film’s series as candidates, and scores the series part', () => {
+    const F13 = 9735
+    const original = film({ title: 'Friday the 13th', seriesId: F13 })
+    const part2 = film({ title: 'Part 2', seriesId: F13 })
+    const part3 = film({ title: 'Part III', seriesId: F13 })
+    const unrelated = film()
+    const picks = recommend(
+      input({
+        liked: [
+          // Part 2 is both recommended and in the series: it counts once for this liked film.
+          { film: original, recommendations: [part2, unrelated], series: [original, part2, part3] },
+        ],
+        excluded: new Set([original.id]),
+      }),
+    )
+    expect(pickOf(picks, part3.id)).toMatchObject({
+      because: ['Friday the 13th'],
+      sameSeries: { liked: 'Friday the 13th' },
+    })
+    expect(pickOf(picks, part3.id).parts).toMatchObject({ series: 1, support: 1 })
+    expect(pickOf(picks, part2.id).parts.support).toBe(1)
+    expect(pickOf(picks, unrelated.id).parts.series).toBe(0)
+    expect(pickOf(picks, unrelated.id).sameSeries).toBeUndefined()
+    // The liked film itself is never suggested back.
+    expect(picks.some((p) => p.film.id === original.id)).toBe(false)
+  })
+
+  it('knows a candidate’s series from its loaded details too', () => {
+    const liked = film({ title: 'Alien', seriesId: 8091 })
+    const aliens = film()
+    const [pick] = recommend(
+      input({
+        liked: [{ film: liked, recommendations: [aliens] }],
+        details: new Map([[aliens.id, { keywordIds: [], directors: [], seriesId: 8091 }]]),
+      }),
+    )
+    expect(pick?.sameSeries).toEqual({ liked: 'Alien' })
+  })
+
+  it('scores a shared writer and says who and which liked film', () => {
+    const liked = film({ title: 'Halloween', writers: [carpenter, hill] })
+    const same = film()
+    const other = film()
+    const picks = recommend(
+      input({
+        liked: [{ film: liked, recommendations: [same, other] }],
+        details: new Map([
+          [same.id, { keywordIds: [], directors: [], writers: [hill] }],
+          [other.id, { keywordIds: [], directors: [] }],
+        ]),
+      }),
+    )
+    expect(pickOf(picks, same.id).parts.writer).toBe(1)
+    expect(pickOf(picks, same.id).sameWriter).toEqual({ writer: 'Debra Hill', liked: 'Halloween' })
+    expect(pickOf(picks, other.id).parts.writer).toBe(0)
+    expect(pickOf(picks, other.id).sameWriter).toBeUndefined()
+  })
+
+  it('takes at most two films from one series, never side by side', () => {
+    const S = 1
+    const series = Array.from({ length: 4 }, (_, i) =>
+      film({ seriesId: S, voteAverage: 9 - i * 0.01, popularity: 1 }),
+    )
+    const others = Array.from({ length: 3 }, () => film({ voteAverage: 5, popularity: 50 }))
+    const picks = recommend(
+      input({ liked: [{ film: film(), recommendations: [], series: [...series, ...others] }] }),
+      { diversityPenalty: 0 },
+    )
+    const inSeries = picks.map((p) => p.film.seriesId === S)
+    // The best two series films lead, split by another film; the other two come last.
+    expect(inSeries.slice(0, 5)).toEqual([true, false, true, false, false])
+    expect(inSeries.slice(5)).toEqual([true, true])
+  })
+
+  it('spreads a director the same way, using loaded details', () => {
+    const byCarpenter = Array.from({ length: 3 }, (_, i) =>
+      film({ voteAverage: 9 - i * 0.01, popularity: 1 }),
+    )
+    const other = film({ voteAverage: 5, popularity: 50 })
+    const picks = recommend(
+      input({
+        liked: [{ film: film(), recommendations: [...byCarpenter, other] }],
+        details: new Map(
+          byCarpenter.map((f) => [f.id, { keywordIds: [], directors: [carpenter] }] as const),
+        ),
+      }),
+      { diversityPenalty: 0 },
+    )
+    expect(picks.map((p) => p.film.id)).toEqual([
+      byCarpenter[0]?.id,
+      other.id,
+      byCarpenter[1]?.id,
+      // A third Carpenter film breaks the cap, but it's all that's left, so it still comes.
+      byCarpenter[2]?.id,
+    ])
+  })
+
+  it('gives explore slots to genres no liked film has, a new genre each time', () => {
+    // 20 horror films that outscore everything, plus three outside your genres.
+    const horror = Array.from({ length: 20 }, () => film({ genreIds: [HORROR], voteAverage: 9 }))
+    const western = film({ genreIds: [WESTERN], voteAverage: 5 })
+    const western2 = film({ genreIds: [WESTERN], voteAverage: 5 })
+    const music = film({ genreIds: [MUSIC], voteAverage: 5 })
+    const picks = recommend(
+      input({
+        liked: [
+          {
+            film: film({ genreIds: [HORROR] }),
+            recommendations: [...horror, western, western2, music],
+          },
+        ],
+      }),
+      { diversityPenalty: 0 },
+    )
+    const [first, second, third] = EXPLORE_SLOTS as [number, number, number]
+    const explored = [picks[first], picks[second]].map((p) => p?.film.genreIds[0])
+    expect(new Set(explored)).toEqual(new Set([WESTERN, MUSIC]))
+    expect(picks[first]?.explore).toBe(true)
+    // With both new genres used, the third slot falls back to the best remaining film.
+    expect(picks[third]?.explore).toBeUndefined()
+    expect(picks[third]?.film.genreIds[0]).toBe(HORROR)
+    expect(picks.filter((p) => p.explore)).toHaveLength(2)
+  })
+
+  it('doesn’t explore a genre you’ve disliked', () => {
+    const horror = Array.from({ length: 8 }, () => film({ genreIds: [HORROR], voteAverage: 9 }))
+    const comedy = film({ genreIds: [COMEDY], voteAverage: 5 })
+    const picks = recommend(
+      input({
+        liked: [{ film: film({ genreIds: [HORROR] }), recommendations: [...horror, comedy] }],
+        disliked: [film({ genreIds: [COMEDY] })],
+      }),
+      { diversityPenalty: 0 },
+    )
+    expect(picks.some((p) => p.explore)).toBe(false)
+    // Still in the feed, just not lifted into an explore slot.
+    expect(picks.at(-1)?.film.id).toBe(comedy.id)
   })
 })

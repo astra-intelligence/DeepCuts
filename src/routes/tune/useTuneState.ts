@@ -1,19 +1,13 @@
-// The onboarding's state (step, genres, favorite, current card), kept in the URL.
+// The onboarding's state (step, favorite, current card), kept in the URL.
 import { useSearchParams } from 'react-router'
 import { z } from 'zod'
 
 /** How many rating cards step 3 shows before finishing on Discover. */
 export const PICKS = 3
 
-// A comma-separated list of up to 10 TMDB ids, e.g. "27,53".
-const ids = z
-  .string()
-  .regex(/^\d{1,6}(,\d{1,6}){0,9}$/)
-  .transform((s) => s.split(',').map(Number))
 // Onboarding state lives in the URL, so Detail → back restores it (ADR-0019 amendment).
 const paramsSchema = z.object({
-  step: z.coerce.number().int().min(1).max(3).catch(1).default(1),
-  genres: ids.catch([]).default([]),
+  step: z.coerce.number().int().min(1).max(2).catch(1).default(1),
   favorite: z.coerce.number().int().positive().max(99_999_999).optional().catch(undefined),
   // The film on the rating card (a TMDB id) and how many cards have been shown (1..PICKS).
   pick: z.coerce.number().int().positive().max(99_999_999).optional().catch(undefined),
@@ -33,7 +27,6 @@ export function useTuneState() {
     const next = { ...state, ...patch }
     // Write only non-default values, so URLs stay short and readable.
     const out: Record<string, string> = { step: String(next.step) }
-    if (next.genres.length) out.genres = next.genres.join(',')
     if (next.favorite) out.favorite = String(next.favorite)
     if (next.pick) out.pick = String(next.pick)
     if (next.n > 1) out.n = String(next.n)

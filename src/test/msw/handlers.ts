@@ -1,6 +1,13 @@
 // Fake TMDB endpoints for unit tests (Mock Service Worker), answering with the fixtures.
 import { http, HttpResponse } from 'msw'
-import { candidateDetailFixtures, movieFixture, providersFixture, searchFixture } from './fixtures'
+import {
+  candidateDetailFixtures,
+  collectionFixture,
+  friday13Fixture,
+  movieFixture,
+  providersFixture,
+  searchFixture,
+} from './fixtures'
 
 /** One handler per TMDB proxy path the app uses. */
 export const handlers = [
@@ -11,12 +18,19 @@ export const handlers = [
   }),
   http.get('/api/tmdb/discover/movie', () => HttpResponse.json(searchFixture)),
   http.get('/api/tmdb/movie/:id/watch/providers', () => HttpResponse.json(providersFixture)),
-  // The Thing, the films it recommends (for the scorer's re-rank), or not found.
+  // The Thing, Friday the 13th, the films The Thing recommends (for the re-rank), or not found.
   http.get('/api/tmdb/movie/:id', ({ params }) => {
     if (params.id === String(movieFixture.id)) return HttpResponse.json(movieFixture)
+    if (params.id === String(friday13Fixture.id)) return HttpResponse.json(friday13Fixture)
     const candidate = candidateDetailFixtures[Number(params.id)]
     return candidate
       ? HttpResponse.json(candidate)
       : HttpResponse.json({ error: 'not_found' }, { status: 404 })
   }),
+  // The Friday the 13th series (ADR-0032), or not found.
+  http.get('/api/tmdb/collection/:id', ({ params }) =>
+    params.id === String(collectionFixture.id)
+      ? HttpResponse.json(collectionFixture)
+      : HttpResponse.json({ error: 'not_found' }, { status: 404 }),
+  ),
 ]

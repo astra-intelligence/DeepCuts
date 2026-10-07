@@ -5,8 +5,7 @@
 // films (minus disliked ones) and suggests liking a few films. Every card names the film's
 // director and writer, from its details (the same cached call the Detail page makes).
 import { useQueries, useQuery } from '@tanstack/react-query'
-import { Link, useSearchParams } from 'react-router'
-import { z } from 'zod'
+import { Link } from 'react-router'
 import { movieQueries } from '../api/queries'
 import { creditsOf, imageUrl, releaseYear, type Credits, type MovieSummary } from '../api/tmdb'
 import { FEATURES } from '../config/features'
@@ -18,16 +17,6 @@ import { genreTone, primaryGenreName } from '../domain/genres'
 import { useTagQueries } from '../session/tagQueries'
 import { useRecommendations } from '../session/useRecommendations'
 
-// ?genres= comes from "Tune my picks" (comma-separated TMDB ids); untrusted, so validated.
-const paramsSchema = z.object({
-  genres: z
-    .string()
-    .regex(/^\d{1,6}(,\d{1,6}){0,9}$/)
-    .transform((s) => s.split(',').map(Number))
-    .catch([])
-    .default([]),
-})
-
 // For the eyebrow, e.g. "Tuesday's edit".
 const WEEKDAY = new Intl.DateTimeFormat('en-US', { weekday: 'long' })
 
@@ -36,11 +25,9 @@ const WEEKDAY = new Intl.DateTimeFormat('en-US', { weekday: 'long' })
  * films minus disliked ones, and says how to tune it.
  */
 export function DiscoverPage() {
-  const [params] = useSearchParams()
-  const { genres } = paramsSchema.parse(Object.fromEntries(params))
   // 17 = one featured film + 16 grid tiles.
   const tuned = useRecommendations(17)
-  const popular = useQuery(movieQueries.discover(genres))
+  const popular = useQuery(movieQueries.discover())
   const excluded = useQuery(useTagQueries().feedExclusions()).data
 
   // Use the scorer's picks when there are likes and the scorer has (or is still finding) picks;
@@ -77,9 +64,7 @@ export function DiscoverPage() {
         lede={
           usePicks
             ? 'Picked from the films you liked, beyond the obvious.'
-            : genres.length
-              ? 'Tuned to the genres you picked.'
-              : 'Popular films worth staying up for. Like a few films to tune this feed to you.'
+            : 'Popular films worth staying up for. Like a few films to tune this feed to you.'
         }
       />
       {loading && <p role="status">Finding films…</p>}
