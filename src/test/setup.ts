@@ -2,11 +2,16 @@
 // Adds DOM matchers (toBeInTheDocument…), starts the fake TMDB server, and resets state between
 // tests so they can't affect each other.
 import '@testing-library/jest-dom/vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 import { createLocalTagRepository } from '../adapters/local/LocalTagRepository'
 import { createMockSessionProvider } from '../adapters/local/MockSessionProvider'
 import { server } from './msw/server'
+
+// findBy*/waitFor wait up to 3s instead of 1s. The first test in a file also loads its lazy page
+// (route code splitting) and the fake TMDB answer; under coverage, with files running in
+// parallel, that sometimes took over a second and failed a correct test.
+configure({ asyncUtilTimeout: 3000 })
 
 // Any request without a fake handler fails the test, so tests can never reach the real TMDB.
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
