@@ -14,6 +14,8 @@ export function tagQueries(repo: TagRepository, kind: string) {
       }),
     list: (tag: SystemTag) =>
       queryOptions({ queryKey: ['tags', kind, 'list', tag], queryFn: () => repo.list(tag) }),
+    /** Every tag record, e.g. to count the films someone has tagged. */
+    all: () => queryOptions({ queryKey: ['tags', kind, 'all'], queryFn: () => repo.exportAll() }),
     feedExclusions: () =>
       queryOptions({
         queryKey: ['tags', kind, 'feedExclusions'],

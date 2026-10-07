@@ -1,13 +1,23 @@
-import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from 'react-aria-components'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
+import type { Account } from '../adapters/SessionProvider'
+import { Avatar } from '../components/AccountChip'
 import { Eyebrow } from '../components/Eyebrow'
 import { Icon } from '../components/Icon'
 import { PageHeading } from '../components/PageHeading'
 import { useSession } from '../session/SessionContext'
+import { useTagQueries } from '../session/tagQueries'
 
-// ADR-0022: one page explains saving. Copy never implies cross-device sync (ADR-0013).
+// ADR-0022 + ADR-0025: one page for saving on this device, signing in, and the signed-in account.
+// Copy never implies cross-device sync until a real account provider exists (ADR-0013).
 export function AccountPage() {
+  const { session } = useSession()
+  return session.kind === 'account' ? <SignedIn account={session.account} /> : <SignedOut />
+}
+
+function SignedOut() {
   const { session, createProfile } = useSession()
   const saved = session.kind === 'profile'
   const [status, setStatus] = useState('')
@@ -22,8 +32,8 @@ export function AccountPage() {
       <title>Account · Deep Cuts</title>
       <PageHeading
         eyebrow="Your account"
-        title="Sign in to keep your cuts"
-        lede="Keep your lists on this device now. Accounts that sync between devices are coming later."
+        title="Keep your cuts"
+        lede="Save your picks on this device, or sign in to keep them in your account."
       />
 
       <div className="flex items-center gap-3 rounded-lg border border-border bg-surface-raised p-3 shadow-sm">
@@ -70,30 +80,26 @@ export function AccountPage() {
         </section>
 
         <section
-          aria-labelledby="register-heading"
+          aria-labelledby="signin-heading"
           className="flex min-h-62 flex-col items-start rounded-lg border border-border bg-surface-raised p-4.5 shadow-sm"
         >
           <span className="mb-4.5 grid size-11 place-items-center rounded-lg bg-info/12 text-info">
-            <Icon name="heart" />
+            <Icon name="user" />
           </span>
-          <Eyebrow tone="info">Registration</Eyebrow>
-          <h2 id="register-heading" className="mb-2 font-display text-3xl">
-            Create your Deep Cuts account
+          <Eyebrow tone="info">Your account</Eyebrow>
+          <h2 id="signin-heading" className="mb-2 font-display text-3xl">
+            Sign in to keep your cuts
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-fg-muted">
-            An account will keep your lists available when you move between devices.
+            Keep your lists in your account instead of a single browser.
           </p>
-          <ul className="mb-4 list-disc pl-5 text-sm leading-loose">
-            <li>Keep all four movie lists</li>
-            <li>Preserve discovery preferences</li>
-            <li>Return to recently viewed films</li>
-          </ul>
-          <Button
-            isDisabled
-            className="mt-auto flex h-11 w-36 cursor-not-allowed items-center justify-center rounded-md border border-info bg-info/12 text-sm font-semibold text-info"
+          <Link
+            to="/sign-in"
+            state={{ from: '/account' }}
+            className="mt-auto flex h-11 w-36 items-center justify-center rounded-md border border-info bg-info/12 text-sm font-semibold text-info hover:bg-info/20"
           >
-            Coming soon
-          </Button>
+            Sign in
+          </Link>
         </section>
       </div>
 
@@ -106,6 +112,107 @@ export function AccountPage() {
       >
         <Icon name="back" /> Back to Search
       </Link>
+    </>
+  )
+}
+
+function SignedIn({ account }: { account: Account }) {
+  const { signOut } = useSession()
+  const navigate = useNavigate()
+  const films = new Set(useQuery(useTagQueries().all()).data?.map((r) => r.tmdbId)).size
+  const [confirming, setConfirming] = useState(false)
+  const confirmRef = useRef<HTMLButtonElement>(null)
+  const askRef = useRef<HTMLButtonElement>(null)
+  // After "Sign out", focus moves to the confirm button the press revealed.
+  useEffect(() => {
+    if (confirming) confirmRef.current?.focus()
+  }, [confirming])
+
+  async function confirmSignOut() {
+    await signOut()
+    navigate('/search')
+  }
+
+  return (
+    <>
+      <title>Account · Deep Cuts</title>
+      <Eyebrow>Your account</Eyebrow>
+      <div className="mb-4 flex items-center gap-3">
+        <Avatar name={account.name} large />
+        <div>
+          <h1 className="font-display text-3xl leading-tight">{account.name}</h1>
+          <p className="text-sm text-fg-muted">
+            {account.method === 'demo' ? 'Signed in with the demo account' : 'Signed in'}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid items-stretch gap-3 md:grid-cols-2">
+        <section
+          aria-labelledby="lists-heading"
+          className="grid content-start gap-2.5 rounded-lg border border-border bg-surface-raised p-4 shadow-sm"
+        >
+          <h2 id="lists-heading" className="font-display text-2xl">
+            Your lists
+          </h2>
+          <p className="text-sm text-fg-muted">
+            {films} {films === 1 ? 'film' : 'films'} tagged across Seen it, Want to see, Like and
+            Dislike.
+          </p>
+          {account.method === 'demo' && (
+            <p className="text-sm text-fg-muted">
+              Demo account: lists are kept on this device. A real account will sync them between
+              devices.
+            </p>
+          )}
+          <Link
+            to="/lists"
+            className="flex min-h-11 w-fit items-center gap-1.5 text-sm font-semibold text-info"
+          >
+            Open My Lists <Icon name="arrow" className="size-4" />
+          </Link>
+        </section>
+
+        <section
+          aria-labelledby="signout-heading"
+          className="grid content-start gap-2.5 rounded-lg border border-border bg-surface-raised p-4 shadow-sm"
+        >
+          <h2 id="signout-heading" className="font-display text-2xl">
+            Sign out
+          </h2>
+          <p className="text-sm text-fg-muted">
+            Your lists stay in your account. This device goes back to guest mode.
+          </p>
+          {confirming ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                ref={confirmRef}
+                onPress={confirmSignOut}
+                className="flex h-11 items-center rounded-md border border-border-control bg-surface-overlay px-3.5 text-sm font-semibold text-fg"
+              >
+                Yes, sign out
+              </Button>
+              <Button
+                onPress={() => {
+                  setConfirming(false)
+                  requestAnimationFrame(() => askRef.current?.focus())
+                }}
+                className="flex h-11 items-center rounded-md px-2 text-sm font-semibold text-info"
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <Button
+              ref={askRef}
+              onPress={() => setConfirming(true)}
+              className="flex h-11 w-36 items-center justify-center rounded-md border border-border-control bg-surface-overlay text-sm font-semibold text-fg"
+            >
+              Sign out
+            </Button>
+          )}
+        </section>
+      </div>
     </>
   )
 }

@@ -1,8 +1,10 @@
 import { Link, NavLink, Outlet } from 'react-router'
 import { FEATURES } from '../config/features'
+import { AccountChip } from '../components/AccountChip'
 import { Icon, type IconName } from '../components/Icon'
 import { Logo } from '../components/Logo'
 import { MovieSearch } from '../components/MovieSearch'
+import { SignedInNotice } from '../components/SignedInNotice'
 import { useRouteFocus } from '../hooks/useRouteFocus'
 
 const NAV: { to: string; label: string; icon: IconName }[] = [
@@ -19,21 +21,6 @@ export function SkipLink() {
     >
       Skip to content
     </a>
-  )
-}
-
-export function SignInLink() {
-  return (
-    <Link
-      to="/account"
-      aria-label="Sign in or open account options"
-      className="flex min-h-11 items-center gap-2 rounded-lg border border-border-control bg-surface-raised py-1 pr-3 pl-1 text-sm font-bold whitespace-nowrap text-fg"
-    >
-      <span className="grid size-9 place-items-center rounded-md bg-surface-overlay text-fg-muted">
-        <Icon name="user" />
-      </span>
-      Sign in
-    </Link>
   )
 }
 
@@ -64,7 +51,7 @@ export function AppLayout() {
                 <Icon name="heart" />
               </Link>
             )}
-            <SignInLink />
+            <AccountChip />
           </div>
         </header>
         <div className="px-5 py-3 md:px-8 md:pb-5">
@@ -75,6 +62,7 @@ export function AppLayout() {
       </div>
 
       <main id="main" className="mx-auto w-full max-w-7xl px-5 pt-5 pb-3 md:pt-6">
+        <SignedInNotice />
         <Outlet />
         <p className="mt-10 text-xs text-fg-muted">
           This product uses the TMDB API but is not endorsed or certified by TMDB.

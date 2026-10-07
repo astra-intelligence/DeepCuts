@@ -14,7 +14,11 @@ describe('account (ADR-0022)', () => {
     await user.click(screen.getByRole('button', { name: 'Save my picks' }))
     expect(await screen.findByText('Saved on this device')).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('saved on this device')
-    expect(screen.getByRole('button', { name: 'Coming soon' })).toBeDisabled()
+    const signInCard = screen.getByRole('region', { name: 'Sign in to keep your cuts' })
+    expect(within(signInCard).getByRole('link', { name: 'Sign in' })).toHaveAttribute(
+      'href',
+      '/sign-in',
+    )
 
     await act(() => router.navigate('/lists'))
     const lists = screen.getByRole('navigation', { name: 'Lists' })

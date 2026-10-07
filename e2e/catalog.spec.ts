@@ -1,6 +1,7 @@
 import { expect, expectNoA11yViolations, expectNoHorizontalOverflow, test } from './fixtures'
 
 for (const path of [
+  '/sign-in',
   '/search',
   '/search?q=thing',
   '/discover',
@@ -115,7 +116,8 @@ test('Save my picks survives a reload; guest picks do not (ADR-0011, ADR-0022)',
   )
 
   await page.getByRole('button', { name: 'Want to see The Thing' }).click()
-  await page.getByRole('link', { name: 'Sign in or open account options' }).click()
+  await page.getByRole('banner').getByRole('link', { name: 'Sign in' }).click()
+  await page.getByRole('link', { name: 'Keep your picks on this device' }).click()
   await page.getByRole('button', { name: 'Save my picks' }).click()
   await expect(page.getByText('Saved on this device', { exact: true })).toBeVisible()
   await expectNoA11yViolations(page)
@@ -124,4 +126,40 @@ test('Save my picks survives a reload; guest picks do not (ADR-0011, ADR-0022)',
     'aria-pressed',
     'true',
   )
+})
+
+test('sign in with the demo account, keyboard only; survives a reload; sign out (ADR-0025)', async ({
+  page,
+}) => {
+  await page.goto('/search?q=thing')
+  await page.getByRole('button', { name: 'Want to see The Thing' }).click()
+  await page.getByRole('banner').getByRole('link', { name: 'Sign in' }).focus()
+  await page.keyboard.press('Enter')
+
+  await expect(page.getByRole('heading', { level: 1, name: 'Sign in to Deep Cuts' })).toBeFocused()
+  await expect(page.getByText('Practice sign-in. No real account is created.')).toBeVisible()
+  await expectNoA11yViolations(page)
+  await page.getByRole('button', { name: /Continue with a demo account/ }).focus()
+  await page.keyboard.press('Enter')
+
+  await expect(page).toHaveURL(/\/search\?q=thing$/)
+  await expect(page.getByText('Signed in as Alex. Your 1 pick is in your account.')).toBeVisible()
+  const chip = page.getByRole('banner').getByRole('link', { name: 'Alex, open your account' })
+  await expect(chip).toBeVisible()
+  expect((await chip.boundingBox())?.height).toBeGreaterThanOrEqual(44)
+
+  await page.reload()
+  await expect(chip).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Want to see The Thing' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+
+  await chip.click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Alex Rivera' })).toBeVisible()
+  await expectNoA11yViolations(page)
+  await page.getByRole('button', { name: 'Sign out' }).click()
+  await page.getByRole('button', { name: 'Yes, sign out' }).click()
+  await expect(page.getByRole('banner').getByRole('link', { name: 'Sign in' })).toBeVisible()
+  await expectNoHorizontalOverflow(page)
 })
