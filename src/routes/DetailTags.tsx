@@ -105,23 +105,24 @@ export function DetailTags({ movieId, title }: { movieId: number; title: string 
           />
         ))}
       </div>
-      {/* Right after the toggles, so the next Tab from a tag reaches Save. */}
+      {/* Right after the toggles, so the next Tab from a tag reaches Save. Right-aligned, with
+          room above so they read as actions for the whole row (owner, 2026-10-07). */}
       {dirty && (
-        <div className="mt-3 flex gap-2">
+        <div className="mt-5 flex justify-end gap-2">
           <Button
             onPress={save}
             // Not `isPending` or `isDisabled`: React Aria's pending announcer leaves an unlabelled
             // element that fails axe, and disabling the button would drop keyboard focus. A second
             // press while saving is ignored in `save` instead.
             aria-disabled={saving}
-            className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-button bg-button-primary-bg px-4 text-sm font-semibold text-button-primary-fg hover:bg-button-primary-bg/85 aria-disabled:opacity-70 md:flex-none"
+            className="flex min-h-11 items-center justify-center gap-2 rounded-button bg-button-primary-bg px-5 text-sm font-semibold text-button-primary-fg hover:bg-button-primary-bg/85 aria-disabled:opacity-70"
           >
             {saving ? 'Saving…' : 'Save'}
           </Button>
           <Button
             onPress={cancel}
             isDisabled={saving}
-            className="flex min-h-11 flex-1 items-center justify-center rounded-button border border-button-secondary-border bg-button-secondary-bg px-4 text-sm font-semibold text-button-secondary-fg hover:border-accent md:flex-none"
+            className="flex min-h-11 items-center justify-center rounded-button border border-button-secondary-border bg-button-secondary-bg px-5 text-sm font-semibold text-button-secondary-fg hover:border-accent"
           >
             Cancel
           </Button>

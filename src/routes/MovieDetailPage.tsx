@@ -38,7 +38,7 @@ export function MovieDetailPage() {
 }
 
 /**
- * "Back", shared by the top button and the one at the end of the page: the previous screen, or
+ * "Back" for the top button: the previous screen, or
  * home on a direct visit (which has no history entry to return to).
  */
 function useBack() {
@@ -80,7 +80,6 @@ function DetailLayout({ children }: { children: ReactNode }) {
 function MovieDetail({ id }: { id: number }) {
   const movie = useQuery(movieQueries.detail(id))
   const providers = useQuery(movieQueries.providers(id))
-  const back = useBack()
 
   if (movie.isPending)
     return (
@@ -136,7 +135,8 @@ function MovieDetail({ id }: { id: number }) {
         {/* The four tag toggles, with Save and Cancel once anything changes (ADR-0017 rules). */}
         <DetailTags movieId={m.id} title={m.title} />
 
-        <section aria-labelledby="where-to-watch" className="mt-4">
+        {/* A clear break between your tags and the streaming info (owner, 2026-10-07). */}
+        <section aria-labelledby="where-to-watch" className="mt-12">
           <h2
             id="where-to-watch"
             className="mb-2.5 text-sm font-bold tracking-widest text-fg-muted uppercase"
@@ -175,16 +175,6 @@ function MovieDetail({ id }: { id: number }) {
           {/* Attribution required for JustWatch data. */}
           <p className="mt-3 text-xs text-fg-muted">Streaming availability data from JustWatch.</p>
         </section>
-
-        {/* A second way back, right below the tags: on desktop the top back button sits in the
-            far corner, a long way from where you've just tagged the film. */}
-        <Button
-          onPress={back}
-          className="mt-6 flex min-h-11 items-center justify-center gap-2 self-start rounded-button border border-button-secondary-border bg-button-secondary-bg px-4 text-sm font-semibold text-button-secondary-fg hover:border-accent"
-        >
-          <Icon name="back" />
-          Back
-        </Button>
       </div>
     </article>
   )
