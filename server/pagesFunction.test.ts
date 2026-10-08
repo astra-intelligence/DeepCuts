@@ -92,6 +92,54 @@ describe('/api middleware: rate limit (Stage 4 H4)', () => {
   })
 })
 
+describe('/api middleware: host pin', () => {
+  const site = 'deep-cuts.example'
+  async function viaApiMiddleware(url: string, env: ApiEnv) {
+    const next = vi.fn(async () => Response.json({ ok: true }))
+    const request = new Request(url, { headers: { 'CF-Connecting-IP': '203.0.113.7' } })
+    const res = await apiMiddleware({ request, env, next } as unknown as Parameters<
+      typeof apiMiddleware
+    >[0])
+    return { res, next }
+  }
+
+  it('answers on the site address', async () => {
+    const { res } = await viaApiMiddleware(`https://${site}/api/tags`, { CANONICAL_HOST: site })
+    expect(res.status).toBe(200)
+  })
+
+  it.each([
+    'https://deep-cuts.pages.dev/api/tags',
+    'https://3f2a9c1b.deep-cuts.pages.dev/api/auth/session',
+    'https://3f2a9c1b.deep-cuts.pages.dev/api/tmdb/genre/movie/list',
+    `https://${site}.evil.example/api/tags`,
+  ])('refuses %s with 421 before the rate limiter or the route', async (url) => {
+    const check = vi.fn(async () => ({ allowed: true }))
+    const { res, next } = await viaApiMiddleware(url, {
+      CANONICAL_HOST: site,
+      RATE_LIMITER: { check },
+    })
+    expect(res.status).toBe(421)
+    expect(await res.json()).toEqual({ error: 'wrong_host' })
+    expect(res.headers.get('cache-control')).toBe('no-store')
+    expect(check).not.toHaveBeenCalled()
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it.each(['http://localhost:8788', 'http://127.0.0.1:8788', 'http://[::1]:8788'])(
+    'allows %s, where wrangler pages dev runs with the production config',
+    async (origin) => {
+      const { res } = await viaApiMiddleware(`${origin}/api/tags`, { CANONICAL_HOST: site })
+      expect(res.status).toBe(200)
+    },
+  )
+
+  it('allows any host when no site address is configured', async () => {
+    const { res } = await viaApiMiddleware('https://deep-cuts.pages.dev/api/tags', {})
+    expect(res.status).toBe(200)
+  })
+})
+
 describe('API catch-all', () => {
   it('answers unknown API paths with a JSON 404, not the app page', async () => {
     const request = new Request('https://deep-cuts.pages.dev/api/nope')

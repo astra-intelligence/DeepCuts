@@ -66,7 +66,7 @@ The app is ready to host on **Cloudflare Pages** (ADR-0029), but it is **not dep
 
 > ⚠️ **Never upgrade the Cloudflare account to Workers Paid and never add a payment method.** On the Free plan, going over a limit fails; on Paid, it bills (ADR-0024).
 
-**Going live** is a manual owner step: follow [docs/hosting/go-live-checklist.md](docs/hosting/go-live-checklist.md). The deploy command, `DEEP_CUTS_DEPLOY=1 npm run deploy`, refuses to run without that flag.
+**Going live** is a manual owner step: follow [docs/hosting/go-live-checklist.md](docs/hosting/go-live-checklist.md). The deploy command, `DEEP_CUTS_DEPLOY=1 npm run deploy`, refuses to run without that flag, and only deploys a clean `main` that matches GitHub. It builds fresh with accounts on, so what goes live is exactly what was merged.
 
 ## Accounts (opt-in)
 

@@ -6,6 +6,12 @@ pages_build_output_dir = "dist"
 # Fixed so the runtime's behavior only changes when this date is moved on purpose.
 compatibility_date = "2026-10-01"
 
+# Plain settings (not secrets). CANONICAL_HOST is the only address the API answers on
+# (server/apiGuard.ts): old deploys at <hash>.deep-cuts.pages.dev, and deep-cuts.pages.dev itself,
+# get 421 from every /api/* route. Local runs on localhost are always allowed.
+[vars]
+CANONICAL_HOST = "deep-cuts.example"
+
 # The rate-limit Worker (workers/rate-limit/), called by the Functions before any other work.
 [[services]]
 binding = "RATE_LIMITER"
