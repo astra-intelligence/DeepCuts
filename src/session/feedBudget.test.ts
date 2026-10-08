@@ -1,0 +1,42 @@
+// Guards the rate-limit budget (ADR-0029, ADR-0032): a heavy profile's first Discover load must fit
+// inside the per-client API limit, with room to spare for clicking around straight afterwards.
+//
+// The numbers come from the real sources (the caps in useRecommendations.ts and the limit in the
+// rate-limit Worker's wrangler.toml), so raising a cap or lowering the limit fails this test
+// instead of quietly cutting the feed short in production.
+import { describe, expect, it } from 'vitest'
+import rateLimitConfig from '../../workers/rate-limit/wrangler.toml?raw'
+import { LIMITS, MAX_SERIES, RERANK } from './useRecommendations'
+
+// Discover shows 17 cards (DiscoverPage.tsx: one featured film + 16 tiles), each needing its
+// details for the credit lines. Counted in full: most are already loaded by the re-rank, but an
+// explore slot can come from outside it.
+const DISCOVER_CARDS = 17
+// Other calls a first load can make: the popular feed, the session check, and the account's
+// tag records (cached for 30 s, so one call, plus one spare for a refresh).
+const OTHER_CALLS = 4
+// Room left for what someone does in the same minute: opening a film costs at most one
+// where-to-watch call, so this covers a few dozen clicks.
+const HEADROOM = 30
+
+// The API_LIMITER's `limit` from the Worker's config, e.g. `simple = { limit = 120, period = 60 }`.
+function apiLimit(toml: string): number {
+  const block = toml.split('[[ratelimits]]').find((b) => b.includes('"API_LIMITER"'))
+  const match = block?.match(/limit\s*=\s*(\d+)\s*,\s*period\s*=\s*60\b/)
+  if (!match?.[1]) throw new Error('API_LIMITER with a 60 s period not found in wrangler.toml')
+  return Number(match[1])
+}
+
+describe('first Discover load vs the rate limit', () => {
+  it('reads the API limit from the Worker config', () => {
+    expect(apiLimit(rateLimitConfig)).toBe(120)
+  })
+
+  it('fits a heavy profile, with headroom', () => {
+    // One details call per tagged film, one per liked series, one per re-rank candidate.
+    const tagged = LIMITS.liked + LIMITS.watchlist + LIMITS.disliked
+    const worstCase = tagged + MAX_SERIES + RERANK + DISCOVER_CARDS + OTHER_CALLS
+    expect(worstCase).toBe(81)
+    expect(worstCase + HEADROOM).toBeLessThanOrEqual(apiLimit(rateLimitConfig))
+  })
+})

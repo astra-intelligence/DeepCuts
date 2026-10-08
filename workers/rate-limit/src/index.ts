@@ -8,7 +8,7 @@ import { WorkerEntrypoint } from 'cloudflare:workers'
 
 /** What this Worker is bound to (workers/rate-limit/wrangler.toml). */
 export type RateLimitEnv = {
-  /** 60 requests per 60 s per key: movie data, tags, the session check. */
+  /** 120 requests per 60 s per key: movie data, tags, the session check. */
   API_LIMITER: RateLimit
   /** 10 requests per 60 s per key: sign-in, registration and account changes. */
   AUTH_LIMITER: RateLimit

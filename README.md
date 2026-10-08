@@ -62,7 +62,7 @@ The app is ready to host on **Cloudflare Pages** (ADR-0029), but it is **not dep
 | Static asset requests                        | Unlimited                      | —                                                                                |
 | Function + Worker requests (shared)          | 100,000 / day, reset 00:00 UTC | The API is skipped (fail open); search shows "can't reach movie data"; no charge |
 | CPU time per request                         | 10 ms                          | Request errors                                                                   |
-| Per-client API rate limit (ours)             | 60 requests / 60 s             | 429 `rate_limited`                                                               |
+| Per-client API rate limit (ours)             | 120 requests / 60 s            | 429 `rate_limited`                                                               |
 
 > ⚠️ **Never upgrade the Cloudflare account to Workers Paid and never add a payment method.** On the Free plan, going over a limit fails; on Paid, it bills (ADR-0024).
 
@@ -91,7 +91,7 @@ Sessions last 30 days and renew on use; the cookie is `__Host-dc_session` (`Http
 | Sign-in / sign-up rate limit (ours)          | 10 requests / 60 s per client | 429 `rate_limited`          |
 | CPU per passkey check (measured locally)     | ~0.3 ms typical, ~2 ms cold   | 10 ms limit; request errors |
 
-`npm run invite -- --remote --base https://<your-subdomain>` writes to the real database. It's for the owner only, after go-live (see the checklist).
+`npm run invite -- --remote --base https://deep-cuts.example` writes to the real database. It's for the owner only, after go-live (see the checklist).
 
 ## Configuration
 

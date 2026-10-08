@@ -3,7 +3,7 @@
 // screen changes; tagRepository.contract.ts proves the behaviors match.
 //
 // The server applies the tag rules itself (the same `applyTag`), so this adapter only sends what
-// the person did. To keep within the API rate limit (60 requests a minute), the account's records
+// the person did. To keep within the API rate limit (120 requests a minute), the account's records
 // are fetched once and reused for 30 seconds, and refreshed after every change.
 import { z } from 'zod'
 import {
