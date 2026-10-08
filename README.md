@@ -2,7 +2,7 @@
 
 A fast, very visual, one-thumb movie tracker. Tag films (Seen it, Want to see, Like, Dislike) in a tap or two, and it surfaces deep cuts you've never heard of.
 
-> Status: search, film details, tagging, My Lists, a demo sign-in and recommendations from your likes (ADR-0026) all work locally. A responsive, mobile-first website (ADR-0021).
+> Status: **live at https://deep-cuts.example** since 2026-10-08 (Cloudflare Pages, invite-only passkey accounts; not indexed by search engines). Discover (recommendations from your likes, ADR-0032), film details, tagging, My Lists and a demo sign-in all work locally too. A responsive, mobile-first website (ADR-0021).
 
 ## Run locally
 
@@ -26,7 +26,7 @@ npm run dev
 | `npm run check:dist`     | No token in the built bundle                                                                 |
 | `npm run check:bundle`   | The build stays within its size budget (first visit ≤ 230 kB gzipped)                        |
 
-CI also runs `npm audit`, gitleaks and CodeQL. Actions are pinned by SHA.
+CI also runs `npm audit` and gitleaks (secret scan of the whole git history). Actions are pinned by SHA. A CodeQL workflow exists, but GitHub skips it while the repo is private on the Free plan.
 
 ## Other scripts
 
@@ -51,9 +51,9 @@ CI also runs `npm audit`, gitleaks and CodeQL. Actions are pinned by SHA.
 | `npm run tokens:review`    | Builds `build/token-review.html`, a page for reviewing the palette                            |
 | `npm run format`           | Formats every file with Prettier                                                              |
 
-## Hosting (opt-in)
+## Hosting
 
-The app is ready to host on **Cloudflare Pages** (ADR-0029), but it is **not deployed**, and nothing here runs a deploy for you. Local development needs no Cloudflare account.
+The app is hosted on **Cloudflare Pages** (ADR-0029) at **https://deep-cuts.example** (Pages address `deep-cuts.pages.dev`, which the API refuses). Only the owner deploys; nothing here runs a deploy for you. Local development needs no Cloudflare account.
 
 **Try the hosted runtime locally:** `npm run build && npm run preview:cf` serves the app at http://localhost:8788 with the real Pages Function (the TMDB proxy), the rate-limit Worker, the generated `_headers` and SPA routing. For the TMDB token, copy `.dev.vars.example` to `.dev.vars` (git-ignored); if it's missing, Wrangler falls back to `.env.local`.
 
@@ -62,11 +62,11 @@ The app is ready to host on **Cloudflare Pages** (ADR-0029), but it is **not dep
 | Static asset requests                        | Unlimited                      | —                                                                                |
 | Function + Worker requests (shared)          | 100,000 / day, reset 00:00 UTC | The API is skipped (fail open); search shows "can't reach movie data"; no charge |
 | CPU time per request                         | 10 ms                          | Request errors                                                                   |
-| Per-client API rate limit (ours)             | 120 requests / 60 s            | 429 `rate_limited`                                                               |
+| Per-client API rate limit (ours)             | 120 requests / 60 s            | 429 `rate_limited` (approximate: counted per location, so bursts get through)    |
 
 > ⚠️ **Never upgrade the Cloudflare account to Workers Paid and never add a payment method.** On the Free plan, going over a limit fails; on Paid, it bills (ADR-0024).
 
-**Going live** is a manual owner step: follow [docs/hosting/go-live-checklist.md](docs/hosting/go-live-checklist.md). The deploy command, `DEEP_CUTS_DEPLOY=1 npm run deploy`, refuses to run without that flag, and only deploys a clean `main` that matches GitHub. It builds fresh with accounts on, so what goes live is exactly what was merged.
+**Deploying** is a manual owner step (first go-live: 2026-10-08). For later deploys see the end of [docs/hosting/go-live-checklist.md](docs/hosting/go-live-checklist.md). The deploy command, `DEEP_CUTS_DEPLOY=1 npm run deploy`, refuses to run without that flag, and only deploys a clean `main` that matches GitHub. It builds fresh with accounts on, so what goes live is exactly what was merged.
 
 ## Accounts (opt-in)
 
