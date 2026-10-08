@@ -157,11 +157,7 @@ function FeatureCard({ item }: { item: Item }) {
         <picture>
           {/* Tall poster on phones; the wide backdrop from md, where the card is landscape. */}
           {backdrop && <source media="(min-width: 768px)" srcSet={backdrop} />}
-          <img
-            src={poster ?? backdrop ?? undefined}
-            alt=""
-            className="size-full object-cover"
-          />
+          <img src={poster ?? backdrop ?? undefined} alt="" className="size-full object-cover" />
         </picture>
       )}
       {/* Fades the image into the page color so the text on top stays readable. */}
