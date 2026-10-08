@@ -151,17 +151,13 @@ function FeatureCard({ item }: { item: Item }) {
     <Link
       to={`/movie/${movie.id}`}
       style={genreTone(movie.genre_ids)}
-      className="group relative block aspect-4/5 w-full overflow-hidden rounded-card border border-(--tone) bg-card-bg shadow-card md:aspect-auto md:h-110"
+      className="relative block aspect-4/5 w-full overflow-hidden rounded-card border border-(--tone) bg-card-bg shadow-card md:aspect-auto md:h-110"
     >
       {(poster || backdrop) && (
         <picture>
           {/* Tall poster on phones; the wide backdrop from md, where the card is landscape. */}
           {backdrop && <source media="(min-width: 768px)" srcSet={backdrop} />}
-          <img
-            src={poster ?? backdrop ?? undefined}
-            alt=""
-            className="size-full object-cover transition-transform duration-500 group-hover:scale-102"
-          />
+          <img src={poster ?? backdrop ?? undefined} alt="" className="size-full object-cover" />
         </picture>
       )}
       {/* Fades the image into the page color so the text on top stays readable. */}
