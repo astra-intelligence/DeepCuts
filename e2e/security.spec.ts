@@ -18,7 +18,7 @@ test('serves a strict Content-Security-Policy and security headers', async ({ re
   expect(h['x-content-type-options']).toBe('nosniff')
   expect(h['x-frame-options']).toBe('DENY')
   expect(h['referrer-policy']).toBe('strict-origin-when-cross-origin')
-  expect(h['permissions-policy']).toContain('microphone=(self)')
+  expect(h['permissions-policy']).toContain('microphone=()')
 })
 
 // Owner, 2026-10-07: no search engines yet. Header, robots.txt and <meta> all say so.

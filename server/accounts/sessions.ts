@@ -75,6 +75,16 @@ export async function newSession(
   return { statement, cookie: sessionCookie(request, id) }
 }
 
+/**
+ * Deletes every expired session, for the caller's batch. Expired sessions are already refused, and
+ * a returning visitor's own row is deleted on sight (`currentUser`), but a browser that never comes
+ * back would leave its row forever. Sign-in and sign-up run this, so the table can't grow without
+ * bound and dead session hashes don't linger.
+ */
+export function purgeExpiredSessions(db: D1Like, now: number): D1Stmt {
+  return db.prepare('DELETE FROM sessions WHERE expires_at <= ?').bind(now)
+}
+
 /** The signed-in user, plus a renewed cookie to send when the session was extended. */
 export type CurrentUser = { id: string; name: string; renewedCookie: string | null }
 

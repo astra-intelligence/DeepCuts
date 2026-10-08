@@ -11,6 +11,9 @@
 // The invite is claimed in the same D1 batch that creates the account, so it can't be used twice.
 // A *recovery* invite carries a user id and adds a new passkey to that existing account.
 //
+// Each new challenge also clears out expired challenges and sessions (`storeChallenge`), so
+// abandoned attempts and long-gone visitors don't pile up in D1.
+//
 // Errors are short codes only (`invalid_invite`, `verification_failed`…), never library messages.
 import {
   generateAuthenticationOptions,
@@ -24,8 +27,8 @@ import { z } from 'zod'
 import { registrationSchema } from '../../src/adapters/SessionProvider.ts'
 import { fail, json, readJson } from '../http.ts'
 import { base64url, randomToken, sha256Hex } from './crypto.ts'
-import type { AccountsEnv, D1Like } from './d1.ts'
-import { newSession } from './sessions.ts'
+import type { AccountsEnv, D1Like, D1Stmt } from './d1.ts'
+import { newSession, purgeExpiredSessions } from './sessions.ts'
 
 /** How long a challenge stays usable. */
 export const CHALLENGE_TTL_MS = 5 * 60 * 1000
@@ -62,6 +65,20 @@ function parseTransports(value: string | null): string[] | undefined {
   } catch {
     return undefined
   }
+}
+
+/**
+ * Stores a new challenge, first deleting expired challenges and sessions in the same transaction.
+ * The options endpoints are the only writers of challenges and sit in the tight `auth` rate-limit
+ * bucket, so the purge runs at most a few times a minute per client. Both tables are small (one
+ * row per sign-in attempt or device), so a scan is cheap.
+ */
+async function storeChallenge(db: D1Like, insert: D1Stmt, now: number) {
+  await db.batch([
+    db.prepare('DELETE FROM challenges WHERE expires_at <= ?').bind(now),
+    purgeExpiredSessions(db, now),
+    insert,
+  ])
 }
 
 /**
@@ -144,12 +161,14 @@ export async function registerOptions(request: Request, env: AccountsEnv, now = 
   })
 
   const challengeId = randomToken(16)
-  await env.DB.prepare(
-    `INSERT INTO challenges (id, challenge, kind, invite_code_hash, name, user_id, expires_at)
-     VALUES (?, ?, 'register', ?, ?, ?, ?)`,
+  await storeChallenge(
+    env.DB,
+    env.DB.prepare(
+      `INSERT INTO challenges (id, challenge, kind, invite_code_hash, name, user_id, expires_at)
+       VALUES (?, ?, 'register', ?, ?, ?, ?)`,
+    ).bind(challengeId, options.challenge, inviteHash, name, userId, now + CHALLENGE_TTL_MS),
+    now,
   )
-    .bind(challengeId, options.challenge, inviteHash, name, userId, now + CHALLENGE_TTL_MS)
-    .run()
   return json(200, { challengeId, options }, NO_STORE)
 }
 
@@ -253,11 +272,13 @@ export async function authenticateOptions(request: Request, env: AccountsEnv, no
   const { rpID } = relyingParty(request)
   const options = await generateAuthenticationOptions({ rpID, userVerification: 'preferred' })
   const challengeId = randomToken(16)
-  await env.DB.prepare(
-    `INSERT INTO challenges (id, challenge, kind, expires_at) VALUES (?, ?, 'authenticate', ?)`,
+  await storeChallenge(
+    env.DB,
+    env.DB.prepare(
+      `INSERT INTO challenges (id, challenge, kind, expires_at) VALUES (?, ?, 'authenticate', ?)`,
+    ).bind(challengeId, options.challenge, now + CHALLENGE_TTL_MS),
+    now,
   )
-    .bind(challengeId, options.challenge, now + CHALLENGE_TTL_MS)
-    .run()
   return json(200, { challengeId, options }, NO_STORE)
 }
 

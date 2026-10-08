@@ -311,6 +311,25 @@ describe('sign-in and sessions (A2)', () => {
     expect((await client.call('GET', '/api/auth/session')).status).toBe(401)
     expect(db.rows('sessions')).toEqual([])
   })
+
+  it('clears expired challenges and sessions whenever a new challenge is made', async () => {
+    // One device signs up and never returns; another starts a sign-in and walks away.
+    await register(createClient(env), await createSoftAuthenticator(), await invite())
+    await createClient(env).call('POST', '/api/auth/authenticate/options')
+    expect(db.rows('sessions')).toHaveLength(1)
+    expect(db.rows('challenges')).toHaveLength(1)
+
+    // A minute later, a fresh challenge leaves the abandoned one alone (still within 5 minutes).
+    vi.setSystemTime(Date.now() + 60 * 1000)
+    await createClient(env).call('POST', '/api/auth/authenticate/options')
+    expect(db.rows('challenges')).toHaveLength(2)
+
+    // 31 days on, the next challenge purges both expired challenges and the dead session.
+    vi.setSystemTime(Date.now() + 31 * DAY)
+    const fresh = await createClient(env).call('POST', '/api/auth/authenticate/options')
+    expect(db.rows('sessions')).toEqual([])
+    expect(db.rows('challenges').map((c) => c.id)).toEqual([fresh.body.challengeId])
+  })
 })
 
 describe('the /api guard', () => {
