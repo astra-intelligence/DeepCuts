@@ -17,7 +17,7 @@ import { guardApi } from '../apiGuard.ts'
 import { route } from '../http.ts'
 import type { RateLimiterBinding } from '../rateLimit.ts'
 
-type Env = AccountsEnv & { RATE_LIMITER?: RateLimiterBinding }
+type Env = AccountsEnv & { RATE_LIMITER?: RateLimiterBinding; CANONICAL_HOST?: string }
 
 /** Path → [the Pages file that serves it, its method handlers]. */
 export const ROUTES = {
@@ -97,7 +97,7 @@ export function createClient(
       body: body === undefined ? undefined : JSON.stringify(body),
     })
     const response =
-      (await guardApi(request, env.RATE_LIMITER)) ?? (await ROUTES[path][1]({ request, env }))
+      (await guardApi(request, env.RATE_LIMITER, env.CANONICAL_HOST)) ?? (await ROUTES[path][1]({ request, env }))
     // Keep (or drop) cookies the way a browser would.
     const set = response.headers.get('Set-Cookie')
     if (set) {

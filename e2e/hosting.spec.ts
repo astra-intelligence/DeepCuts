@@ -34,6 +34,20 @@ test('deep links load the app (H7)', async ({ page }) => {
   }
 })
 
+test('the API answers only on the site address (host pin)', async ({ request }) => {
+  // An old deploy's own address, as Cloudflare would route it. Localhost (every other test here)
+  // is allowed; so is the real site.
+  const wrong = await request.get('/api/auth/session', {
+    headers: { Host: 'a1b2c3d4.deep-cuts.pages.dev' },
+  })
+  expect(wrong.status()).toBe(421)
+  expect(await wrong.json()).toEqual({ error: 'wrong_host' })
+  const site = await request.get('/api/auth/session', {
+    headers: { Host: 'deep-cuts.example' },
+  })
+  expect(site.status()).toBe(401)
+})
+
 test('unknown API paths are a JSON 404, not the app page', async ({ request }) => {
   const res = await request.get('/api/nope')
   expect(res.status()).toBe(404)
