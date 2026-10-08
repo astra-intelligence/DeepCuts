@@ -20,6 +20,10 @@ const detail = async () => ({
   Component: (await import('./routes/MovieDetailPage')).MovieDetailPage,
 })
 const tune = async () => ({ Component: (await import('./routes/tune/TunePage')).TunePage })
+// Design labs: prototypes the owner tunes on the dev server. `import.meta.env.DEV` is false in
+// a production build, so these routes and their code are left out of the shipped app.
+const vhsLab = async () => ({ Component: (await import('./routes/lab/VhsLabPage')).VhsLabPage })
+const labRoutes: RouteObject[] = import.meta.env.DEV ? [{ path: 'lab/vhs', lazy: vhsLab }] : []
 
 /**
  * Builds the route table. The landing page is "home": Discover, or Search while the Search page
@@ -46,6 +50,7 @@ export function createRoutes(features: Features = FEATURES): RouteObject[] {
           : { path: 'search', element: <Navigate to={home} replace /> },
         { path: 'lists', lazy: lists },
         { path: 'account', lazy: account },
+        ...labRoutes,
         // Any unknown URL shows the "not found" page inside the shell.
         { path: '*', element: <RouteError /> },
       ],

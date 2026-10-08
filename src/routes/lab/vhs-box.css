@@ -1,0 +1,342 @@
+/* VHS box hover lab (dev only, /lab/vhs): each poster drawn as a 3D video-rental tape box.
+
+   A prototype for the owner to tune, not an approved design. Once a look is approved, its values
+   move into tokens (a `tokens/component/vhs.json`) and these rules into `@utility` blocks in
+   src/index.css, and this file goes away.
+
+   How the box is built. CSS 3D: the box element keeps its children in 3D (`preserve-3d`) and
+   each face is a flat element folded back from one edge of the front cover:
+     front  - the cover art, at the layout plane (z = 0)
+     spine  - folded back from the left edge (shows when the box turns right)
+     edge   - folded back from the right edge (the clamshell's opening side)
+     top    - folded back from the top edge (shows when the box tilts toward you)
+     bottom - folded back from the bottom edge
+   Each fold swings the face forward with its printed side out, then pushes it back by the
+   depth, so it spans from the front cover to the back. Sizes come from the box's width through container query units (100cqw = the tile width), so
+   the depth stays in proportion on every screen size.
+
+   Real proportions: a rental clamshell is about 135 × 208 × 30 mm (W × H × D), a cardboard
+   sleeve about 105 × 190 × 26 mm. That's width/height ≈ 0.55–0.65 and depth ≈ 22–25% of the
+   width, which are the defaults below. Colors come only from tokens (raw colors fail lint). */
+
+/* Knobs, set on the lab wrapper by the control panel. */
+.vhs-lab {
+  --vhs-aspect: 0.6; /* box width / height */
+  --vhs-depth: 0.23; /* depth as a share of the width */
+  --vhs-rest-y: 6deg; /* turn at rest, so the spine always shows a little */
+  --vhs-rest-x: -2deg; /* tilt at rest (negative = top toward you) */
+  --vhs-hover-y: 24deg;
+  --vhs-hover-x: -6deg;
+  --vhs-lift: -6px; /* how far the box rises on hover */
+  --vhs-perspective: 1100px;
+  --vhs-speed: 450ms;
+}
+
+/* One tile's 3D stage. Its own perspective gives every box its own vanishing point, so boxes at
+   the edges of the grid don't skew more than the ones in the middle. */
+.vhs-scene {
+  container-type: inline-size;
+  perspective: var(--vhs-perspective);
+  perspective-origin: 50% 35%;
+  position: relative;
+}
+
+/* The box. Derived sizes: W (width), H (height) and D (depth). */
+.vhs-box {
+  --w: 100cqw;
+  --h: calc(100cqw / var(--vhs-aspect));
+  --d: calc(100cqw * var(--vhs-depth));
+  --turn-y: var(--vhs-rest-y);
+  --turn-x: var(--vhs-rest-x);
+  --rise: 0px;
+  position: relative;
+  display: block;
+  width: var(--w);
+  height: var(--h);
+  transform-style: preserve-3d;
+  /* Turn around the middle of the box, not around the front cover. */
+  transform-origin: 50% 50% calc(var(--d) * -0.5);
+  transform: translateY(var(--rise)) rotateX(var(--turn-x)) rotateY(var(--turn-y));
+  transition: transform var(--vhs-speed) cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* The hover pose, on pointer hover (real mice only: a tap on a phone would leave it stuck), on
+   keyboard focus, and for every tile when "show the hover pose" is on. */
+@media (hover: hover) {
+  .vhs-card:hover .vhs-box {
+    --turn-y: var(--vhs-hover-y);
+    --turn-x: var(--vhs-hover-x);
+    --rise: var(--vhs-lift);
+  }
+}
+.vhs-card:focus-visible .vhs-box,
+.vhs-lab[data-freeze] .vhs-box {
+  --turn-y: var(--vhs-hover-y);
+  --turn-x: var(--vhs-hover-x);
+  --rise: var(--vhs-lift);
+}
+
+/* "Follow cursor" mode: the page sets --px/--py (-1..1) from the pointer, and the box leans
+   toward it, within the hover angles. */
+.vhs-lab[data-mode='follow'] .vhs-card:hover .vhs-box {
+  --turn-y: calc(var(--vhs-rest-y) + (var(--vhs-hover-y) - var(--vhs-rest-y)) * var(--px, 0));
+  --turn-x: calc(var(--vhs-hover-x) * var(--py, 0));
+  transition-duration: 120ms;
+}
+
+/* Reduced motion: the box keeps its resting angle; nothing moves. */
+@media (prefers-reduced-motion: reduce) {
+  .vhs-box,
+  .vhs-card:hover .vhs-box,
+  .vhs-card:focus-visible .vhs-box,
+  .vhs-lab[data-freeze] .vhs-box {
+    --turn-y: var(--vhs-rest-y);
+    --turn-x: var(--vhs-rest-x);
+    --rise: 0px;
+  }
+}
+
+/* ---- Faces ------------------------------------------------------------------------------- */
+
+.vhs-face {
+  position: absolute;
+  backface-visibility: hidden;
+}
+
+/* Molded black plastic, for the case's edges. Lighter than the page so the box reads on it. */
+.vhs-plastic {
+  background: color-mix(in srgb, var(--color-fg) 9%, var(--color-surface));
+}
+
+.vhs-front {
+  inset: 0;
+  overflow: hidden;
+}
+.vhs-front img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Spine: as deep as the box, folded back from the left edge. */
+.vhs-spine {
+  top: 0;
+  left: 0;
+  width: var(--d);
+  height: 100%;
+  transform-origin: left center;
+  transform: translateZ(calc(var(--d) * -1)) rotateY(-90deg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  /* Turned away from the light: a touch darker than the front. */
+  box-shadow: inset 0 0 0 100vmax color-mix(in srgb, var(--color-surface) 18%, transparent);
+}
+
+.vhs-edge {
+  top: 0;
+  right: 0;
+  width: var(--d);
+  height: 100%;
+  transform-origin: right center;
+  transform: translateZ(calc(var(--d) * -1)) rotateY(90deg);
+}
+
+.vhs-top,
+.vhs-bottom {
+  left: 0;
+  width: 100%;
+  height: var(--d);
+}
+.vhs-top {
+  top: 0;
+  transform-origin: center top;
+  transform: translateZ(calc(var(--d) * -1)) rotateX(90deg);
+  /* Lit from above: the brightest face. Ridges are the molded grip lines on the case. */
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 3px,
+      color-mix(in srgb, var(--color-surface) 35%, transparent) 3px 4px
+    ),
+    color-mix(in srgb, var(--color-fg) 16%, var(--color-surface));
+}
+.vhs-bottom {
+  bottom: 0;
+  transform-origin: center bottom;
+  transform: translateZ(calc(var(--d) * -1)) rotateX(-90deg);
+}
+
+/* Spine print: the film's title, read top to bottom like a US tape spine. */
+.vhs-spine-title {
+  flex: 1;
+  min-height: 0;
+  writing-mode: vertical-rl;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-brand);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: calc(var(--d) * 0.42);
+  line-height: var(--d);
+  padding-block: calc(var(--d) * 0.25);
+  color: var(--color-fg);
+}
+
+/* A band of the film's genre color at the top of the spine, with the release year. */
+.vhs-spine-band {
+  width: 100%;
+  padding-block: calc(var(--d) * 0.18);
+  background: var(--tone);
+  color: var(--color-print-ink);
+  font-family: var(--font-brand);
+  font-weight: 800;
+  font-size: calc(var(--d) * 0.3);
+  text-align: center;
+  line-height: 1;
+}
+
+/* The rental store's barcode label, stuck on the bottom of the spine. */
+.vhs-spine-label {
+  width: 82%;
+  margin-bottom: calc(var(--d) * 0.35);
+  padding: calc(var(--d) * 0.08);
+  background: var(--color-print-paper);
+  rotate: -2deg;
+}
+.vhs-barcode {
+  display: block;
+  height: calc(var(--d) * 1.1);
+  background: repeating-linear-gradient(
+    0deg,
+    var(--color-print-ink) 0 1px,
+    transparent 1px 2px,
+    var(--color-print-ink) 2px 4px,
+    transparent 4px 5px,
+    var(--color-print-ink) 5px 6px,
+    transparent 6px 8px
+  );
+}
+
+/* ---- Rental clamshell ---------------------------------------------------------------------
+   Thick black plastic case. The printed sleeve sits under a clear vinyl overlay that wraps the
+   front and spine, so the art has a plastic rim around it and a glossy sheen across it. */
+.vhs-lab[data-case='clamshell'] {
+  .vhs-box {
+    --rim: calc(100cqw * 0.035);
+  }
+  .vhs-front {
+    padding: var(--rim);
+    border-radius: calc(100cqw * 0.03);
+  }
+  .vhs-front img {
+    border-radius: 2px;
+  }
+  /* The vinyl overlay: a soft diagonal glare that slides across as the box turns. */
+  .vhs-front::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      115deg,
+      transparent 30%,
+      color-mix(in srgb, var(--color-fg) 22%, transparent) 45%,
+      transparent 60%
+    );
+    background-size: 250% 100%;
+    background-position: 100% 0;
+    transition: background-position var(--vhs-speed) ease-out;
+    pointer-events: none;
+  }
+  /* The overlay's edge: a faint highlight just inside the rim. */
+  .vhs-front::before {
+    content: '';
+    position: absolute;
+    inset: calc(var(--rim) * 0.5);
+    border: 1px solid color-mix(in srgb, var(--color-fg) 14%, transparent);
+    border-radius: calc(100cqw * 0.02);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .vhs-spine {
+    border-block: var(--rim) solid color-mix(in srgb, var(--color-fg) 9%, var(--color-surface));
+    background: var(--color-surface);
+  }
+  /* The two halves of the case meet in a seam along the opening side. */
+  .vhs-edge {
+    background:
+      linear-gradient(
+        90deg,
+        transparent 48%,
+        color-mix(in srgb, var(--color-surface) 70%, transparent) 48% 52%,
+        transparent 52%
+      ),
+      color-mix(in srgb, var(--color-fg) 6%, var(--color-surface));
+  }
+}
+@media (hover: hover) {
+  .vhs-lab[data-case='clamshell'] .vhs-card:hover .vhs-front::after {
+    background-position: 0 0;
+  }
+}
+.vhs-lab[data-case='clamshell'][data-freeze] .vhs-front::after,
+.vhs-lab[data-case='clamshell'] .vhs-card:focus-visible .vhs-front::after {
+  background-position: 0 0;
+}
+
+/* ---- Cardboard sleeve ---------------------------------------------------------------------
+   The thinner retail sleeve: art printed edge to edge on matte card, crisp corners, and shelf
+   wear along the edges where it rubbed against its neighbours. */
+.vhs-lab[data-case='sleeve'] {
+  .vhs-front {
+    border-radius: 1px;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-print-paper) 25%, transparent);
+  }
+  .vhs-spine {
+    background: var(--color-surface);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--color-print-paper) 25%, transparent),
+      inset 0 0 0 100vmax color-mix(in srgb, var(--color-surface) 18%, transparent);
+  }
+  .vhs-top {
+    background: color-mix(in srgb, var(--color-fg) 22%, var(--color-surface));
+  }
+  /* The open end: the tape inside shows as a dark gap. */
+  .vhs-edge {
+    background: var(--color-surface);
+  }
+}
+
+/* ---- Shadow ------------------------------------------------------------------------------ */
+
+/* A soft contact shadow on the "shelf" under the box. It spreads and fades as the box lifts. */
+.vhs-scene::after {
+  content: '';
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: -10px;
+  height: 18px;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--color-surface) 90%, transparent),
+    transparent
+  );
+  filter: blur(2px);
+  transition:
+    transform var(--vhs-speed) ease-out,
+    opacity var(--vhs-speed) ease-out;
+  pointer-events: none;
+  z-index: -1;
+}
+@media (hover: hover) {
+  .vhs-card:hover .vhs-scene::after {
+    transform: scaleX(1.08);
+    opacity: 0.7;
+  }
+}

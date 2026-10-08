@@ -75,6 +75,8 @@ export default defineConfig(({ mode }) => ({
         'src/test/**',
         // Storybook stories are documentation, checked by the Storybook a11y gate instead.
         'src/**/*.stories.tsx',
+        // Dev-only design labs (router.tsx): prototypes that never ship.
+        'src/routes/lab/**',
         'server/**/*.test.ts',
         'server/**/*.contract.ts',
       ],
