@@ -1,0 +1,4 @@
+# Deep Cuts is a private demo: please don't crawl it (owner, 2026-10-07).
+# Every response also sends `X-Robots-Tag: noindex, nofollow` (server/securityHeaders.ts).
+User-agent: *
+Disallow: /
