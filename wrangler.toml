@@ -24,5 +24,5 @@ service = "deep-cuts-rate-limit"
 [[d1_databases]]
 binding = "DB"
 database_name = "deep-cuts"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "bffdf6b8-1516-4ccc-a641-5a8d2e6a829d"
 migrations_dir = "migrations"
