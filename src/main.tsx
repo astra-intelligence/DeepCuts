@@ -5,6 +5,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router'
 import { createMockSessionProvider } from './adapters/local/MockSessionProvider'
+import { shouldRetry } from './api/retry'
 import { AppSessionProvider } from './session/AppSessionProvider'
 import { routes } from './router'
 import './index.css'
@@ -12,10 +13,11 @@ import './index.css'
 const root = document.getElementById('root')
 if (!root) throw new Error('Root element #root not found')
 
-// Shared cache for every data request. Retry a failed request once; don't re-fetch just because
-// the window regained focus (movie data rarely changes).
+// Shared cache for every data request. Retry a failed request once, but never a rate-limit 429
+// (see api/retry.ts); don't re-fetch just because the window regained focus (movie data rarely
+// changes).
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
+  defaultOptions: { queries: { retry: shouldRetry, refetchOnWindowFocus: false } },
 })
 const router = createBrowserRouter(routes)
 // Which accounts the app uses (ADR-0031): with the build flag VITE_ACCOUNTS=cloudflare (not a
