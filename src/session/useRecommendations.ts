@@ -20,12 +20,20 @@ import {
 } from '../domain/scorer'
 import { useTagQueries } from './tagQueries'
 
-/** How many recent tags of each kind inform the feed (bounds the number of calls). */
-const LIMITS = { liked: 20, watchlist: 10, disliked: 10 } as const
+// These three caps bound how many proxy calls a first Discover load makes, which must stay well
+// under the per-client rate limit (workers/rate-limit/wrangler.toml). feedBudget.test.ts adds
+// them up and fails if a change here would push a heavy profile's first load over it.
+
+/**
+ * How many recent tags of each kind inform the feed (bounds the number of calls). Likes drive the
+ * candidates, so they get the most; the watchlist and dislikes only nudge scores, so 5 each is
+ * enough (cut from 10 to fit the rate limit, owner 2026-10-07).
+ */
+export const LIMITS = { liked: 20, watchlist: 5, disliked: 5 } as const
 /** How many top candidates get their keywords and directors loaded for the re-rank (ADR-0028). */
-const RERANK = 20
+export const RERANK = 20
 /** How many liked series (most recent likes first) bring their films in as candidates. */
-const MAX_SERIES = 10
+export const MAX_SERIES = 10
 
 export interface Recommendation extends Omit<Pick, 'film'> {
   movie: MovieSummary
