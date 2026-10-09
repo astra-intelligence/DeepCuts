@@ -30,7 +30,9 @@ async function wantToSeeTheThing(page: Page) {
     .getByRole('button', { name: 'Want to see' })
     .click()
   await page.getByRole('button', { name: 'Save' }).click()
+  // Save briefly announces success, then closes Detail through its exit transition.
   await expect(page.getByRole('status')).toContainText('Saved.')
+  await expect(page).toHaveURL(/\/discover$/)
 }
 
 test('header search → detail → back, keyboard only', async ({ page }) => {
@@ -51,8 +53,8 @@ test('header search → detail → back, keyboard only', async ({ page }) => {
   await page.keyboard.press('ArrowDown')
   await page.keyboard.press('Enter')
 
-  const heading = page.getByRole('heading', { level: 1, name: 'The Thing' })
-  await expect(heading).toBeFocused()
+  await expect(page.getByRole('heading', { level: 1, name: 'The Thing' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Back to previous screen' })).toBeFocused()
   await expect(page.getByRole('img', { name: 'Disney Plus' })).toBeVisible()
   await expect(page).toHaveTitle('The Thing · Deep Cuts')
 
@@ -98,8 +100,8 @@ test('detail tags toggle and save by keyboard, all at 44px or more', async ({ pa
   await expect(save).toBeFocused()
   await page.keyboard.press('Enter')
   await expect(page.getByRole('status')).toHaveText('Saved. The Thing: Seen it.')
-  await expect(seen).toBeFocused()
-  await expect(save).toHaveCount(0)
+  await expect(page).toHaveURL(/\/discover$/)
+  await expect(page.getByRole('heading', { level: 1, name: 'Found for you' })).toBeFocused()
   await expectNoA11yViolations(page)
 })
 
@@ -113,8 +115,8 @@ test('a disliked film appears only on the Disliked list, with the tag accent', a
   // Detail stages tag changes until Save.
   await page.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByRole('status')).toContainText('Saved.')
+  await expect(page).toHaveURL(/\/discover$/)
   // Client-side navigation keeps the in-memory guest picks (ADR-0011).
-  await page.getByRole('link', { name: 'Deep Cuts, go to Discover' }).click()
   await page
     .getByRole('navigation', { name: 'Main' })
     .getByRole('link', { name: 'My Lists' })
@@ -132,6 +134,7 @@ test('Save my picks survives a reload; guest picks do not (ADR-0011, ADR-0022)',
 }) => {
   await page.goto('/movie/1091')
   await wantToSeeTheThing(page)
+  await page.goto('/movie/1091')
   await page.reload()
   const wanted = page
     .getByRole('group', { name: 'Your tags' })
@@ -140,7 +143,6 @@ test('Save my picks survives a reload; guest picks do not (ADR-0011, ADR-0022)',
 
   await wantToSeeTheThing(page)
   // Client-side navigation keeps the in-memory guest picks (ADR-0011).
-  await page.getByRole('link', { name: 'Deep Cuts, go to Discover' }).click()
   await page.getByRole('banner').getByRole('link', { name: 'Sign in' }).click()
   await page.getByRole('link', { name: 'Keep your picks on this device' }).click()
   await page.getByRole('button', { name: 'Save my picks' }).click()
@@ -155,7 +157,6 @@ test('sign in with the demo account, keyboard only; survives a reload; sign out 
 }) => {
   await page.goto('/movie/1091')
   await wantToSeeTheThing(page)
-  await page.getByRole('link', { name: 'Deep Cuts, go to Discover' }).click()
   await page.getByRole('banner').getByRole('link', { name: 'Sign in' }).focus()
   await page.keyboard.press('Enter')
 

@@ -3,10 +3,54 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
+import { delay, http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { renderRoute } from '../test/renderRoute'
+import { candidateDetailFixtures, movieFixture, searchFixture } from '../test/msw/fixtures'
+import { server } from '../test/msw/server'
 
 describe('discover', () => {
+  it('reserves both list sections while the film list loads', async () => {
+    server.use(
+      http.get('/api/tmdb/discover/movie', async () => {
+        await delay(250)
+        return HttpResponse.json(searchFixture)
+      }),
+    )
+
+    renderRoute('/discover')
+    expect(await screen.findByRole('status')).toHaveTextContent('Finding films…')
+    expect(document.querySelector('[data-loading-section="featured"]')).toBeInTheDocument()
+    expect(document.querySelector('[data-loading-section="grid"]')).toBeInTheDocument()
+    await screen.findByRole('link', { name: /Today’s featured deep cut.*The Thing/ })
+  })
+
+  it('reveals films before secondary credits and reserves the late content space', async () => {
+    // Hold only the featured film's details. Its poster should remain available for an early LCP,
+    // while the fixed-height credit container prevents the late names from shifting the card.
+    server.use(
+      http.get('/api/tmdb/movie/:id', async ({ params }) => {
+        if (params.id === String(movieFixture.id)) {
+          await delay(750)
+          return HttpResponse.json(movieFixture)
+        }
+        const candidate = candidateDetailFixtures[Number(params.id)]
+        return candidate ? HttpResponse.json(candidate) : undefined
+      }),
+    )
+
+    renderRoute('/discover')
+    const feature = await screen.findByRole('link', {
+      name: /Today’s featured deep cut.*The Thing/,
+    })
+    await screen.findByRole('link', { name: /Alien.*1979 · Horror/ })
+    expect(document.querySelector('[data-loading-section="grid"]')).not.toBeInTheDocument()
+    expect(document.querySelector('[data-loading-section="featured"]')).not.toBeInTheDocument()
+    expect(feature.querySelector('[data-credit-lines]')).toHaveClass('min-h-10')
+    expect(feature).not.toHaveTextContent('Director: John Carpenter')
+    await waitFor(() => expect(feature).toHaveTextContent('Director: John Carpenter'))
+  })
+
   it('shows a feature card and a poster grid', async () => {
     renderRoute('/discover')
     expect(

@@ -7,18 +7,24 @@ const HOLES = [12, 29, 46, 63, 80]
   .join('')
 const FRAME = `M0 0h520v100H0z M36 8h448v84H36z ${HOLES}`
 
-type LogoProps = { className?: string }
+type LogoProps = { className?: string; decorative?: boolean }
 
 /**
  * Deep Cuts wordmark, rebuilt as code from the owner's artwork (docs/design/brand/).
  * Colors come from the brand token tier, the artwork's exact values (ADR-0023): the frame and
  * DEEP use the teal gradient, CUTS the gold. The logo never changes color with the page accent.
  */
-export function Logo({ className }: LogoProps) {
+export function Logo({ className, decorative = false }: LogoProps) {
   // A unique id per logo: two logos on one page would otherwise share (and clash on) one gradient.
   const gradientId = useId()
   return (
-    <svg viewBox="0 0 520 100" role="img" aria-label="Deep Cuts" className={className}>
+    <svg
+      viewBox="0 0 520 100"
+      role={decorative ? undefined : 'img'}
+      aria-label={decorative ? undefined : 'Deep Cuts'}
+      aria-hidden={decorative || undefined}
+      className={className}
+    >
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" style={{ stopColor: 'var(--dc-brand-logo-gradient-start)' }} />

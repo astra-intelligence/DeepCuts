@@ -3,7 +3,7 @@
 // Information only (ADR-0018): no ratings or reviews of our own. It has its own full-bleed
 // layout without the tab bar, with the film's backdrop behind the page.
 import { useQuery } from '@tanstack/react-query'
-import type { ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Button } from 'react-aria-components'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { z } from 'zod'
@@ -13,14 +13,21 @@ import { Icon } from '../components/Icon'
 import { HOME } from '../config/features'
 import { Logo } from '../components/Logo'
 import { MovieSearch } from '../components/MovieSearch'
-import { useRouteFocus } from '../hooks/useRouteFocus'
 import { SkipLink } from './AppLayout'
 import { DetailTags } from './DetailTags'
+import './MovieDetailPage.css'
 
 // The :id in the URL is untrusted: it must be a positive whole number of sensible size.
 const idSchema = z.coerce.number().int().positive().max(99_999_999)
 // Ratings and streaming services are shown for one country for now.
 const REGION = 'US'
+
+// CSS stores the shared motion token as a duration, which can be expressed in ms or seconds.
+function milliseconds(value: string) {
+  const amount = Number.parseFloat(value)
+  if (!Number.isFinite(amount)) return 400
+  return value.trim().endsWith('ms') ? amount : amount * 1000
+}
 
 /** Length-aware title scale from design v2 (55 and 95 character thresholds). */
 function titleSize(title: string) {
@@ -32,42 +39,144 @@ function titleSize(title: string) {
 /** The Detail page: shows the film, or "not found" for a malformed id. */
 export function MovieDetailPage() {
   const parsed = idSchema.safeParse(useParams().id)
+  const { closing, dismiss } = useDetailDismiss()
   return (
-    <DetailLayout>{parsed.success ? <MovieDetail id={parsed.data} /> : <NotFound />}</DetailLayout>
+    <DetailLayout closing={closing} onDismiss={dismiss}>
+      {parsed.success ? <MovieDetail id={parsed.data} onDismiss={dismiss} /> : <NotFound />}
+    </DetailLayout>
   )
 }
 
 /**
- * "Back" for the top button: the previous screen, or
- * home on a direct visit (which has no history entry to return to).
+ * Fades Detail away before changing routes. The same `motion.enter` token controls both
+ * directions, so an enter and dismiss always feel like one interaction. The small JavaScript
+ * fallback exists because CSS animation events are not guaranteed (for example in test DOMs).
  */
-function useBack() {
+function useDetailDismiss() {
   const navigate = useNavigate()
   const location = useLocation()
-  return () => (location.key === 'default' ? navigate(HOME.path) : navigate(-1))
+  const [closing, setClosing] = useState(false)
+  const timeout = useRef<number | null>(null)
+
+  useEffect(
+    () => () => {
+      if (timeout.current !== null) window.clearTimeout(timeout.current)
+    },
+    [],
+  )
+
+  const dismiss = useCallback(
+    (destination?: string) => {
+      // Ignore every later close request while the first one is playing out.
+      if (closing) return
+      setClosing(true)
+
+      // The global reduced-motion rule makes the CSS animation effectively instant; navigation
+      // must do the same instead of leaving people waiting for an invisible 400ms animation.
+      const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+      const page = document.querySelector<HTMLElement>('.detail-page')
+      const duration = reduced
+        ? 0
+        : milliseconds(page ? getComputedStyle(page).animationDuration : '')
+      timeout.current = window.setTimeout(() => {
+        // A direct visit has no useful history entry. Other Detail visits return to their source.
+        if (destination) navigate(destination)
+        else if (location.key === 'default') navigate(HOME.path)
+        else navigate(-1)
+      }, duration)
+    },
+    [closing, location.key, navigate],
+  )
+
+  useEffect(() => {
+    // Detail can be opened by pointer, keyboard or a direct URL. A document listener means Escape
+    // works in all three cases, even before focus moves inside the freshly opened route. Controls
+    // that use Escape first (such as the movie-search list) prevent default and keep precedence.
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !event.defaultPrevented) dismiss()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [dismiss])
+
+  return {
+    closing,
+    dismiss,
+  }
 }
 
 // Detail opens above the app shell (design v2): no tab bar; back, logo and search float on top.
-function DetailLayout({ children }: { children: ReactNode }) {
-  useRouteFocus()
-  const back = useBack()
+function DetailLayout({
+  children,
+  closing,
+  onDismiss,
+}: {
+  children: ReactNode
+  closing: boolean
+  onDismiss: (destination?: string) => void
+}) {
+  const layoutRef = useRef<HTMLDivElement>(null)
+  const backRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    // Detail is an overlay-like route. Its Back control is the first meaningful action, so it
+    // receives focus rather than letting the page-heading route helper steal it after data loads.
+    backRef.current?.focus()
+  }, [])
+
+  useEffect(() => {
+    const trapTab = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return
+      const layout = layoutRef.current
+      if (!layout?.contains(document.activeElement)) return
+      // Query only keyboard-reachable controls inside this route. The selector deliberately omits
+      // tabindex=-1 headings and decorative content, while preserving the visible Skip link.
+      const focusable = [
+        ...layout.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ].filter((element) => !element.hasAttribute('inert'))
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (!first || !last) return
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', trapTab)
+    return () => document.removeEventListener('keydown', trapTab)
+  }, [])
+
   return (
-    <div className="relative mx-auto min-h-svh w-full max-w-360 overflow-x-clip">
+    // Once the fade begins this route is no longer actionable; the destination will receive
+    // focus through its normal route-focus handling after the animation completes.
+    <div
+      ref={layoutRef}
+      className="detail-page relative mx-auto min-h-svh w-full max-w-360 overflow-x-clip"
+      data-closing={closing || undefined}
+      inert={closing}
+    >
       <SkipLink />
       <Button
-        onPress={back}
+        ref={backRef}
+        onPress={() => onDismiss()}
         aria-label="Back to previous screen"
         className="absolute top-[max(1.125rem,env(safe-area-inset-top))] left-5 z-10 grid size-12 place-items-center rounded-full border border-border-control bg-surface-raised/80 backdrop-blur-md md:fixed"
       >
         <Icon name="back" className="size-6" />
       </Button>
-      <Link
-        to="/discover"
+      <Button
+        onPress={() => onDismiss(HOME.path)}
         aria-label="Deep Cuts, go to Discover"
         className="absolute top-[max(1.5rem,env(safe-area-inset-top))] right-5 z-10 inline-flex min-h-11 items-center md:fixed md:right-8"
       >
-        <Logo className="h-7 w-auto" />
-      </Link>
+        <Logo decorative className="h-7 w-auto" />
+      </Button>
       <div className="absolute top-[max(5rem,calc(env(safe-area-inset-top)+4rem))] right-5 left-5 z-10 md:fixed md:top-[max(1.125rem,env(safe-area-inset-top))] md:right-auto md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2">
         <MovieSearch />
       </div>
@@ -77,7 +186,7 @@ function DetailLayout({ children }: { children: ReactNode }) {
 }
 
 // The film itself, once its id is known to be valid.
-function MovieDetail({ id }: { id: number }) {
+function MovieDetail({ id, onDismiss }: { id: number; onDismiss: () => void }) {
   const movie = useQuery(movieQueries.detail(id))
   const providers = useQuery(movieQueries.providers(id))
 
@@ -133,7 +242,7 @@ function MovieDetail({ id }: { id: number }) {
         {m.overview && <p className="my-3.5 leading-relaxed text-fg-muted">{m.overview}</p>}
 
         {/* The four tag toggles, with Save and Cancel once anything changes (ADR-0017 rules). */}
-        <DetailTags movieId={m.id} title={m.title} />
+        <DetailTags movieId={m.id} title={m.title} onDismiss={onDismiss} />
 
         {/* A clear break between your tags and the streaming info (owner, 2026-10-07). */}
         <section aria-labelledby="where-to-watch" className="mt-12">

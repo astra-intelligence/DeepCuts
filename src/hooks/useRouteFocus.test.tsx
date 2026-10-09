@@ -18,11 +18,12 @@ describe('useRouteFocus', () => {
     await waitFor(() => expect(heading).toHaveFocus())
   })
 
-  it('waits for a heading that renders after data loads', async () => {
+  it('lets Detail focus its first control while data loads', async () => {
     const { router } = renderRoute('/lists')
     await act(() => router.navigate('/movie/1091'))
+    await screen.findByRole('heading', { level: 1, name: 'The Thing' })
     await waitFor(() =>
-      expect(screen.getByRole('heading', { level: 1, name: 'The Thing' })).toHaveFocus(),
+      expect(screen.getByRole('button', { name: 'Back to previous screen' })).toHaveFocus(),
     )
   })
 
