@@ -1,35 +1,31 @@
-// VHS box hover lab (/lab/vhs, dev server only): Discover's grid of films drawn as 3D video-rental
-// tape boxes, with a control panel to tune the look and the hover turn live.
+// VHS box lab (/lab/vhs, dev server only): Discover's films as the real VHS box posters
+// (VhsBox), with a control panel to try new values for the look and the motion live.
 //
-// A prototype for the owner to iterate on, not an approved design: it isn't linked from the app
-// and the route only exists under `npm run dev` (see router.tsx), so it never ships. The 3D box
-// itself is plain CSS in vhs-box.css; this page only renders the faces and feeds the knobs to it
-// as CSS variables. Once a look is approved it moves into tokens and the real PosterCard.
+// The design was tuned here and approved on 2026-10-09; its values now live in src/index.css
+// ("VHS box posters") and the vhs-box tokens. The lab stays as a tuning tool: it renders the
+// real component and only overrides the `--vhs-*` CSS variables on its wrapper, so what you see
+// here is exactly what Discover would show with those values. It isn't linked from the app,
+// and the route only exists under `npm run dev` (see router.tsx), so it never ships.
 import { useQuery } from '@tanstack/react-query'
-import {
-  useEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type PointerEvent,
-  type ReactNode,
-} from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { movieQueries } from '../../api/queries'
-import { imageUrl, releaseYear, type MovieSummary } from '../../api/tmdb'
-import { GenreSticker } from '../../components/GenreSticker'
+import { releaseYear, type MovieSummary } from '../../api/tmdb'
 import { PageHeading } from '../../components/PageHeading'
+import { VhsBox } from '../../components/VhsBox'
 import { genreTone, primaryGenreName } from '../../domain/genres'
-import './vhs-box.css'
+import './vhs-lab.css'
 
 /** Every knob on the control panel. Angles in degrees, lift in px. */
 interface Settings {
-  /** Rental clamshell (plastic case, vinyl overlay) or cardboard retail sleeve. */
-  caseType: 'clamshell' | 'sleeve'
   /** Width / height of the box. */
   aspect: number
   /** Depth as a share of the width. */
   depth: number
+  /** Poster on the front: fill it and crop the sides, or show the whole poster with bars. */
+  artFit: 'cover' | 'contain'
+  /** Which part of the poster the crop keeps, from 0 (left edge) to 100 (right edge). */
+  artX: number
   restY: number
   restX: number
   /** Mouse: the turn (cursor at a side edge) and tilt (top/bottom edge), from face-on. */
@@ -42,7 +38,6 @@ interface Settings {
   scrollX: number
   lift: number
   perspective: number
-  speed: number
   /** Touch: tilt the boxes as they scroll past (phones only). */
   scroll: boolean
   /** Show the scroll tilt on this screen too, to try it with a mouse wheel. */
@@ -51,11 +46,12 @@ interface Settings {
   freeze: boolean
 }
 
-// Starting values: real cardboard-sleeve proportions and gentle angles (see vhs-box.css).
+// Starting values: the approved design (src/index.css, "VHS box posters").
 const DEFAULTS: Settings = {
-  caseType: 'sleeve',
   aspect: 0.547,
   depth: 0.24,
+  artFit: 'cover',
+  artX: 50,
   restY: 6,
   restX: -2,
   leanY: 24,
@@ -65,15 +61,14 @@ const DEFAULTS: Settings = {
   scrollX: 8,
   lift: 4,
   perspective: 1100,
-  speed: 450,
   scroll: true,
   scrollPreview: false,
   freeze: false,
 }
 
-// Box shapes to choose from, W × H × D, checked 2026-10-09. Picking one sets both the shape
-// (width / height) and the depth (share of the width). Posters are 2:3; real tape boxes are
-// narrower, so the art is cropped at the sides (as it was on real covers).
+// Box shapes to start from, W × H × D, checked 2026-10-09. Picking one sets both the shape
+// (width / height) and the depth (share of the width); the Shape slider fine-tunes from there.
+// Posters are 2:3 (0.667), so any narrower box crops the art at the sides.
 // Sources: the sleeve and clamshell from Pacdora's VHS box template
 // (https://www.pacdora.com/tools/vhs-box-template); the wide rental clamshell from a case
 // maker's listing, 8 3/16" × 5 11/16" × 1 3/32"
@@ -81,8 +76,8 @@ const DEFAULTS: Settings = {
 const SHAPES = [
   { label: 'Cardboard sleeve (104 × 190 × 25 mm)', aspect: 0.547, depth: 0.24 },
   { label: 'Clamshell (120 × 201 × 27 mm)', aspect: 0.597, depth: 0.225 },
-  { label: 'Wide rental clamshell (144 × 208 × 28 mm)', aspect: 0.692, depth: 0.193 },
   { label: 'Poster (2:3, no crop)', aspect: 0.667, depth: 0.24 },
+  { label: 'Wide rental clamshell (144 × 208 × 28 mm)', aspect: 0.692, depth: 0.193 },
 ]
 
 /**
@@ -99,10 +94,12 @@ export function VhsLabPage() {
   const [tuning, setTuning] = useState<Section | null>(null)
   const films = (useQuery(movieQueries.discover()).data?.results ?? []).slice(0, 15)
 
-  // The knobs as the CSS variables vhs-box.css reads.
+  // The knobs as the CSS variables the VHS box styles read.
   const vars = {
     '--vhs-aspect': s.aspect,
     '--vhs-depth': s.depth,
+    '--vhs-art-fit': s.artFit,
+    '--vhs-art-position': `${s.artX}% 50%`,
     '--vhs-rest-y': `${s.restY}deg`,
     '--vhs-rest-x': `${s.restX}deg`,
     '--vhs-lean-y': `${s.leanY}deg`,
@@ -112,7 +109,6 @@ export function VhsLabPage() {
     '--vhs-scroll-x': `${s.scrollX}deg`,
     '--vhs-lift': `${-s.lift}px`,
     '--vhs-perspective': `${s.perspective}px`,
-    '--vhs-speed': `${s.speed}ms`,
   } as CSSProperties
   const freeze = s.freeze || tuning === 'keyboard'
   const scrollPreview = s.scroll && (s.scrollPreview || tuning === 'touch')
@@ -121,7 +117,6 @@ export function VhsLabPage() {
     <div
       className="vhs-lab"
       style={vars}
-      data-case={s.caseType}
       data-scroll={s.scroll || undefined}
       data-scroll-preview={scrollPreview || undefined}
       data-freeze={freeze || undefined}
@@ -129,15 +124,15 @@ export function VhsLabPage() {
       <title>VHS box lab · Deep Cuts</title>
       <PageHeading
         eyebrow="Design lab · dev only"
-        title="VHS box hover"
-        lede="Move the mouse over a box to look around it, tab to one for the keyboard turn (Option+Tab in Safari), and scroll on a phone. Tune it here, then send me the settings line."
+        title="VHS box posters"
+        lede="The approved design, as Discover shows it. Move the mouse over a box to look around it, tab to one for the keyboard turn (Option+Tab in Safari), and scroll on a phone. Try new values here, then send me the settings line."
       />
       <div className="mt-4 grid gap-8 lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start">
         <Controls s={s} set={set} reset={() => setS(DEFAULTS)} onTuning={setTuning} />
-        <ul className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4">
+        <ul className="grid grid-cols-2 gap-x-4 gap-y-5.5 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4">
           {films.map((movie) => (
             <li key={movie.id} className="flex">
-              <VhsCard movie={movie} />
+              <LabCard movie={movie} />
             </li>
           ))}
         </ul>
@@ -146,66 +141,18 @@ export function VhsLabPage() {
   )
 }
 
-/** One film: the 3D box, then the same title and meta lines as Discover's tiles. */
-function VhsCard({ movie }: { movie: MovieSummary }) {
-  const poster = imageUrl(movie.poster_path, 'w342')
-  const year = releaseYear(movie.release_date)
-  const meta = [year, primaryGenreName(movie.genre_ids)].filter(Boolean)
-
-  // Mouse: where the pointer is over the box, from -1 (left/top) to 1 (right/bottom).
-  // Measured against the box, not the whole link, so the title lines below don't count; over
-  // the title it stays at the bottom edge (clamped to 1). Written straight to CSS variables
-  // rather than React state, so moving the mouse doesn't re-render anything.
-  const follow = (e: PointerEvent<HTMLElement>) => {
-    const box = e.currentTarget.querySelector('.vhs-scene')
-    if (!box) return
-    const r = box.getBoundingClientRect()
-    const clamp = (n: number) => Math.max(-1, Math.min(1, n)).toFixed(3)
-    e.currentTarget.style.setProperty('--px', clamp(((e.clientX - r.left) / r.width) * 2 - 1))
-    e.currentTarget.style.setProperty('--py', clamp(((e.clientY - r.top) / r.height) * 2 - 1))
-  }
-
+/** One film: Discover's tile, trimmed to the box, title and year · genre. */
+function LabCard({ movie }: { movie: MovieSummary }) {
+  const meta = [releaseYear(movie.release_date), primaryGenreName(movie.genre_ids)].filter(Boolean)
   return (
     <Link
       to={`/movie/${movie.id}`}
       style={genreTone(movie.genre_ids)}
-      onPointerMove={follow}
-      className="vhs-card group flex min-w-0 flex-1 flex-col rounded-control focus-visible:shadow-none focus-visible:outline-none"
+      data-vhs-target=""
+      className="group relative flex min-w-0 flex-1 flex-col rounded-control hover:z-1 focus-visible:shadow-none focus-visible:outline-none"
     >
-      {/* The box is decorative (aria-hidden): the title below names the link. */}
-      <span aria-hidden="true" className="vhs-scene block">
-        <span className="vhs-box">
-          <span className="vhs-face vhs-top" />
-          <span className="vhs-face vhs-bottom vhs-plastic" />
-          <span className="vhs-face vhs-edge vhs-plastic">
-            <span className="vhs-edge-label">{movie.title}</span>
-          </span>
-          <span className="vhs-face vhs-spine">
-            <span className="vhs-spine-band">{year.slice(2) && `’${year.slice(2)}`}</span>
-            <span className="vhs-spine-title">{movie.title}</span>
-            <span className="vhs-spine-label">
-              <span className="vhs-barcode" />
-            </span>
-          </span>
-          <span className="vhs-face vhs-front vhs-plastic">
-            {poster ? (
-              <img src={poster} alt="" loading="lazy" />
-            ) : (
-              <span className="block size-full bg-poster-placeholder" />
-            )}
-            <GenreSticker
-              genreIds={movie.genre_ids}
-              seed={movie.id}
-              className="absolute top-3 right-3 z-2"
-            />
-          </span>
-        </span>
-      </span>
-      {/* Keyboard focus: instead of the app's usual ring around the whole link, which would
-          box in the turning 3D box too, the ring goes around this text block only (owner's call,
-          2026-10-09). The box still turns to the keyboard pose. Same ring as the app's
-          (3px focus color, 3px offset), so it reads as the standard focus indicator. */}
-      <div className="mt-4 rounded-control group-focus-visible:outline-3 group-focus-visible:outline-offset-3 group-focus-visible:outline-focus">
+      <VhsBox movie={movie} />
+      <div className="mt-3 rounded-control group-focus-visible:outline-3 group-focus-visible:outline-offset-3 group-focus-visible:outline-focus">
         <h3
           title={movie.title}
           className="mb-1 line-clamp-2 min-h-10 text-sm leading-snug font-semibold"
@@ -226,7 +173,9 @@ type Slider = [keyof Settings, string, number, number, number, string]
 
 const SLIDERS: Record<Section, Slider[]> = {
   box: [
+    ['aspect', 'Shape (width / height)', 0.45, 0.75, 0.001, ''],
     ['depth', 'Depth (share of width)', 0.12, 0.35, 0.005, ''],
+    ['artX', 'Crop keeps (0 = left edge, 100 = right)', 0, 100, 1, '%'],
     ['restY', 'Turn at rest', 0, 20, 1, '°'],
     ['restX', 'Tilt at rest', -10, 10, 1, '°'],
     ['perspective', 'Perspective', 500, 2500, 50, 'px'],
@@ -235,7 +184,6 @@ const SLIDERS: Record<Section, Slider[]> = {
     ['leanY', 'Turn at the sides', 0, 40, 1, '°'],
     ['leanX', 'Tilt at top and bottom', 0, 25, 1, '°'],
     ['lift', 'Lift (also on focus)', 0, 20, 1, 'px'],
-    ['speed', 'Speed back to rest', 150, 1200, 25, 'ms'],
   ],
   keyboard: [
     ['focusY', 'Turn on focus', 0, 40, 1, '°'],
@@ -249,7 +197,7 @@ const SLIDERS: Record<Section, Slider[]> = {
  * Claude. On wide screens it's a sticky sidebar that scrolls on its own. The app's base styles
  * hide the focus ring on bare inputs, so every label wraps its input and carries
  * `focus-ring-within` to draw the ring around the whole control (index.css).
- * @param onTuning - Called with the section that has focus (null when focus leaves the panel).
+ * @param onTuning - Called with the section being adjusted (null once you've moved elsewhere).
  */
 function Controls({
   s,
@@ -288,10 +236,10 @@ function Controls({
     }
   }, [onTuning])
 
-  const summary = `case=${s.caseType} shape=${s.aspect} depth=${s.depth} rest=${s.restY}°/${s.restX}° mouse=${s.leanY}°/${s.leanX}° focus=${s.focusY}°/${s.focusX}° scroll=${s.scroll ? `${s.scrollX}°` : 'off'} lift=${s.lift}px perspective=${s.perspective}px speed=${s.speed}ms`
+  const summary = `shape=${s.aspect} depth=${s.depth} art=${s.artFit}${s.artFit === 'cover' ? ` ${s.artX}%` : ''} rest=${s.restY}°/${s.restX}° mouse=${s.leanY}°/${s.leanX}° focus=${s.focusY}°/${s.focusX}° scroll=${s.scroll ? `${s.scrollX}°` : 'off'} lift=${s.lift}px perspective=${s.perspective}px`
 
-  // One section of the panel. Its `data-section` tells the form's focus handler (below) which
-  // motion you're tuning.
+  // One section of the panel. Its `data-section` tells the listeners above which motion you're
+  // tuning.
   const section = (id: Section, legend: string, hint: string, extra?: ReactNode) => (
     <fieldset
       data-section={id}
@@ -325,10 +273,20 @@ function Controls({
     </fieldset>
   )
 
-  // A radio or checkbox row.
-  const option = (control: ReactNode, label: string, key?: string) => (
-    <label key={key} className="focus-ring-within flex items-center gap-2 rounded-control">
-      {control}
+  // A checkbox row.
+  const checkbox = (
+    key: 'freeze' | 'scroll' | 'scrollPreview',
+    label: string,
+    disabled = false,
+  ) => (
+    <label className="focus-ring-within flex items-center gap-2 rounded-control">
+      <input
+        type="checkbox"
+        checked={s[key]}
+        disabled={disabled}
+        onChange={(e) => set(key, e.target.checked)}
+        className="accent-slider-fill"
+      />
       {label}
     </label>
   )
@@ -342,31 +300,14 @@ function Controls({
       {section(
         'box',
         'Box',
-        'The case, its shape and how it sits at rest.',
+        'Its shape, how the poster fits it, its depth and how it sits at rest.',
         <>
-          <div className="flex flex-col gap-1.5" role="radiogroup" aria-label="Case">
-            {(
-              [
-                ['sleeve', 'Cardboard sleeve (matte card)'],
-                ['clamshell', 'Rental clamshell (plastic, vinyl overlay)'],
-              ] as const
-            ).map(([value, label]) =>
-              option(
-                <input
-                  type="radio"
-                  name="case"
-                  checked={s.caseType === value}
-                  onChange={() => set('caseType', value)}
-                  className="accent-slider-fill"
-                />,
-                label,
-                value,
-              ),
-            )}
-          </div>
           <div className="flex flex-col gap-1.5" role="radiogroup" aria-label="Box shape">
-            {SHAPES.map((shape) =>
-              option(
+            {SHAPES.map((shape) => (
+              <label
+                key={shape.label}
+                className="focus-ring-within flex items-center gap-2 rounded-control"
+              >
                 <input
                   type="radio"
                   name="shape"
@@ -376,11 +317,32 @@ function Controls({
                     set('depth', shape.depth)
                   }}
                   className="accent-slider-fill"
-                />,
-                shape.label,
-                shape.label,
-              ),
-            )}
+                />
+                {shape.label}
+              </label>
+            ))}
+          </div>
+          <div className="flex flex-col gap-1.5" role="radiogroup" aria-label="Poster fit">
+            {(
+              [
+                ['cover', 'Fill the front (crops the sides)'],
+                ['contain', 'Whole poster (bars above and below)'],
+              ] as const
+            ).map(([value, label]) => (
+              <label
+                key={value}
+                className="focus-ring-within flex items-center gap-2 rounded-control"
+              >
+                <input
+                  type="radio"
+                  name="fit"
+                  checked={s.artFit === value}
+                  onChange={() => set('artFit', value)}
+                  className="accent-slider-fill"
+                />
+                {label}
+              </label>
+            ))}
           </div>
         </>,
       )}
@@ -389,40 +351,15 @@ function Controls({
         'keyboard',
         'Keyboard',
         'Every box shows the keyboard pose while you adjust these.',
-        option(
-          <input
-            type="checkbox"
-            checked={s.freeze}
-            onChange={(e) => set('freeze', e.target.checked)}
-            className="accent-slider-fill"
-          />,
-          'Keep showing it on every box',
-        ),
+        checkbox('freeze', 'Keep showing it on every box'),
       )}
       {section(
         'touch',
         'Touch (phones)',
-        'Boxes tilt as they scroll past. The preview runs while you adjust this; scroll the page to see the tilt change.',
+        'Phones can’t hover or focus, so boxes rest in the keyboard pose and tilt as they scroll past. The preview runs while you adjust this; scroll the page (with the mouse over the boxes) to see the tilt change.',
         <>
-          {option(
-            <input
-              type="checkbox"
-              checked={s.scroll}
-              onChange={(e) => set('scroll', e.target.checked)}
-              className="accent-slider-fill"
-            />,
-            'Tilt the boxes while scrolling',
-          )}
-          {option(
-            <input
-              type="checkbox"
-              checked={s.scrollPreview}
-              disabled={!s.scroll}
-              onChange={(e) => set('scrollPreview', e.target.checked)}
-              className="accent-slider-fill"
-            />,
-            'Keep the preview on (here, with a mouse)',
-          )}
+          {checkbox('scroll', 'Tilt the boxes while scrolling')}
+          {checkbox('scrollPreview', 'Keep the preview on (here, with a mouse)', !s.scroll)}
         </>,
       )}
       <div className="flex flex-col gap-2 border-t border-border pt-4 text-sm">
