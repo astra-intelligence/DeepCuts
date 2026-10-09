@@ -27,16 +27,19 @@ interface Settings {
   restX: number
   hoverY: number
   hoverX: number
+  /** Follow mode: the most the box turns (cursor at a side edge) and tilts (top/bottom edge). */
+  leanY: number
+  leanX: number
   lift: number
   perspective: number
   speed: number
-  /** Turn to a fixed pose on hover, or lean toward the cursor. */
+  /** Follow the mouse (look around the box), or turn to a fixed pose on hover. */
   mode: 'turn' | 'follow'
   /** Show every box in its hover pose, to compare without hovering. */
   freeze: boolean
 }
 
-// Starting values: real cardboard-sleeve proportions and a modest turn (see vhs-box.css).
+// Starting values: real cardboard-sleeve proportions, following the mouse (see vhs-box.css).
 const DEFAULTS: Settings = {
   caseType: 'sleeve',
   aspect: 0.55,
@@ -45,10 +48,12 @@ const DEFAULTS: Settings = {
   restX: -2,
   hoverY: 24,
   hoverX: -6,
+  leanY: 32,
+  leanX: 16,
   lift: 6,
   perspective: 1100,
   speed: 450,
-  mode: 'turn',
+  mode: 'follow',
   freeze: false,
 }
 
@@ -75,6 +80,8 @@ export function VhsLabPage() {
     '--vhs-rest-x': `${s.restX}deg`,
     '--vhs-hover-y': `${s.hoverY}deg`,
     '--vhs-hover-x': `${s.hoverX}deg`,
+    '--vhs-lean-y': `${s.leanY}deg`,
+    '--vhs-lean-x': `${s.leanX}deg`,
     '--vhs-lift': `${-s.lift}px`,
     '--vhs-perspective': `${s.perspective}px`,
     '--vhs-speed': `${s.speed}ms`,
@@ -112,11 +119,17 @@ function VhsCard({ movie }: { movie: MovieSummary }) {
   const year = releaseYear(movie.release_date)
   const meta = [year, primaryGenreName(movie.genre_ids)].filter(Boolean)
 
-  // "Follow cursor" mode: where the pointer is over the box, from -1 (left/top) to 1.
+  // Follow mode: where the pointer is over the box, from -1 (left/top) to 1 (right/bottom).
+  // Measured against the box, not the whole link, so the title lines below don't count; over
+  // the title it stays at the bottom edge (clamped to 1). Written straight to CSS variables
+  // rather than React state, so moving the mouse doesn't re-render anything.
   const follow = (e: PointerEvent<HTMLElement>) => {
-    const r = e.currentTarget.getBoundingClientRect()
-    e.currentTarget.style.setProperty('--px', String(((e.clientX - r.left) / r.width) * 2 - 1))
-    e.currentTarget.style.setProperty('--py', String(((e.clientY - r.top) / r.height) * 2 - 1))
+    const box = e.currentTarget.querySelector('.vhs-scene')
+    if (!box) return
+    const r = box.getBoundingClientRect()
+    const clamp = (n: number) => Math.max(-1, Math.min(1, n)).toFixed(3)
+    e.currentTarget.style.setProperty('--px', clamp(((e.clientX - r.left) / r.width) * 2 - 1))
+    e.currentTarget.style.setProperty('--py', clamp(((e.clientY - r.top) / r.height) * 2 - 1))
   }
 
   return (
@@ -178,14 +191,16 @@ function Controls({
   const sliders: [keyof Settings, string, number, number, number, string][] = [
     ['restY', 'Turn at rest', 0, 20, 1, '°'],
     ['restX', 'Tilt at rest', -10, 10, 1, '°'],
-    ['hoverY', 'Turn on hover', 0, 45, 1, '°'],
-    ['hoverX', 'Tilt on hover', -15, 15, 1, '°'],
+    ['leanY', 'Follow: max turn (sides)', 0, 50, 1, '°'],
+    ['leanX', 'Follow: max tilt (top/bottom)', 0, 30, 1, '°'],
+    ['hoverY', 'Fixed: turn on hover', 0, 45, 1, '°'],
+    ['hoverX', 'Fixed: tilt on hover', -15, 15, 1, '°'],
     ['depth', 'Depth (share of width)', 0.12, 0.35, 0.01, ''],
     ['lift', 'Lift on hover', 0, 20, 1, 'px'],
     ['perspective', 'Perspective', 500, 2500, 50, 'px'],
     ['speed', 'Speed', 150, 1200, 25, 'ms'],
   ]
-  const summary = `case=${s.caseType} shape=${s.aspect} depth=${s.depth} rest=${s.restY}°/${s.restX}° hover=${s.hoverY}°/${s.hoverX}° lift=${s.lift}px perspective=${s.perspective}px speed=${s.speed}ms mode=${s.mode}`
+  const summary = `case=${s.caseType} shape=${s.aspect} depth=${s.depth} rest=${s.restY}°/${s.restX}° ${s.mode === 'follow' ? `lean=${s.leanY}°/${s.leanX}°` : `hover=${s.hoverY}°/${s.hoverX}°`} lift=${s.lift}px perspective=${s.perspective}px speed=${s.speed}ms mode=${s.mode}`
 
   return (
     <form
@@ -231,8 +246,8 @@ function Controls({
         <legend className="mb-1 font-semibold">Motion</legend>
         {(
           [
-            ['turn', 'Turn to show the spine'],
-            ['follow', 'Lean toward the cursor'],
+            ['follow', 'Follow the mouse (look around the box)'],
+            ['turn', 'Fixed turn to show the spine'],
           ] as const
         ).map(([value, label]) => (
           <label key={value} className="flex items-center gap-2">

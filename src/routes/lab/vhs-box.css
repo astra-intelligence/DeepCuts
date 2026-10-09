@@ -27,6 +27,8 @@
   --vhs-rest-x: -2deg; /* tilt at rest (negative = top toward you) */
   --vhs-hover-y: 24deg;
   --vhs-hover-x: -6deg;
+  --vhs-lean-y: 32deg; /* follow mode: turn with the cursor at the left/right edge */
+  --vhs-lean-x: 16deg; /* follow mode: tilt with the cursor at the top/bottom edge */
   --vhs-lift: -6px; /* how far the box rises on hover */
   --vhs-perspective: 1100px;
   --vhs-speed: 450ms;
@@ -76,18 +78,26 @@
   --rise: var(--vhs-lift);
 }
 
-/* "Follow cursor" mode: the page sets --px/--py (-1..1) from the pointer, and the box leans
-   toward it, within the hover angles. */
+/* "Follow the mouse" mode (the default): look around the box with the cursor. The page sets
+   --px/--py from -1 to 1 for where the pointer is over the box (left/top = -1). The side under
+   the cursor turns toward you and the far side swings away, up to the lean angles:
+     cursor left  → turns right, showing the spine
+     cursor right → turns left, showing the open end
+     cursor top   → tips back, showing the top edge (and the bottom edge from below)
+   A short transition smooths the pointer's jumps; leaving the box eases it back to rest at the
+   normal speed. */
 .vhs-lab[data-mode='follow'] .vhs-card:hover .vhs-box {
-  --turn-y: calc(var(--vhs-rest-y) + (var(--vhs-hover-y) - var(--vhs-rest-y)) * var(--px, 0));
-  --turn-x: calc(var(--vhs-hover-x) * var(--py, 0));
-  transition-duration: 120ms;
+  --turn-y: calc(var(--vhs-lean-y) * var(--px, 0) * -1);
+  --turn-x: calc(var(--vhs-lean-x) * var(--py, 0));
+  transition-duration: 160ms;
+  transition-timing-function: ease-out;
 }
 
 /* Reduced motion: the box keeps its resting angle; nothing moves. */
 @media (prefers-reduced-motion: reduce) {
   .vhs-box,
   .vhs-card:hover .vhs-box,
+  .vhs-lab[data-mode='follow'] .vhs-card:hover .vhs-box,
   .vhs-card:focus-visible .vhs-box,
   .vhs-lab[data-freeze] .vhs-box {
     --turn-y: var(--vhs-rest-y);
@@ -335,9 +345,18 @@
   .vhs-bottom {
     background: color-mix(in srgb, var(--color-print-paper) 22%, var(--color-surface));
   }
-  /* The open end: the tape inside shows as a dark gap. */
+  /* The open end: the black cassette inside, with its paper spine label running lengthwise. */
   .vhs-edge {
-    background: var(--color-surface);
+    background:
+      linear-gradient(
+          90deg,
+          transparent 24%,
+          color-mix(in srgb, var(--color-print-paper) 85%, var(--color-surface)) 24% 76%,
+          transparent 76%
+        )
+        center / 100% 86% no-repeat,
+      color-mix(in srgb, var(--color-fg) 5%, var(--color-surface));
+    box-shadow: inset 0 0 calc(var(--d) * 0.15) var(--color-surface);
   }
 }
 
