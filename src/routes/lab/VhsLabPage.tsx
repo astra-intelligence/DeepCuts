@@ -114,7 +114,7 @@ export function VhsLabPage() {
       <PageHeading
         eyebrow="Design lab · dev only"
         title="VHS box hover"
-        lede="Move the mouse over a box to look around it, tab to one for the keyboard turn, and scroll on a phone. Tune it below, then send me the settings line."
+        lede="Move the mouse over a box to look around it, tab to one for the keyboard turn (Option+Tab in Safari), and scroll on a phone. Tune it below, then send me the settings line."
       />
       <Controls s={s} set={set} reset={() => setS(DEFAULTS)} />
       <ul className="mt-8 grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-4 lg:grid-cols-5">
