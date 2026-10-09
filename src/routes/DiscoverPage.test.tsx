@@ -3,10 +3,37 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
+import { delay, http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { renderRoute } from '../test/renderRoute'
+import { candidateDetailFixtures, movieFixture } from '../test/msw/fixtures'
+import { server } from '../test/msw/server'
 
 describe('discover', () => {
+  it('loads the featured card and grid independently without late credit shifts', async () => {
+    // Hold only the featured film's details. Alien's details can complete, so the grid should
+    // replace its skeleton while the featured section keeps its own size-matched placeholder.
+    server.use(
+      http.get('/api/tmdb/movie/:id', async ({ params }) => {
+        if (params.id === String(movieFixture.id)) {
+          await delay(750)
+          return HttpResponse.json(movieFixture)
+        }
+        const candidate = candidateDetailFixtures[Number(params.id)]
+        return candidate ? HttpResponse.json(candidate) : undefined
+      }),
+    )
+
+    renderRoute('/discover')
+    expect(await screen.findByRole('status')).toHaveTextContent('Finding films…')
+    expect(document.querySelector('[data-loading-section="featured"]')).toBeInTheDocument()
+    expect(document.querySelector('[data-loading-section="grid"]')).toBeInTheDocument()
+
+    await screen.findByRole('link', { name: /Alien.*1979 · Horror/ })
+    expect(document.querySelector('[data-loading-section="grid"]')).not.toBeInTheDocument()
+    expect(document.querySelector('[data-loading-section="featured"]')).toBeInTheDocument()
+  })
+
   it('shows a feature card and a poster grid', async () => {
     renderRoute('/discover')
     expect(

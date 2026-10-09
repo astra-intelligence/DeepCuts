@@ -53,7 +53,9 @@ export function DetailTags({
   const [message, setMessage] = useState('')
 
   const shown = draft ?? saved
-  const dirty = draft !== null && !sameTags(draft, saved)
+  // Saving and the final confirmation keep the action row mounted even after the query cache
+  // catches up with the draft. It disappears only when the closing Detail route unmounts.
+  const dirty = draft !== null && (!sameTags(draft, saved) || saving || message !== '')
 
   function toggle(tag: SystemTag, on: boolean) {
     if (saving) return
@@ -66,6 +68,7 @@ export function DetailTags({
     if (!draft || saving) return
     setSaving(true)
     setFailed(false)
+    let succeeded = false
     try {
       // The repository changes one tag at a time. Removals go first, then additions, which lands
       // exactly on the draft: the draft already follows the rules, so an addition never clears a
@@ -79,22 +82,25 @@ export function DetailTags({
         if (!saved.has(tag) && draft.has(tag))
           await setTag.mutateAsync({ tmdbId: movieId, tag, on: true })
       }
-      setDraft(null)
       setMessage(savedMessage(title, draft))
+      succeeded = true
       // Commit the live-region text before starting the fade, so it has a real DOM update to
-      // announce even though this route leaves straight afterwards.
+      // announce even though this route leaves straight afterwards. Keep the draft and Saving…
+      // state mounted until then, so the action row cannot collapse during the exit transition.
       requestAnimationFrame(() => onDismiss())
     } catch {
       // The draft stays selected, so nothing the person picked is lost; the alert says to retry.
       setFailed(true)
     } finally {
-      setSaving(false)
+      // A successful save immediately starts dismissal; unmount owns the final cleanup. On an
+      // error the page stays open, so restore the controls for a retry.
+      if (!succeeded) setSaving(false)
     }
   }
 
   function cancel() {
-    setDraft(null)
-    setFailed(false)
+    // The route is about to unmount, which discards the draft. Keeping it for the 400ms fade
+    // preserves the action row's dimensions and prevents the content below from jumping upward.
     onDismiss()
   }
 
@@ -138,7 +144,7 @@ export function DetailTags({
       {/* Always in the page, and never display:none (empty until a save takes no space), so
           screen readers announce the message when it appears. A live region added or unhidden at
           the same moment as its text is often missed. */}
-      <p role="status" className={message ? 'mt-3 flex items-center gap-2 text-sm' : ''}>
+      <p role="status" className="mt-3 flex min-h-5 items-center gap-2 text-sm">
         {message && (
           <>
             <Icon name="check" className="size-5 shrink-0 text-accent" />

@@ -55,6 +55,10 @@ export function DiscoverPage() {
   })
   // The first film is featured; the rest fill the grid.
   const [feature, ...rest] = withCredits
+  // Feature and grid resolve independently. Each keeps its skeleton until every piece of content
+  // it can reveal is ready, so director/writer lines never arrive late and move content below.
+  const featureLoading = loading || (feature !== undefined && details[0]?.isPending)
+  const gridLoading = loading || (rest.length > 0 && details.slice(1).some((q) => q.isPending))
 
   return (
     <>
@@ -68,7 +72,11 @@ export function DiscoverPage() {
             : 'Popular films worth staying up for. Like a few films to tune this feed to you.'
         }
       />
-      {loading && <p role="status">Finding films…</p>}
+      {(featureLoading || gridLoading) && (
+        <p role="status" className="sr-only">
+          Finding films…
+        </p>
+      )}
       {!usePicks && popular.isError && (
         <EmptyState>Discover is unavailable right now. Try again in a moment.</EmptyState>
       )}
@@ -77,21 +85,25 @@ export function DiscoverPage() {
           No films left in your feed. Films you dislike stay on the Disliked list in My Lists.
         </EmptyState>
       )}
-      {feature && <FeatureCard item={feature} />}
-      {rest.length > 0 && (
+      {featureLoading ? <FeatureSkeleton /> : feature && <FeatureCard item={feature} />}
+      {(gridLoading || rest.length > 0) && (
         <section aria-labelledby="deeper" className="mt-6">
           <h2 id="deeper" className="text-lg font-semibold">
             Go a little deeper
           </h2>
           <p className="mb-2.5 text-sm text-fg-muted">Picked from beyond the obvious</p>
           {/* 16 tiles fill 2- and 4-column rows; the 16th hides at 5 columns (lg). */}
-          <ul className="grid grid-cols-2 gap-x-4 gap-y-5.5 md:grid-cols-4 lg:grid-cols-5">
-            {rest.slice(0, 16).map((item, i) => (
-              <li key={item.movie.id} className={i === 15 ? 'flex lg:hidden' : 'flex'}>
-                <PosterCard item={item} />
-              </li>
-            ))}
-          </ul>
+          {gridLoading ? (
+            <PosterGridSkeleton />
+          ) : (
+            <ul className="grid grid-cols-2 gap-x-4 gap-y-5.5 md:grid-cols-4 lg:grid-cols-5">
+              {rest.slice(0, 16).map((item, i) => (
+                <li key={item.movie.id} className={i === 15 ? 'flex lg:hidden' : 'flex'}>
+                  <PosterCard item={item} />
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
       {/* The weights lab is a dev-server tool, so the link only shows there (FEATURES.labs). */}
@@ -104,6 +116,50 @@ export function DiscoverPage() {
         </p>
       )}
     </>
+  )
+}
+
+/** Size-matched placeholder for the featured card while its film and credits load. */
+function FeatureSkeleton() {
+  return (
+    <div
+      aria-hidden="true"
+      data-loading-section="featured"
+      className="relative aspect-4/5 w-full animate-pulse overflow-hidden rounded-card border border-card-border bg-card-bg md:aspect-auto md:h-110"
+    >
+      <div className="absolute right-5 bottom-5.5 left-5 space-y-3">
+        <div className="h-3 w-2/5 rounded-subtle bg-surface-selected" />
+        <div className="h-10 w-3/4 rounded-subtle bg-surface-selected" />
+        <div className="h-4 w-1/2 rounded-subtle bg-surface-selected" />
+        <div className="h-4 w-2/3 rounded-subtle bg-surface-selected" />
+      </div>
+    </div>
+  )
+}
+
+/** Sixteen stable VHS-tile placeholders; the last follows the real grid's lg visibility rule. */
+function PosterGridSkeleton() {
+  return (
+    <ul
+      aria-hidden="true"
+      data-loading-section="grid"
+      className="grid grid-cols-2 gap-x-4 gap-y-5.5 md:grid-cols-4 lg:grid-cols-5"
+    >
+      {Array.from({ length: 16 }, (_, i) => (
+        <li key={i} className={i === 15 ? 'flex lg:hidden' : 'flex'}>
+          <div className="flex min-w-0 flex-1 animate-pulse flex-col">
+            <div className="aspect-[0.547] w-full rounded-subtle border border-card-border bg-card-bg" />
+            <div className="mt-3 min-h-36 space-y-2 rounded-control">
+              <div className="h-4 w-4/5 rounded-subtle bg-surface-selected" />
+              <div className="h-4 w-3/5 rounded-subtle bg-surface-selected" />
+              <div className="h-3 w-1/2 rounded-subtle bg-surface-selected" />
+              <div className="h-3 w-2/3 rounded-subtle bg-surface-selected" />
+              <div className="h-3 w-3/4 rounded-subtle bg-surface-selected" />
+            </div>
+          </div>
+        </li>
+      ))}
+    </ul>
   )
 }
 

@@ -66,6 +66,9 @@ describe('movie detail', () => {
     await user.click(btn('Like'))
     await user.click(screen.getByRole('button', { name: 'Save' }))
     expect(await screen.findByRole('status')).toHaveTextContent('Saved. The Thing: Seen it, Like.')
+    // The action row stays in place for the fade and disappears only when Detail unmounts.
+    expect(screen.getByRole('button', { name: 'Saving…' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
     await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
 
     // What was saved is really saved: My Lists has it after the overlay closes.
@@ -79,6 +82,8 @@ describe('movie detail', () => {
     const group = await screen.findByRole('group', { name: 'Your tags' })
     await user.click(within(group).getByRole('button', { name: 'Want to see' }))
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
     await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
     await act(() => router.navigate('/lists?tag=watchlist'))
     expect(await screen.findByText(/will appear here/)).toBeInTheDocument()
