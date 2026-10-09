@@ -75,7 +75,7 @@ describe('sign in (ADR-0025)', () => {
     await act(() => router.navigate('/sign-in', { state: { from: '//evil.example' } }))
     await user.click(await screen.findByRole('button', { name: /Continue with a demo account/ }))
     // An unsafe `from` falls back to home: Discover while the Search page is off.
-    await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
   })
 })
 
@@ -100,7 +100,7 @@ describe('signed-in account page', () => {
 
     await user.click(screen.getByRole('button', { name: 'Sign out' }))
     await user.click(screen.getByRole('button', { name: 'Yes, sign out' }))
-    await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
     expect(within(header()).getByRole('link', { name: 'Sign in' })).toBeInTheDocument()
   })
 })

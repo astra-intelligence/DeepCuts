@@ -60,8 +60,8 @@ export function TunePage() {
       />
       <header className="relative z-10 flex min-h-16 items-center justify-between gap-2.5 px-5 pt-[max(0.625rem,env(safe-area-inset-top))] pb-2 md:px-8">
         <Link
-          to="/discover"
-          aria-label="Deep Cuts, go to Discover"
+          to="/"
+          aria-label="Deep Cuts, go to Home"
           className="inline-flex min-h-11 items-center"
         >
           <Logo decorative className="h-7 w-auto" />

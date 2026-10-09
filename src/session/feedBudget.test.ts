@@ -1,4 +1,4 @@
-// Guards the rate-limit budget (ADR-0029, ADR-0032): a heavy profile's first Discover load must fit
+// Guards the rate-limit budget (ADR-0029, ADR-0032): a heavy profile's first Home load must fit
 // inside the per-client API limit, with room to spare for clicking around straight afterwards.
 //
 // The numbers come from the real sources (the caps in useRecommendations.ts and the limit in the
@@ -8,10 +8,10 @@ import { describe, expect, it } from 'vitest'
 import rateLimitConfig from '../../workers/rate-limit/wrangler.toml?raw'
 import { LIMITS, MAX_SERIES, RERANK } from './useRecommendations'
 
-// Discover shows 17 cards (DiscoverPage.tsx: one featured film + 16 tiles), each needing its
+// Home shows seven cards (one featured film + six tiles), each needing its
 // details for the credit lines. Counted in full: most are already loaded by the re-rank, but an
 // explore slot can come from outside it.
-const DISCOVER_CARDS = 17
+const HOME_CARDS = 7
 // Other calls a first load can make: the popular feed, the session check, and the account's
 // tag records (cached for 30 s, so one call, plus one spare for a refresh).
 const OTHER_CALLS = 4
@@ -27,7 +27,7 @@ function apiLimit(toml: string): number {
   return Number(match[1])
 }
 
-describe('first Discover load vs the rate limit', () => {
+describe('first Home load vs the rate limit', () => {
   it('reads the API limit from the Worker config', () => {
     expect(apiLimit(rateLimitConfig)).toBe(120)
   })
@@ -35,8 +35,8 @@ describe('first Discover load vs the rate limit', () => {
   it('fits a heavy profile, with headroom', () => {
     // One details call per tagged film, one per liked series, one per re-rank candidate.
     const tagged = LIMITS.liked + LIMITS.watchlist + LIMITS.disliked
-    const worstCase = tagged + MAX_SERIES + RERANK + DISCOVER_CARDS + OTHER_CALLS
-    expect(worstCase).toBe(81)
+    const worstCase = tagged + MAX_SERIES + RERANK + HOME_CARDS + OTHER_CALLS
+    expect(worstCase).toBe(71)
     expect(worstCase + HEADROOM).toBeLessThanOrEqual(apiLimit(rateLimitConfig))
   })
 })

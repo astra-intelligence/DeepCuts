@@ -81,14 +81,14 @@ describe('weights lab (ADR-0026)', () => {
   })
 
   it('is linked from Discover once there are picks', async () => {
-    const { user, router } = await likeThenOpen('/discover')
+    const { user, router } = await likeThenOpen('/')
     await user.click(await screen.findByRole('link', { name: 'Tune the weights' }))
     expect(router.state.location.pathname).toBe('/lab/weights')
   })
 
   it('does not exist outside the dev server: the old address goes to Discover', async () => {
     const { router } = renderRoute('/discover/weights', { features: { labs: false } })
-    await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
     renderRoute('/lab/weights', { features: { labs: false } })
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Something went wrong' }),

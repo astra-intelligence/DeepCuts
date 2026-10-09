@@ -10,9 +10,9 @@ describe('tune my picks (onboarding)', () => {
   it('is hidden while the feature flag is off: /tune goes home, no header link', async () => {
     const { router } = renderRoute('/tune')
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Found for you' }),
+      await screen.findByRole('heading', { level: 1, name: 'Your movies, close at hand' }),
     ).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/discover')
+    expect(router.state.location.pathname).toBe('/')
     expect(screen.queryByRole('link', { name: 'Tune my picks' })).not.toBeInTheDocument()
   })
 
@@ -60,7 +60,7 @@ describe('tune my picks (onboarding)', () => {
     expect(await screen.findByRole('article', { name: 'Alien' })).toBeInTheDocument()
     expect(screen.getByText('Tune your picks · 2 of 3')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Next film' }))
-    await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
     expect(router.state.location.search).toBe('')
   })
 

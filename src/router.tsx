@@ -10,7 +10,7 @@ import { RouteError } from './routes/PlaceholderPages'
 
 // Each loader imports one page module and hands React Router its component.
 const search = async () => ({ Component: (await import('./routes/SearchPage')).SearchPage })
-const discover = async () => ({ Component: (await import('./routes/DiscoverPage')).DiscoverPage })
+const welcome = async () => ({ Component: (await import('./routes/DiscoverPage')).HomePage })
 const lists = async () => ({ Component: (await import('./routes/ListsPage')).ListsPage })
 const account = async () => ({ Component: (await import('./routes/AccountPage')).AccountPage })
 const signIn = async () => ({ Component: (await import('./routes/SignInPage')).SignInPage })
@@ -34,13 +34,12 @@ const LAB_ROUTES: RouteObject[] = import.meta.env.DEV
   : []
 
 /**
- * Builds the route table. The landing page is "home": Discover, or Search while the Search page
- * is on (`homeOf`). Onboarding (/tune) is optional (ADR-0019 amendment) and behind a feature
- * flag; while a page's flag is off, its URL redirects home. Tests pass their own `features` to
- * check both states of a flag.
+ * Builds the route table. Home is Welcome, including its recommendation area (ADR-0033).
+ * Onboarding (/tune) is optional (ADR-0019 amendment) and behind a feature flag; while a page's
+ * flag is off, its URL redirects home. Tests pass their own `features` to check both states.
  */
 export function createRoutes(features: Features = FEATURES): RouteObject[] {
-  const home = homeOf(features).path
+  const homePath = homeOf().path
   return [
     // Pages inside the main shell: header, search band and tab bar (AppLayout).
     {
@@ -48,17 +47,18 @@ export function createRoutes(features: Features = FEATURES): RouteObject[] {
       element: <AppLayout />,
       errorElement: <RouteError />,
       children: [
-        { index: true, element: <Navigate to={home} replace /> },
-        { path: 'discover', lazy: discover },
+        { index: true, lazy: welcome },
+        // Bookmarked Discover links have one safe destination after ADR-0033: Home.
+        { path: 'discover', element: <Navigate to={homePath} replace /> },
         // The weights lab's old address (it was live until 2026-10-09): to the lab on the dev
-        // server, to Discover everywhere else.
+        // server, to Home everywhere else.
         {
           path: 'discover/weights',
-          element: <Navigate to={features.labs ? '/lab/weights' : '/discover'} replace />,
+          element: <Navigate to={features.labs ? '/lab/weights' : homePath} replace />,
         },
         features.searchPage
           ? { path: 'search', lazy: search }
-          : { path: 'search', element: <Navigate to={home} replace /> },
+          : { path: 'search', element: <Navigate to={homePath} replace /> },
         { path: 'lists', lazy: lists },
         { path: 'account', lazy: account },
         ...(features.labs ? LAB_ROUTES : []),
@@ -75,7 +75,11 @@ export function createRoutes(features: Features = FEATURES): RouteObject[] {
     // Optional onboarding, also outside the tab-bar shell (ADR-0019 amendment).
     features.onboarding
       ? { path: '/tune', lazy: tune, errorElement: <RouteError /> }
-      : { path: '/tune', element: <Navigate to={home} replace />, errorElement: <RouteError /> },
+      : {
+          path: '/tune',
+          element: <Navigate to={homePath} replace />,
+          errorElement: <RouteError />,
+        },
   ]
 }
 

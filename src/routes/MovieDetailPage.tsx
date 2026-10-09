@@ -172,7 +172,7 @@ function DetailLayout({
       </Button>
       <Button
         onPress={() => onDismiss(HOME.path)}
-        aria-label="Deep Cuts, go to Discover"
+        aria-label="Deep Cuts, go to Home"
         className="absolute top-[max(1.5rem,env(safe-area-inset-top))] right-5 z-10 inline-flex min-h-11 items-center md:fixed md:right-8"
       >
         <Logo decorative className="h-7 w-auto" />
