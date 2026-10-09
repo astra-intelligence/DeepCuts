@@ -143,6 +143,10 @@ StyleDictionary.registerFormat({
       `  --default-transition-duration: ${value('motion.transition.duration')};`,
       `  --default-transition-timing-function: ${value('motion.transition.easing')};`,
       `  --animate-enter: enter ${value('motion.enter.duration')} ${value('motion.enter.easing')} both;`,
+      // Motion roles for component stylesheets that animate in plain CSS (VhsBox.css), read
+      // with --theme(). Tailwind has no namespace for durations, so they're named for the role.
+      `  --motion-turn-duration: ${value('motion.turn.duration')};`,
+      `  --motion-turn-easing: ${value('motion.turn.easing')};`,
       ...lines,
       '}',
       '',

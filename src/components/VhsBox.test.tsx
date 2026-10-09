@@ -47,33 +47,57 @@ describe('VhsBox', () => {
     expect(box.querySelector('.vhs-spine-band')).toBeEmptyDOMElement()
   })
 
-  it('reports where the mouse is over the box, from -1 to 1, clamped', () => {
+  /** Lets the per-frame mouse animation run for `ms` (fake timers drive animation frames). */
+  const runFrames = (ms: number) => act(() => vi.advanceTimersByTime(ms))
+
+  it('eases into the hover pose toward where the mouse is, measured against the box', () => {
+    vi.useFakeTimers()
     const { link, box } = renderInLink()
     box.getBoundingClientRect = () => ({ left: 100, top: 0, width: 200, height: 400 }) as DOMRect
-    fireEvent.pointerMove(link, { pointerType: 'mouse', clientX: 150, clientY: 300 })
+    fireEvent.pointerEnter(link, { pointerType: 'mouse', clientX: 150, clientY: 300 })
+    expect(link).toHaveAttribute('data-vhs-active')
+    // It starts at rest and eases in, rather than snapping.
+    expect(Number(link.style.getPropertyValue('--vhs-h'))).toBeLessThan(0.1)
+    runFrames(2000)
+    expect(link.style.getPropertyValue('--vhs-h')).toBe('1.000')
     expect(link.style.getPropertyValue('--vhs-px')).toBe('-0.500')
     expect(link.style.getPropertyValue('--vhs-py')).toBe('0.500')
-    // Over the text below the box: held at the bottom edge.
+    // Over the text below the box: held at the bottom edge (clamped to 1).
     fireEvent.pointerMove(link, { pointerType: 'mouse', clientX: 300, clientY: 900 })
+    runFrames(2000)
     expect(link.style.getPropertyValue('--vhs-px')).toBe('1.000')
     expect(link.style.getPropertyValue('--vhs-py')).toBe('1.000')
+    vi.useRealTimers()
   })
 
-  it('eases into the first lean on entering, then follows quickly', () => {
+  it('eases back to rest on leaving, then hands the box back to the CSS', () => {
     vi.useFakeTimers()
     const { link, box } = renderInLink()
     box.getBoundingClientRect = () => ({ left: 0, top: 0, width: 200, height: 400 }) as DOMRect
-    fireEvent.pointerEnter(link, { pointerType: 'mouse', clientX: 0, clientY: 200 })
-    expect(link).toHaveAttribute('data-vhs-entering')
-    expect(link.style.getPropertyValue('--vhs-px')).toBe('-1.000')
-    act(() => vi.advanceTimersByTime(450))
-    expect(link).not.toHaveAttribute('data-vhs-entering')
+    fireEvent.pointerEnter(link, { pointerType: 'mouse', clientX: 200, clientY: 200 })
+    runFrames(2000)
+    fireEvent.pointerLeave(link, { pointerType: 'mouse' })
+    runFrames(100)
+    // Still on its way back, and still raised above its neighbours.
+    expect(link).toHaveAttribute('data-vhs-active')
+    expect(Number(link.style.getPropertyValue('--vhs-h'))).toBeGreaterThan(0.2)
+    runFrames(2000)
+    expect(link).not.toHaveAttribute('data-vhs-active')
     vi.useRealTimers()
   })
 
   it('ignores touch and pen, which turn the box by scrolling instead', () => {
     const { link } = renderInLink()
-    fireEvent.pointerMove(link, { pointerType: 'touch', clientX: 10, clientY: 10 })
-    expect(link.style.getPropertyValue('--vhs-px')).toBe('')
+    fireEvent.pointerEnter(link, { pointerType: 'touch', clientX: 10, clientY: 10 })
+    expect(link).not.toHaveAttribute('data-vhs-active')
+  })
+
+  it('stays still under reduced motion', () => {
+    const matchMedia = window.matchMedia
+    window.matchMedia = ((query: string) => ({ matches: query.includes('reduce') })) as never
+    const { link } = renderInLink()
+    fireEvent.pointerEnter(link, { pointerType: 'mouse', clientX: 10, clientY: 10 })
+    expect(link).not.toHaveAttribute('data-vhs-active')
+    window.matchMedia = matchMedia
   })
 })

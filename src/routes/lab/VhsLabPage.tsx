@@ -1,8 +1,8 @@
 // VHS box lab (/lab/vhs, dev server only): Discover's films as the real VHS box posters
 // (VhsBox), with a control panel to try new values for the look and the motion live.
 //
-// The design was tuned here and approved on 2026-10-09; its values now live in src/index.css
-// ("VHS box posters") and the vhs-box tokens. The lab stays as a tuning tool: it renders the
+// The design was tuned here and approved on 2026-10-09; its values now live in
+// src/components/VhsBox.css and the vhs-box tokens. The lab stays as a tuning tool: it renders the
 // real component and only overrides the `--vhs-*` CSS variables on its wrapper, so what you see
 // here is exactly what Discover would show with those values. It isn't linked from the app,
 // and the route only exists under `npm run dev` (see router.tsx), so it never ships.
@@ -46,7 +46,7 @@ interface Settings {
   freeze: boolean
 }
 
-// Starting values: the approved design (src/index.css, "VHS box posters").
+// Starting values: the approved design (src/components/VhsBox.css).
 const DEFAULTS: Settings = {
   aspect: 0.547,
   depth: 0.24,
@@ -149,7 +149,7 @@ function LabCard({ movie }: { movie: MovieSummary }) {
       to={`/movie/${movie.id}`}
       style={genreTone(movie.genre_ids)}
       data-vhs-target=""
-      className="group relative flex min-w-0 flex-1 flex-col rounded-control hover:z-1 focus-visible:shadow-none focus-visible:outline-none"
+      className="group relative flex min-w-0 flex-1 flex-col rounded-control focus-visible:shadow-none focus-visible:outline-none"
     >
       <VhsBox movie={movie} />
       <div className="mt-3 rounded-control group-focus-visible:outline-3 group-focus-visible:outline-offset-3 group-focus-visible:outline-focus">
