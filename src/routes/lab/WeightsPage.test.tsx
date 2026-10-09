@@ -3,7 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { describe, expect, it } from 'vitest'
-import { renderRoute } from '../test/renderRoute'
+import { renderRoute } from '../../test/renderRoute'
 
 /** Likes The Thing on its Detail page, then opens `path`, as a person would. */
 async function likeThenOpen(path: string, options: Parameters<typeof renderRoute>[1] = {}) {
@@ -20,7 +20,7 @@ async function likeThenOpen(path: string, options: Parameters<typeof renderRoute
 
 describe('weights lab (ADR-0026)', () => {
   it('asks for likes first when there are none', async () => {
-    renderRoute('/discover/weights')
+    renderRoute('/lab/weights')
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Tune the weights' }),
     ).toBeInTheDocument()
@@ -29,7 +29,7 @@ describe('weights lab (ADR-0026)', () => {
   })
 
   it('shows a labelled, described slider per part and the ranked picks', async () => {
-    await likeThenOpen('/discover/weights')
+    await likeThenOpen('/lab/weights')
     const support = await screen.findByRole('slider', { name: 'Recommended by your likes' })
     expect(support).toHaveValue('22')
     expect(support).toHaveAccessibleDescription(
@@ -50,7 +50,7 @@ describe('weights lab (ADR-0026)', () => {
 
   it('keeps settings in the URL, scales them to 100%, and ignores bad values', async () => {
     await likeThenOpen(
-      '/discover/weights?support=50&genre=50&quality=0&deepCut=0&decade=0&language=0&keywords=0&director=0&writer=0&series=0&diversity=999',
+      '/lab/weights?support=50&genre=50&quality=0&deepCut=0&decade=0&language=0&keywords=0&director=0&writer=0&series=0&diversity=999',
     )
     expect(await screen.findByRole('slider', { name: 'Genre fit' })).toHaveValue('50')
     // Out-of-range diversity falls back to the default 5.
@@ -61,7 +61,7 @@ describe('weights lab (ADR-0026)', () => {
   })
 
   it('updates the URL from the keyboard and resets to the defaults', async () => {
-    const { user, router } = await likeThenOpen('/discover/weights')
+    const { user, router } = await likeThenOpen('/lab/weights')
     const deepCut = await screen.findByRole('slider', { name: 'Deep cut' })
     await act(() => deepCut.focus())
     await user.keyboard('{ArrowRight}')
@@ -75,7 +75,7 @@ describe('weights lab (ADR-0026)', () => {
 
   it('warns when every weight is zero', async () => {
     await likeThenOpen(
-      '/discover/weights?support=0&genre=0&quality=0&deepCut=0&decade=0&language=0&keywords=0&director=0&writer=0&series=0',
+      '/lab/weights?support=0&genre=0&quality=0&deepCut=0&decade=0&language=0&keywords=0&director=0&writer=0&series=0',
     )
     expect(await screen.findByRole('alert')).toHaveTextContent('Every weight is at zero')
   })
@@ -83,11 +83,20 @@ describe('weights lab (ADR-0026)', () => {
   it('is linked from Discover once there are picks', async () => {
     const { user, router } = await likeThenOpen('/discover')
     await user.click(await screen.findByRole('link', { name: 'Tune the weights' }))
-    expect(router.state.location.pathname).toBe('/discover/weights')
+    expect(router.state.location.pathname).toBe('/lab/weights')
   })
 
-  it('redirects to Discover when the lab is turned off', async () => {
-    const { router } = renderRoute('/discover/weights', { features: { weightsLab: false } })
+  it('does not exist outside the dev server: the old address goes to Discover', async () => {
+    const { router } = renderRoute('/discover/weights', { features: { labs: false } })
     await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
+    renderRoute('/lab/weights', { features: { labs: false } })
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Something went wrong' }),
+    ).toBeVisible()
+  })
+
+  it('sends the old address to the lab on the dev server', async () => {
+    const { router } = renderRoute('/discover/weights')
+    await waitFor(() => expect(router.state.location.pathname).toBe('/lab/weights'))
   })
 })

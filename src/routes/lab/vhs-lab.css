@@ -1,0 +1,29 @@
+/* VHS box lab (dev only, /lab/vhs): the few rules the lab adds on top of the real VHS box styles
+   (src/index.css, "VHS box posters"). The lab's knobs override the `--vhs-*` variables inline on
+   `.vhs-lab`; these rules only add the lab's preview switches. */
+
+/* "Show every box in its keyboard-focus pose" (and while adjusting a Keyboard control). */
+.vhs-lab[data-freeze] .vhs-box {
+  --turn-y: var(--vhs-focus-y);
+  --turn-x: var(--vhs-focus-x);
+  --rise: var(--vhs-lift);
+}
+
+/* "Tilt the boxes while scrolling" switched off: phones keep the still pose. */
+.vhs-lab:not([data-scroll]) .vhs-box {
+  animation: none;
+}
+
+/* Previewing the phone behavior with a mouse: rest in the keyboard pose and tilt while
+   scrolling, as on a touch screen. */
+.vhs-lab[data-scroll-preview] .vhs-box {
+  --still-y: var(--vhs-focus-y);
+  --still-x: var(--vhs-focus-x);
+}
+@supports (animation-timeline: view()) {
+  .vhs-lab[data-scroll-preview] .vhs-box {
+    animation: vhs-shelf linear both;
+    animation-timeline: view();
+    animation-range: contain;
+  }
+}

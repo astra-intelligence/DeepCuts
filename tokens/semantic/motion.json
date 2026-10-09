@@ -7,7 +7,10 @@
         "$value": "{duration.150}",
         "$description": "Default for hover and state changes"
       },
-      "easing": { "$type": "cubicBezier", "$value": "{easing.in-out}" }
+      "easing": {
+        "$type": "cubicBezier",
+        "$value": "{easing.in-out}"
+      }
     },
     "enter": {
       "duration": {
@@ -15,13 +18,34 @@
         "$value": "{duration.400}",
         "$description": "Onboarding steps fading in"
       },
-      "easing": { "$type": "cubicBezier", "$value": "{easing.ease}" }
+      "easing": {
+        "$type": "cubicBezier",
+        "$value": "{easing.ease}"
+      }
     },
     "zoom": {
       "duration": {
         "$type": "duration",
         "$value": "{duration.500}",
         "$description": "Poster zoom on hover"
+      }
+    },
+    "turn": {
+      "duration": {
+        "$type": "duration",
+        "$value": "{duration.450}",
+        "$description": "A VHS box turning to a pose (keyboard focus) and settling back to rest"
+      },
+      "easing": {
+        "$type": "cubicBezier",
+        "$value": "{easing.out}"
+      }
+    },
+    "follow": {
+      "duration": {
+        "$type": "duration",
+        "$value": "{duration.150}",
+        "$description": "A VHS box following the mouse: short, to smooth the pointer's jumps without lagging"
       }
     }
   }

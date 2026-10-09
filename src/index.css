@@ -151,3 +151,347 @@
     }
   }
 }
+
+/* ==== VHS box posters (VhsBox.tsx; design approved 2026-10-09) ==================================
+   Each film on Discover's grid drawn as a 3D cardboard VHS sleeve: the poster on the front, a
+   printed spine on the left (genre band with the year, title, store barcode label), the open
+   end on the right (the black cassette with a genre-colored title sticker), and raw card on the
+   folded top and bottom edges.
+
+   How it's built. CSS 3D: `.vhs-box` keeps its children in 3D (`preserve-3d`) and each face is
+   a flat element folded back from one edge of the front cover. Each fold swings the face
+   forward with its printed side out, then pushes it back by the depth, so it spans from the
+   front cover to the back. Sizes come from the tile's width through container query units
+   (100cqw), so the proportions hold at every screen size.
+
+   Proportions: a real cardboard sleeve is 104 × 190 × 25 mm (W × H × D), so width / height
+   0.547 and depth 24% of the width (Pacdora's VHS box template, checked 2026-10-09). Posters
+   are 2:3, so the art is cropped a little at the sides, as it was on real covers.
+
+   How it moves, by input. The interactive parent carries `data-vhs-target` (the tile's link):
+     mouse    - the box follows the cursor, so you can look around it: face-on with the cursor
+                in the middle; the side under the cursor presses away and the far side swings
+                toward you (up to 24° turn, 12° tilt)
+     keyboard - focus turns the box to a fixed pose that shows the spine (18°, 4° tilt)
+     touch    - phones can't hover or focus a box, so the boxes rest in the keyboard pose to
+                show their depth (owner's call, 2026-10-09), and tilt as they scroll past, like
+                walking along a shelf (±8°), with a scroll-driven animation: no JavaScript, and
+                browsers without it just hold the pose
+   With a mouse, every box rests turned 6° so a sliver of spine always shows. Reduced motion
+   keeps every box still in its resting pose: nothing turns, lifts or tilts.
+
+   The values below were tuned by the owner in the dev-only lab (/lab/vhs), which overrides
+   these variables to try new ones. Colors come from the vhs-box component tokens and the film's
+   genre tone (`--tone`, set by genreTone()). */
+@layer components {
+  :root {
+    --vhs-aspect: 0.547; /* width / height */
+    --vhs-depth: 0.24; /* depth as a share of the width */
+    --vhs-corner: 0.007; /* corner radius as a share of the width (about 1.5px on desktop) */
+    --vhs-rest-y: 6deg; /* turn at rest (positive shows the spine) */
+    --vhs-rest-x: -2deg; /* tilt at rest (negative = top toward you) */
+    --vhs-lean-y: 24deg; /* mouse: turn with the cursor at a side edge */
+    --vhs-lean-x: 12deg; /* mouse: tilt with the cursor at the top or bottom edge */
+    --vhs-focus-y: 18deg; /* keyboard focus: turn */
+    --vhs-focus-x: -4deg; /* keyboard focus: tilt */
+    --vhs-scroll-x: 8deg; /* touch: tilt at the top and bottom of the screen */
+    --vhs-lift: -4px; /* how far the box rises on hover and focus */
+    --vhs-perspective: 1100px;
+    --vhs-art-fit: cover; /* the poster fills the front, cropped at the sides */
+    --vhs-art-position: 50% 50%; /* which part of the poster the crop keeps */
+  }
+
+  /* One tile's 3D stage. Its own perspective gives every box its own vanishing point, so boxes
+     at the edges of the grid don't skew more than the ones in the middle. */
+  .vhs-scene {
+    position: relative;
+    display: block;
+    container-type: inline-size;
+    perspective: var(--vhs-perspective);
+    perspective-origin: 50% 35%;
+  }
+
+  /* The box. Derived sizes: --h (height) and --d (depth). --still-y/--still-x are its resting
+     pose: the rest angles with a mouse, the keyboard pose on touch screens (below). */
+  .vhs-box {
+    --h: calc(100cqw / var(--vhs-aspect));
+    --d: calc(100cqw * var(--vhs-depth));
+    --corner: calc(100cqw * var(--vhs-corner));
+    --still-y: var(--vhs-rest-y);
+    --still-x: var(--vhs-rest-x);
+    --turn-y: var(--still-y);
+    --turn-x: var(--still-x);
+    --rise: 0px;
+    position: relative;
+    display: block;
+    width: 100cqw;
+    height: var(--h);
+    transform-style: preserve-3d;
+    /* Turn around the middle of the box, not around the front cover. */
+    transform-origin: 50% 50% calc(var(--d) * -0.5);
+    transform: translateY(var(--rise)) rotateX(var(--turn-x)) rotateY(var(--turn-y));
+    transition: transform var(--dc-motion-turn-duration) var(--dc-motion-turn-easing);
+  }
+
+  /* Keyboard: focus turns the box to a fixed pose that shows the spine. */
+  [data-vhs-target]:focus-visible .vhs-box {
+    --turn-y: var(--vhs-focus-y);
+    --turn-x: var(--vhs-focus-x);
+    --rise: var(--vhs-lift);
+  }
+
+  /* Mouse: look around the box. VhsBox sets --vhs-px/--vhs-py on the target, from -1 to 1 for
+     where the pointer is over the box (left/top = -1). Real mice only (`hover: hover`): a tap
+     on a phone would leave a box stuck mid-turn. After the focus rule, so the mouse wins when a
+     focused box is also hovered. The short transition smooths the pointer's jumps; leaving the
+     box eases it back to rest at the normal speed. */
+  @media (hover: hover) {
+    [data-vhs-target]:hover .vhs-box {
+      --turn-y: calc(var(--vhs-lean-y) * var(--vhs-px, 0));
+      --turn-x: calc(var(--vhs-lean-x) * var(--vhs-py, 0) * -1);
+      --rise: var(--vhs-lift);
+      transition-duration: var(--dc-motion-follow-duration);
+    }
+  }
+
+  /* Moving between boxes. On entering, VhsBox marks the target `data-vhs-entering` for the
+     length of a turn, so the box eases into its first lean instead of snapping to it; after
+     that the quick follow takes over. On leaving, the target keeps its raised layer (z-index,
+     set by the page) until the box has swung back, so its edge doesn't pop behind the next
+     box mid-turn. */
+  @media (hover: hover) {
+    [data-vhs-target][data-vhs-entering]:hover .vhs-box {
+      transition-duration: var(--dc-motion-turn-duration);
+    }
+    [data-vhs-target] {
+      transition: z-index 0s linear var(--dc-motion-turn-duration);
+      /* z-index goes back to `auto`, which can only be delayed as a discrete change. */
+      transition-behavior: allow-discrete;
+    }
+    [data-vhs-target]:hover {
+      transition-delay: 0s;
+    }
+  }
+
+  /* Touch: no hover or focus to reveal the depth, so the box rests in the keyboard pose. */
+  @media (hover: none) {
+    .vhs-box {
+      --still-y: var(--vhs-focus-y);
+      --still-x: var(--vhs-focus-x);
+    }
+  }
+
+  /* Touch: the tilt runs from a box's top edge appearing to its bottom edge leaving, reaching
+     its full angle while the box is wholly on screen (`contain`). Entering at the bottom of the
+     screen it shows its top edge (you look down at it); leaving at the top, its bottom edge. */
+  @supports (animation-timeline: view()) {
+    @media (hover: none) {
+      .vhs-box {
+        animation: vhs-shelf linear both;
+        animation-timeline: view();
+        animation-range: contain;
+      }
+    }
+  }
+
+  /* Reduced motion: every box stays still in its resting pose (on phones, still turned). */
+  @media (prefers-reduced-motion: reduce) {
+    .vhs-box,
+    [data-vhs-target]:hover .vhs-box,
+    [data-vhs-target]:focus-visible .vhs-box {
+      --turn-y: var(--still-y);
+      --turn-x: var(--still-x);
+      --rise: 0px;
+      animation: none;
+    }
+  }
+
+  /* ---- Faces --------------------------------------------------------------------------------- */
+
+  .vhs-face {
+    position: absolute;
+    backface-visibility: hidden;
+  }
+
+  /* The front cover: the poster, printed edge to edge on matte card, with edges rubbed pale
+     where the sleeve slid against its neighbours on the shelf. */
+  .vhs-front {
+    inset: 0;
+    overflow: hidden;
+    border-radius: var(--corner);
+    background: var(--color-vhs-box-shell);
+    box-shadow: inset 0 0 calc(100cqw * 0.02)
+      color-mix(in srgb, var(--color-vhs-box-card) 30%, transparent);
+  }
+  .vhs-front img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: var(--vhs-art-fit);
+    object-position: var(--vhs-art-position);
+  }
+  /* Matte finish: paper grain over the art (SVG noise as a data URI, which the CSP allows) and
+     one broad, soft light falloff instead of a glossy glare. */
+  .vhs-front::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0 0.42 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")
+        0 0 / 80px 80px,
+      linear-gradient(
+        160deg,
+        color-mix(in srgb, var(--color-vhs-box-card) 6%, transparent),
+        transparent 55%,
+        color-mix(in srgb, var(--color-vhs-box-shell) 18%, transparent)
+      );
+    background-blend-mode: multiply, normal;
+    pointer-events: none;
+  }
+
+  /* The spine, folded back from the left edge: printed card in a dark ink tinted with the
+     film's genre color, with the same grain and rubbed edges, turned slightly from the light. */
+  .vhs-spine {
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: var(--d);
+    height: 100%;
+    overflow: hidden;
+    border-radius: var(--corner);
+    transform-origin: left center;
+    transform: translateZ(calc(var(--d) * -1)) rotateY(-90deg);
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0 0.42 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")
+        0 0 / 80px 80px,
+      color-mix(in srgb, var(--tone) 18%, var(--color-vhs-box-shell));
+    box-shadow:
+      inset 0 0 calc(var(--d) * 0.12) color-mix(in srgb, var(--color-vhs-box-card) 30%, transparent),
+      inset 0 0 0 100vmax color-mix(in srgb, var(--color-vhs-box-shell) 15%, transparent);
+  }
+  /* The top of the spine: a band of the genre color with the release year ("’26"), bleached a
+     quarter toward the paper like the stickers, so the dark ink reads on every genre color
+     (at least 4.8:1). */
+  .vhs-spine-band {
+    width: 100%;
+    padding-block: calc(var(--d) * 0.18);
+    background: color-mix(in srgb, var(--tone) 75%, var(--color-vhs-box-card));
+    color: var(--color-vhs-box-ink);
+    font-family: var(--font-brand);
+    font-size: calc(var(--d) * 0.3);
+    font-weight: 800;
+    line-height: 1;
+    text-align: center;
+  }
+  /* The title, read top to bottom like a US tape spine; long titles end in "…". */
+  .vhs-spine-title {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding-block: calc(var(--d) * 0.25);
+    color: var(--color-vhs-box-light);
+    font-family: var(--font-brand);
+    font-size: calc(var(--d) * 0.42);
+    font-weight: 800;
+    line-height: var(--d);
+    letter-spacing: 0.04em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+    writing-mode: vertical-rl;
+  }
+  /* The rental store's barcode label, stuck on (slightly crooked) at the bottom of the spine. */
+  .vhs-spine-label {
+    width: 82%;
+    margin-bottom: calc(var(--d) * 0.35);
+    padding: calc(var(--d) * 0.08);
+    background: var(--color-vhs-box-card);
+    rotate: -2deg;
+  }
+  .vhs-barcode {
+    display: block;
+    height: calc(var(--d) * 1.1);
+    background: repeating-linear-gradient(
+      0deg,
+      var(--color-vhs-box-ink) 0 1px,
+      transparent 1px 2px,
+      var(--color-vhs-box-ink) 2px 4px,
+      transparent 4px 5px,
+      var(--color-vhs-box-ink) 5px 6px,
+      transparent 6px 8px
+    );
+  }
+
+  /* The open end, folded back from the right edge: the black cassette inside, lightly lit. */
+  .vhs-edge {
+    top: 0;
+    right: 0;
+    width: var(--d);
+    height: 100%;
+    border-radius: var(--corner);
+    transform-origin: right center;
+    transform: translateZ(calc(var(--d) * -1)) rotateY(90deg);
+    background: color-mix(in srgb, var(--color-vhs-box-light) 5%, var(--color-vhs-box-shell));
+    box-shadow: inset 0 0 calc(var(--d) * 0.15) var(--color-vhs-box-shell);
+  }
+  /* The cassette's label sticker: the genre color, bleached a quarter toward the paper like the
+     spine's band, with the title in dark ink (at least 4.8:1). Laid out as a normal horizontal
+     label (86% of the box's height long, half its depth wide), centered, then turned 90° so the
+     title reads top to bottom like the spine. (Vertical text in a box this narrow was placed
+     unreliably, spilling off one side.) */
+  .vhs-edge-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: calc(var(--h) * 0.86);
+    height: calc(var(--d) * 0.52);
+    overflow: hidden;
+    padding-inline: calc(var(--d) * 0.25);
+    border-radius: 1px;
+    translate: -50% -50%;
+    rotate: 90deg;
+    background: color-mix(in srgb, var(--tone) 75%, var(--color-vhs-box-card));
+    color: var(--color-vhs-box-ink);
+    font-family: var(--font-brand);
+    font-size: calc(var(--d) * 0.3);
+    font-weight: 800;
+    line-height: calc(var(--d) * 0.52);
+    letter-spacing: 0.04em;
+    text-align: center;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* The folded card edges: raw card, lit from above on top and in shade underneath. */
+  .vhs-top,
+  .vhs-bottom {
+    left: 0;
+    width: 100%;
+    height: var(--d);
+  }
+  .vhs-top {
+    top: 0;
+    transform-origin: center top;
+    transform: translateZ(calc(var(--d) * -1)) rotateX(90deg);
+    background: color-mix(in srgb, var(--color-vhs-box-card) 45%, var(--color-vhs-box-shell));
+  }
+  .vhs-bottom {
+    bottom: 0;
+    transform-origin: center bottom;
+    transform: translateZ(calc(var(--d) * -1)) rotateX(-90deg);
+    background: color-mix(in srgb, var(--color-vhs-box-card) 22%, var(--color-vhs-box-shell));
+  }
+}
+
+/* Touch: the scroll tilt (see "How it moves" above). Keeps the resting turn throughout. */
+@keyframes vhs-shelf {
+  from {
+    transform: rotateX(calc(var(--vhs-scroll-x) * -1)) rotateY(var(--still-y));
+  }
+  to {
+    transform: rotateX(var(--vhs-scroll-x)) rotateY(var(--still-y));
+  }
+}
