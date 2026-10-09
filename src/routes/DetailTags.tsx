@@ -117,29 +117,32 @@ export function DetailTags({
           />
         ))}
       </div>
-      {/* Right after the toggles, so the next Tab from a tag reaches Save. Right-aligned, with
-          room above so they read as actions for the whole row (owner, 2026-10-07). */}
-      {dirty && (
-        <div className="mt-5 flex justify-end gap-2">
-          <Button
-            onPress={save}
-            // Not `isPending` or `isDisabled`: React Aria's pending announcer leaves an unlabelled
-            // element that fails axe, and disabling the button would drop keyboard focus. A second
-            // press while saving is ignored in `save` instead.
-            aria-disabled={saving}
-            className="flex min-h-11 items-center justify-center gap-2 rounded-button bg-button-primary-bg px-5 text-sm font-semibold text-button-primary-fg hover:bg-button-primary-bg/85 aria-disabled:opacity-70"
-          >
-            {saving ? 'Saving…' : 'Save'}
-          </Button>
-          <Button
-            onPress={cancel}
-            isDisabled={saving}
-            className="flex min-h-11 items-center justify-center rounded-button border border-button-secondary-border bg-button-secondary-bg px-5 text-sm font-semibold text-button-secondary-fg hover:border-accent"
-          >
-            Cancel
-          </Button>
-        </div>
-      )}
+      {/* Reserve the complete 44px action row from first paint, so showing or hiding the buttons
+          never moves the status line or streaming section. When dirty, the next Tab from a tag
+          reaches Save; actions stay right-aligned (owner, 2026-10-07/09). */}
+      <div data-detail-actions="" className="mt-5 flex min-h-11 justify-end gap-2">
+        {dirty && (
+          <>
+            <Button
+              onPress={save}
+              // Not `isPending` or `isDisabled`: React Aria's pending announcer leaves an unlabelled
+              // element that fails axe, and disabling the button would drop keyboard focus. A second
+              // press while saving is ignored in `save` instead.
+              aria-disabled={saving}
+              className="flex min-h-11 items-center justify-center gap-2 rounded-button bg-button-primary-bg px-5 text-sm font-semibold text-button-primary-fg hover:bg-button-primary-bg/85 aria-disabled:opacity-70"
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </Button>
+            <Button
+              onPress={cancel}
+              isDisabled={saving}
+              className="flex min-h-11 items-center justify-center rounded-button border border-button-secondary-border bg-button-secondary-bg px-5 text-sm font-semibold text-button-secondary-fg hover:border-accent"
+            >
+              Cancel
+            </Button>
+          </>
+        )}
+      </div>
       {failed && <TagSaveError staged className="mt-2" />}
       {/* Always in the page, and never display:none (empty until a save takes no space), so
           screen readers announce the message when it appears. A live region added or unhidden at

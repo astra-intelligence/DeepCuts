@@ -51,7 +51,9 @@ describe('movie detail', () => {
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
     const btn = (name: string) => within(group).getByRole('button', { name })
-    // No Save or Cancel until something changes.
+    // The 44px action slot is reserved from first paint, but no misleading action appears until
+    // something changes.
+    expect(document.querySelector('[data-detail-actions]')).toHaveClass('min-h-11')
     expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
     await user.click(btn('Seen it'))
     await user.click(btn('Like'))
