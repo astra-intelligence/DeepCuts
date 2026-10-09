@@ -36,10 +36,10 @@ interface Settings {
   freeze: boolean
 }
 
-// Starting values: real clamshell proportions and a modest turn (see vhs-box.css).
+// Starting values: real cardboard-sleeve proportions and a modest turn (see vhs-box.css).
 const DEFAULTS: Settings = {
-  caseType: 'clamshell',
-  aspect: 0.6,
+  caseType: 'sleeve',
+  aspect: 0.55,
   depth: 0.23,
   restY: 6,
   restX: -2,
@@ -196,8 +196,8 @@ function Controls({
         <legend className="mb-1 font-semibold">Case</legend>
         {(
           [
+            ['sleeve', 'Cardboard sleeve (matte card)'],
             ['clamshell', 'Rental clamshell (plastic, vinyl overlay)'],
-            ['sleeve', 'Cardboard sleeve (retail)'],
           ] as const
         ).map(([value, label]) => (
           <label key={value} className="flex items-center gap-2">

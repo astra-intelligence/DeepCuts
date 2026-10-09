@@ -21,7 +21,7 @@
 
 /* Knobs, set on the lab wrapper by the control panel. */
 .vhs-lab {
-  --vhs-aspect: 0.6; /* box width / height */
+  --vhs-aspect: 0.55; /* box width / height */
   --vhs-depth: 0.23; /* depth as a share of the width */
   --vhs-rest-y: 6deg; /* turn at rest, so the spine always shows a little */
   --vhs-rest-x: -2deg; /* tilt at rest (negative = top toward you) */
@@ -290,21 +290,50 @@
 }
 
 /* ---- Cardboard sleeve ---------------------------------------------------------------------
-   The thinner retail sleeve: art printed edge to edge on matte card, crisp corners, and shelf
-   wear along the edges where it rubbed against its neighbours. */
+   The printed card sleeve: art edge to edge with no plastic around it, a matte finish (paper
+   grain, no glare), and edges rubbed pale where the box slid against its shelf neighbours.
+   The folded top and bottom edges show the card itself. */
 .vhs-lab[data-case='sleeve'] {
   .vhs-front {
     border-radius: 1px;
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-print-paper) 25%, transparent);
+    /* Shelf wear: the card's edges rubbed toward the paper color. */
+    box-shadow: inset 0 0 calc(100cqw * 0.02)
+      color-mix(in srgb, var(--color-print-paper) 30%, transparent);
   }
+  /* Matte finish: paper grain over the art, and one broad, soft light falloff instead of glare. */
+  .vhs-front::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0 0.42 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")
+        0 0 / 80px 80px,
+      linear-gradient(
+        160deg,
+        color-mix(in srgb, var(--color-print-paper) 6%, transparent),
+        transparent 55%,
+        color-mix(in srgb, var(--color-surface) 18%, transparent)
+      );
+    background-blend-mode: multiply, normal;
+    pointer-events: none;
+  }
+  /* The spine is printed card too: a dark ink tinted with the film's genre color, with the
+     same grain and a pale rubbed outline. */
   .vhs-spine {
-    background: var(--color-surface);
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0 0.42 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")
+        0 0 / 80px 80px,
+      color-mix(in srgb, var(--tone) 18%, var(--color-surface));
     box-shadow:
-      inset 0 0 0 1px color-mix(in srgb, var(--color-print-paper) 25%, transparent),
-      inset 0 0 0 100vmax color-mix(in srgb, var(--color-surface) 18%, transparent);
+      inset 0 0 calc(var(--d) * 0.12) color-mix(in srgb, var(--color-print-paper) 30%, transparent),
+      inset 0 0 0 100vmax color-mix(in srgb, var(--color-surface) 15%, transparent);
   }
+  /* Folded card edges: the raw cardboard, lit from above on top, in shade underneath. */
   .vhs-top {
-    background: color-mix(in srgb, var(--color-fg) 22%, var(--color-surface));
+    background: color-mix(in srgb, var(--color-print-paper) 45%, var(--color-surface));
+  }
+  .vhs-bottom {
+    background: color-mix(in srgb, var(--color-print-paper) 22%, var(--color-surface));
   }
   /* The open end: the tape inside shows as a dark gap. */
   .vhs-edge {
