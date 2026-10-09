@@ -254,6 +254,25 @@
     }
   }
 
+  /* Moving between boxes. On entering, VhsBox marks the target `data-vhs-entering` for the
+     length of a turn, so the box eases into its first lean instead of snapping to it; after
+     that the quick follow takes over. On leaving, the target keeps its raised layer (z-index,
+     set by the page) until the box has swung back, so its edge doesn't pop behind the next
+     box mid-turn. */
+  @media (hover: hover) {
+    [data-vhs-target][data-vhs-entering]:hover .vhs-box {
+      transition-duration: var(--dc-motion-turn-duration);
+    }
+    [data-vhs-target] {
+      transition: z-index 0s linear var(--dc-motion-turn-duration);
+      /* z-index goes back to `auto`, which can only be delayed as a discrete change. */
+      transition-behavior: allow-discrete;
+    }
+    [data-vhs-target]:hover {
+      transition-delay: 0s;
+    }
+  }
+
   /* Touch: no hover or focus to reveal the depth, so the box rests in the keyboard pose. */
   @media (hover: none) {
     .vhs-box {

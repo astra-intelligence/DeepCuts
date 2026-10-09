@@ -42,8 +42,24 @@ export function VhsBox({
       target.style.setProperty('--vhs-px', clamp(((e.clientX - r.left) / r.width) * 2 - 1))
       target.style.setProperty('--vhs-py', clamp(((e.clientY - r.top) / r.height) * 2 - 1))
     }
+    // Entering: ease into the first lean at the slower turn speed instead of snapping to it,
+    // then switch to the quick follow once the box has caught up (CSS reads the attribute).
+    // 450ms matches the motion.turn duration token.
+    let settle: ReturnType<typeof setTimeout> | undefined
+    const enter = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return
+      follow(e)
+      target.setAttribute('data-vhs-entering', '')
+      clearTimeout(settle)
+      settle = setTimeout(() => target.removeAttribute('data-vhs-entering'), 450)
+    }
+    target.addEventListener('pointerenter', enter)
     target.addEventListener('pointermove', follow)
-    return () => target.removeEventListener('pointermove', follow)
+    return () => {
+      clearTimeout(settle)
+      target.removeEventListener('pointerenter', enter)
+      target.removeEventListener('pointermove', follow)
+    }
   }, [])
 
   const poster = imageUrl(movie.poster_path, 'w342')

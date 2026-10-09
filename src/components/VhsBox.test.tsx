@@ -1,6 +1,6 @@
 // VhsBox: decorative faces, and the mouse position it reports for the CSS to turn the box.
-import { fireEvent, render } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { act, fireEvent, render } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import type { MovieSummary } from '../api/tmdb'
 import { VhsBox } from './VhsBox'
 
@@ -57,6 +57,18 @@ describe('VhsBox', () => {
     fireEvent.pointerMove(link, { pointerType: 'mouse', clientX: 300, clientY: 900 })
     expect(link.style.getPropertyValue('--vhs-px')).toBe('1.000')
     expect(link.style.getPropertyValue('--vhs-py')).toBe('1.000')
+  })
+
+  it('eases into the first lean on entering, then follows quickly', () => {
+    vi.useFakeTimers()
+    const { link, box } = renderInLink()
+    box.getBoundingClientRect = () => ({ left: 0, top: 0, width: 200, height: 400 }) as DOMRect
+    fireEvent.pointerEnter(link, { pointerType: 'mouse', clientX: 0, clientY: 200 })
+    expect(link).toHaveAttribute('data-vhs-entering')
+    expect(link.style.getPropertyValue('--vhs-px')).toBe('-1.000')
+    act(() => vi.advanceTimersByTime(450))
+    expect(link).not.toHaveAttribute('data-vhs-entering')
+    vi.useRealTimers()
   })
 
   it('ignores touch and pen, which turn the box by scrolling instead', () => {
