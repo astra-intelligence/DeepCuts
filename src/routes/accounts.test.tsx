@@ -117,7 +117,7 @@ describe('account settings (A2b)', () => {
     const confirm = screen.getByRole('button', { name: 'Yes, delete my account' })
     await waitFor(() => expect(confirm).toHaveFocus())
     await user.click(confirm)
-    await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
     expect(api.state.signedIn).toBeNull()
   })
 

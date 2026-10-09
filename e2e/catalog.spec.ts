@@ -4,7 +4,7 @@
 import type { Page } from '@playwright/test'
 import { expect, expectNoA11yViolations, expectNoHorizontalOverflow, test } from './fixtures'
 
-for (const path of ['/sign-in', '/register', '/discover', '/movie/1091', '/lists', '/account']) {
+for (const path of ['/sign-in', '/register', '/', '/movie/1091', '/lists', '/account']) {
   test(`${path} has no axe violations and no horizontal overflow`, async ({ page }) => {
     await page.goto(path)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
@@ -13,14 +13,16 @@ for (const path of ['/sign-in', '/register', '/discover', '/movie/1091', '/lists
   })
 }
 
-test('/ opens Discover, and the hidden Search page redirects there (FEATURES.searchPage)', async ({
+test('/ opens Home, and the hidden Search page redirects there (FEATURES.searchPage)', async ({
   page,
 }) => {
   await page.goto('/')
-  await expect(page).toHaveURL(/\/discover$/)
-  await expect(page.getByRole('heading', { level: 1, name: 'Found for you' })).toBeVisible()
+  await expect(page).toHaveURL(/\/$/)
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Your movies, close at hand' }),
+  ).toBeVisible()
   await page.goto('/search?q=thing')
-  await expect(page).toHaveURL(/\/discover$/)
+  await expect(page).toHaveURL(/\/$/)
 })
 
 /** Tags The Thing "Want to see" on its Detail page (tags are staged until Save). */
@@ -32,11 +34,11 @@ async function wantToSeeTheThing(page: Page) {
   await page.getByRole('button', { name: 'Save' }).click()
   // Save briefly announces success, then closes Detail through its exit transition.
   await expect(page.getByRole('status')).toContainText('Saved.')
-  await expect(page).toHaveURL(/\/discover$/)
+  await expect(page).toHaveURL(/\/$/)
 }
 
 test('header search → detail → back, keyboard only', async ({ page }) => {
-  await page.goto('/discover')
+  await page.goto('/')
   const box = page.getByRole('combobox', { name: 'Find a movie to view and tag' })
   await box.focus()
   await page.keyboard.type('thing')
@@ -59,14 +61,16 @@ test('header search → detail → back, keyboard only', async ({ page }) => {
   await expect(page).toHaveTitle('The Thing · Deep Cuts')
 
   await page.goBack()
-  await expect(page.getByRole('heading', { level: 1, name: 'Found for you' })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Your movies, close at hand' }),
+  ).toBeVisible()
 })
 
 test('main navigation is reachable and marks the current page', async ({ page }) => {
-  await page.goto('/discover')
+  await page.goto('/')
   const nav = page.getByRole('navigation', { name: 'Main' })
   // Two tabs while the Search page is hidden.
-  await expect(nav.getByRole('link')).toHaveText(['Discover', 'My Lists'])
+  await expect(nav.getByRole('link')).toHaveText(['Home', 'My Lists'])
   await nav.getByRole('link', { name: 'My Lists' }).click()
   await expect(nav.getByRole('link', { name: 'My Lists' })).toHaveAttribute('aria-current', 'page')
   const box = await nav.getByRole('link', { name: 'My Lists' }).boundingBox()
@@ -100,8 +104,10 @@ test('detail tags toggle and save by keyboard, all at 44px or more', async ({ pa
   await expect(save).toBeFocused()
   await page.keyboard.press('Enter')
   await expect(page.getByRole('status')).toHaveText('Saved. The Thing: Seen it.')
-  await expect(page).toHaveURL(/\/discover$/)
-  await expect(page.getByRole('heading', { level: 1, name: 'Found for you' })).toBeFocused()
+  await expect(page).toHaveURL(/\/$/)
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Your movies, close at hand' }),
+  ).toBeFocused()
   await expectNoA11yViolations(page)
 })
 
@@ -115,7 +121,7 @@ test('a disliked film appears only on the Disliked list, with the tag accent', a
   // Detail stages tag changes until Save.
   await page.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByRole('status')).toContainText('Saved.')
-  await expect(page).toHaveURL(/\/discover$/)
+  await expect(page).toHaveURL(/\/$/)
   // Client-side navigation keeps the in-memory guest picks (ADR-0011).
   await page
     .getByRole('navigation', { name: 'Main' })
@@ -166,7 +172,7 @@ test('sign in with the demo account, keyboard only; survives a reload; sign out 
   await page.getByRole('button', { name: /Continue with a demo account/ }).focus()
   await page.keyboard.press('Enter')
 
-  await expect(page).toHaveURL(/\/discover$/)
+  await expect(page).toHaveURL(/\/$/)
   await expect(page.getByText('Signed in as Mike. Your 1 pick is in your account.')).toBeVisible()
   const chip = page.getByRole('banner').getByRole('link', { name: 'Mike, open your account' })
   await expect(chip).toBeVisible()
@@ -210,7 +216,7 @@ test('register from an invite link with the keyboard; errors pass axe; the pract
   await page.keyboard.type('Ada Lovelace')
   await page.keyboard.press('Enter')
 
-  await expect(page).toHaveURL(/\/discover$/)
+  await expect(page).toHaveURL(/\/$/)
   await expect(page.getByText('Signed in as Ada.')).toBeVisible()
   await page.reload()
   const chip = page.getByRole('banner').getByRole('link', { name: 'Ada, open your account' })
@@ -218,7 +224,9 @@ test('register from an invite link with the keyboard; errors pass axe; the pract
   await expect(page.getByText('Practice account, made on this device')).toBeVisible()
 })
 
-test('liking a film tunes Discover, with a match and the reason (ADR-0026)', async ({ page }) => {
+test('liking a film tunes Home’s recommendations, with a match and the reason (ADR-0026)', async ({
+  page,
+}) => {
   await page.goto('/movie/1091')
   const like = page
     .getByRole('group', { name: 'Your tags' })
@@ -229,7 +237,7 @@ test('liking a film tunes Discover, with a match and the reason (ADR-0026)', asy
   await page.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByRole('status')).toContainText('Saved.')
   // Client-side navigation keeps the in-memory guest picks (ADR-0011).
-  await page.getByRole('link', { name: 'Deep Cuts, go to Discover' }).click()
+  await page.getByRole('link', { name: 'Deep Cuts, go to Home' }).click()
   await expect(page.getByText('Picked from the films you liked, beyond the obvious.')).toBeVisible()
   const feature = page.getByRole('link', { name: /Today’s featured deep cut/ })
   await expect(feature).toContainText(/\d+% match/)
@@ -254,22 +262,29 @@ test('tag and genre colors reach the page (runtime CSS variables, ADR-0020/0027)
     return names.filter((n) => !root.getPropertyValue(n).trim())
   })
   expect(missing).toEqual([])
-  // Each unselected toggle's icon wears its tag color, not the button's muted text color.
+  // Each unselected toggle's icon wears its own tag color. Compare against the tag's resolved
+  // color rather than the label's: Like's tag color is the same near-white as label text.
   const group = page.getByRole('group', { name: 'Your tags' })
-  for (const name of ['Seen it', 'Want to see', 'Like', 'Dislike']) {
+  const tags = { 'Seen it': 'seen', 'Want to see': 'watchlist', Like: 'liked', Dislike: 'disliked' }
+  for (const [name, tag] of Object.entries(tags)) {
     const button = group.getByRole('button', { name, exact: true })
-    const [text, icon] = await button.evaluate((b) => [
-      getComputedStyle(b).color,
-      getComputedStyle(b.querySelector('svg') as Element).color,
-    ])
-    expect(icon, name).not.toBe(text)
+    const [expected, icon] = await button.evaluate((b, t) => {
+      // Resolve the variable through a probe element so both sides are rgb() strings.
+      const probe = document.createElement('span')
+      probe.style.color = `var(--color-tag-${t})`
+      document.body.append(probe)
+      const resolved = getComputedStyle(probe).color
+      probe.remove()
+      return [resolved, getComputedStyle(b.querySelector('svg') as Element).color]
+    }, tag)
+    expect(icon, name).toBe(expected)
   }
 })
 
 test('the dev-only labs are not part of the production site', async ({ page }) => {
-  // The weights lab's old live address now goes to Discover.
+  // The weights lab's old live address now goes to Home.
   await page.goto('/discover/weights')
-  await expect(page).toHaveURL(/\/discover$/)
+  await expect(page).toHaveURL(/\/$/)
   for (const path of ['/lab/weights', '/lab/vhs']) {
     await page.goto(path)
     await expect(

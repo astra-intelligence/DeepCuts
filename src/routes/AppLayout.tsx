@@ -1,4 +1,4 @@
-// The app shell around Discover, Search, My Lists and Account: header, search band, the page,
+// The app shell around Home, Search, My Lists and Account: header, search band, the page,
 // and the tab bar. (Detail and Sign in have their own layouts.)
 import { Link, NavLink, Outlet } from 'react-router'
 import { FEATURES } from '../config/features'
@@ -9,14 +9,11 @@ import { MovieSearch } from '../components/MovieSearch'
 import { SignedInNotice } from '../components/SignedInNotice'
 import { useRouteFocus } from '../hooks/useRouteFocus'
 
-// The tabs in the tab bar, in order. Search only while its page is on (FEATURES.searchPage).
+// The tabs in the tab bar, in order. Search stays in the header rather than taking a primary tab.
 const NAV: { to: string; label: string; icon: IconName }[] = [
-  { to: '/discover', label: 'Discover', icon: 'home' },
-  ...(FEATURES.searchPage ? [{ to: '/search', label: 'Search', icon: 'search' as const }] : []),
+  { to: '/', label: 'Home', icon: 'home' },
   { to: '/lists', label: 'My Lists', icon: 'list' },
 ]
-// One column per tab. Written out in full so Tailwind generates both classes.
-const NAV_COLUMNS = NAV.length === 3 ? 'grid-cols-3' : 'grid-cols-2'
 
 /**
  * "Skip to content": hidden until a keyboard user tabs to it, then jumps past the header to
@@ -34,7 +31,7 @@ export function SkipLink() {
 }
 
 /**
- * Design v2 shell (ADR-0021): sticky header + persistent search band; a bottom tab bar on
+ * Shell (ADR-0021, ADR-0033): sticky header + persistent search band; a bottom tab bar on
  * phones that becomes a floating pill from `md`.
  */
 export function AppLayout() {
@@ -56,8 +53,8 @@ export function AppLayout() {
         {/* 46px tall below `lg`, matching the old 64px first row minus its padding, so the phone
             layout is pixel-identical to before; the usual 44px in the one-row `lg` header. */}
         <Link
-          to="/discover"
-          aria-label="Deep Cuts, go to Discover"
+          to="/"
+          aria-label="Deep Cuts, go to Home"
           className="inline-flex min-h-11.5 shrink-0 items-center lg:min-h-11"
         >
           <Logo decorative className="h-7 w-auto md:h-8" />
@@ -98,7 +95,7 @@ export function AppLayout() {
         aria-label="Main"
         className="fixed bottom-0 left-1/2 z-20 w-full max-w-360 -translate-x-1/2 border-t border-nav-border bg-nav-bg/95 px-3.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:bottom-4 md:w-md md:rounded-nav md:border md:p-1 md:shadow-nav md:shadow-surface/80"
       >
-        <ul className={`grid ${NAV_COLUMNS}`}>
+        <ul className="grid grid-cols-2">
           {NAV.map((item) => (
             <li key={item.to}>
               <NavLink

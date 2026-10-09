@@ -43,7 +43,7 @@ export function RateStep({ state, update }: StepProps) {
   function next() {
     const after = pool.findIndex((m, i) => i > current && !excluded?.has(m.id))
     if (state.n >= PICKS || after === -1) {
-      navigate('/discover')
+      navigate('/')
     } else {
       update({ pick: pool[after]?.id, n: state.n + 1 }, true)
     }
@@ -54,8 +54,8 @@ export function RateStep({ state, update }: StepProps) {
   if (!pick) {
     return (
       <Prompt eyebrow="Tune your picks" title="That’s everything for now">
-        <Link to="/discover" className={`${primary} mt-4`}>
-          Go to Discover <Icon name="arrow" />
+        <Link to="/" className={`${primary} mt-4`}>
+          Go to Home <Icon name="arrow" />
         </Link>
       </Prompt>
     )

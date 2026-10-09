@@ -1,4 +1,4 @@
-// Discover (/discover): a feed of films picked for you.
+// Home (/): a concise personal movie shelf with a watchlist preview and recommendations.
 //
 // A large featured film on top, then a grid of 16 more. With likes, the picks come from the
 // recommendation scorer (ADR-0026) and show a "% match" and why. Without likes, it shows popular
@@ -13,6 +13,7 @@ import { EmptyState } from '../components/EmptyState'
 import { GenreSticker } from '../components/GenreSticker'
 import { Icon } from '../components/Icon'
 import { PageHeading } from '../components/PageHeading'
+import { MovieLink } from '../components/MovieLink'
 import { VhsBox } from '../components/VhsBox'
 import { genreTone, primaryGenreName } from '../domain/genres'
 import { useTagQueries } from '../session/tagQueries'
@@ -22,12 +23,13 @@ import { useRecommendations } from '../session/useRecommendations'
 const WEEKDAY = new Intl.DateTimeFormat('en-US', { weekday: 'long' })
 
 /**
- * With likes, Discover ranks films with the scorer (ADR-0026). Without likes it shows popular
- * films minus disliked ones, and says how to tune it.
+ * Home puts personal value before browsing (ADR-0033). Its compact recommendation section uses
+ * the existing scorer (ADR-0026); without likes it uses popular films minus dislikes.
  */
-export function DiscoverPage() {
-  // 17 = one featured film + 16 grid tiles.
-  const tuned = useRecommendations(17)
+export function HomePage() {
+  // Seven = one feature plus six visual follow-on picks: enough to browse without becoming a
+  // second, endless destination on the new Home page.
+  const tuned = useRecommendations(7)
   const popular = useQuery(movieQueries.discover())
   const excluded = useQuery(useTagQueries().feedExclusions()).data
 
@@ -47,7 +49,7 @@ export function DiscoverPage() {
   // Director and writer for each card on show: one details call per film, cached for a day and
   // shared with Detail (and with the scorer's re-rank, so most picks are already loaded). A card
   // shows its film at once and the credit lines fill in when its details arrive.
-  const shown = items.slice(0, 17)
+  const shown = items.slice(0, 7)
   const details = useQueries({ queries: shown.map((i) => movieQueries.detail(i.movie.id)) })
   const withCredits = shown.map((item, i) => {
     const data = details[i]?.data
@@ -63,16 +65,14 @@ export function DiscoverPage() {
 
   return (
     <>
-      <title>Discover · Deep Cuts</title>
+      <title>Home · Deep Cuts</title>
       <PageHeading
-        eyebrow={`${WEEKDAY.format(new Date())}’s edit`}
-        title="Found for you"
-        lede={
-          usePicks
-            ? 'Picked from the films you liked, beyond the obvious.'
-            : 'Popular films worth staying up for. Like a few films to tune this feed to you.'
-        }
+        eyebrow={`${WEEKDAY.format(new Date())}’s shelf`}
+        title="Your movies, close at hand"
+        lede="The films you love, want to see, and a few worth going deeper for."
       />
+      <TopTenPreview />
+      <WatchlistPreview />
       {(featureLoading || gridLoading) && (
         <p role="status" className="sr-only">
           Finding films…
@@ -83,7 +83,7 @@ export function DiscoverPage() {
       )}
       {!loading && !feature && !(!usePicks && popular.isError) && (
         <EmptyState>
-          No films left in your feed. Films you dislike stay on the Disliked list in My Lists.
+          No films left in your picks. Films you dislike stay on the Disliked list in My Lists.
         </EmptyState>
       )}
       {featureLoading ? <FeatureSkeleton /> : feature && <FeatureCard item={feature} />}
@@ -92,14 +92,17 @@ export function DiscoverPage() {
           <h2 id="deeper" className="text-lg font-semibold">
             Go a little deeper
           </h2>
-          <p className="mb-2.5 text-sm text-fg-muted">Picked from beyond the obvious</p>
-          {/* 16 tiles fill 2- and 4-column rows; the 16th hides at 5 columns (lg). */}
+          <p className="mb-2.5 text-sm text-fg-muted">
+            {usePicks
+              ? 'Picked from the films you liked, beyond the obvious.'
+              : 'Popular films worth staying up for. Like a few films to tune these picks to you.'}
+          </p>
           {gridLoading ? (
             <PosterGridSkeleton />
           ) : (
             <ul className="grid grid-cols-2 gap-x-4 gap-y-5.5 md:grid-cols-4 lg:grid-cols-5">
-              {rest.slice(0, 16).map((item, i) => (
-                <li key={item.movie.id} className={i === 15 ? 'flex lg:hidden' : 'flex'}>
+              {rest.slice(0, 6).map((item) => (
+                <li key={item.movie.id} className="flex">
                   <PosterCard item={item} />
                 </li>
               ))}
@@ -117,6 +120,78 @@ export function DiscoverPage() {
         </p>
       )}
     </>
+  )
+}
+
+/** The visible home for the future curated list, without pretending liked films are a Top Ten. */
+function TopTenPreview() {
+  return (
+    <section
+      aria-labelledby="top-ten"
+      className="mt-6 rounded-card border border-card-border bg-card-bg p-4 shadow-card md:p-5"
+    >
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 id="top-ten" className="font-display text-2xl">
+          Top Ten
+        </h2>
+        <span className="text-sm font-semibold text-fg-muted">Your favourites</span>
+      </div>
+      <p className="mt-2 max-w-prose text-sm leading-relaxed text-fg-muted">
+        Your all-time favourites, in your order. Building and sharing this list is the next project.
+      </p>
+    </section>
+  )
+}
+
+/** A short, useful preview of the existing watchlist, with My Lists as the full destination. */
+function WatchlistPreview() {
+  const queries = useTagQueries()
+  const ids = useQuery(queries.list('watchlist')).data ?? []
+  // Three rows keep Home scannable; My Lists remains the complete collection.
+  const movies = useQueries({ queries: ids.slice(0, 3).map((id) => movieQueries.detail(id)) })
+    .map((query) => query.data)
+    .filter((movie): movie is NonNullable<typeof movie> => movie !== undefined)
+
+  return (
+    <section aria-labelledby="watchlist" className="mt-6">
+      <div className="flex items-baseline justify-between gap-4 border-b border-border pb-2">
+        <div>
+          <h2 id="watchlist" className="text-lg font-semibold">
+            Movies I want to watch
+          </h2>
+          <p className="mt-0.5 text-sm text-fg-muted">Saved for the right night.</p>
+        </div>
+        <Link
+          to="/lists?tag=watchlist"
+          className="inline-flex min-h-11 items-center text-sm font-semibold text-info underline"
+        >
+          See all
+        </Link>
+      </div>
+      {movies.length > 0 ? (
+        <ul className="mt-3 grid gap-3 md:grid-cols-3">
+          {movies.map((movie) => (
+            <li
+              key={movie.id}
+              style={genreTone(movie.genres.map((genre) => genre.id))}
+              className="rounded-card border border-card-border bg-card-bg p-3 shadow-card"
+            >
+              <MovieLink
+                movie={movie}
+                meta={[
+                  releaseYear(movie.release_date),
+                  primaryGenreName(movie.genres.map((g) => g.id)),
+                ].filter(Boolean)}
+              />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-3 text-sm leading-relaxed text-fg-muted">
+          Save a film from search or its details, and it will be waiting here.
+        </p>
+      )}
+    </section>
   )
 }
 
@@ -138,7 +213,7 @@ function FeatureSkeleton() {
   )
 }
 
-/** Sixteen stable VHS-tile placeholders; the last follows the real grid's lg visibility rule. */
+/** Six stable VHS-tile placeholders for Home's deliberately compact recommendation section. */
 function PosterGridSkeleton() {
   return (
     <ul
@@ -146,8 +221,8 @@ function PosterGridSkeleton() {
       data-loading-section="grid"
       className="grid grid-cols-2 gap-x-4 gap-y-5.5 md:grid-cols-4 lg:grid-cols-5"
     >
-      {Array.from({ length: 16 }, (_, i) => (
-        <li key={i} className={i === 15 ? 'flex lg:hidden' : 'flex'}>
+      {Array.from({ length: 6 }, (_, i) => (
+        <li key={i} className="flex">
           <div className="flex min-w-0 flex-1 animate-pulse flex-col">
             <div className="aspect-[0.547] w-full rounded-subtle border border-card-border bg-card-bg" />
             <div className="mt-3 min-h-36 space-y-2 rounded-control">

@@ -1,4 +1,4 @@
-// Tests for Discover: the feed without likes (popular films minus dislikes) and with likes
+// Tests for Home's recommendation area: popular films without likes, scored picks with likes,
 // (scored picks with a match and the reason).
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -9,7 +9,24 @@ import { renderRoute } from '../test/renderRoute'
 import { candidateDetailFixtures, movieFixture, searchFixture } from '../test/msw/fixtures'
 import { server } from '../test/msw/server'
 
-describe('discover', () => {
+describe('home', () => {
+  it('puts personal-list areas before its compact recommendation section', async () => {
+    renderRoute('/')
+    const topTen = await screen.findByRole('heading', { level: 2, name: 'Top Ten' })
+    const watchlist = screen.getByRole('heading', { level: 2, name: 'Movies I want to watch' })
+    const recommendations = screen.getByRole('heading', { level: 2, name: 'Go a little deeper' })
+    expect(topTen.compareDocumentPosition(watchlist)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(watchlist.compareDocumentPosition(recommendations)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
+  })
+
+  it('returns a retired Discover URL to Home', async () => {
+    const { router } = renderRoute('/discover')
+    await screen.findByRole('heading', { level: 1, name: 'Your movies, close at hand' })
+    expect(router.state.location.pathname).toBe('/')
+  })
+
   it('reserves both list sections while the film list loads', async () => {
     server.use(
       http.get('/api/tmdb/discover/movie', async () => {
@@ -18,7 +35,7 @@ describe('discover', () => {
       }),
     )
 
-    renderRoute('/discover')
+    renderRoute('/')
     expect(await screen.findByRole('status')).toHaveTextContent('Finding films…')
     expect(document.querySelector('[data-loading-section="featured"]')).toBeInTheDocument()
     expect(document.querySelector('[data-loading-section="grid"]')).toBeInTheDocument()
@@ -39,7 +56,7 @@ describe('discover', () => {
       }),
     )
 
-    renderRoute('/discover')
+    renderRoute('/')
     const feature = await screen.findByRole('link', {
       name: /Today’s featured deep cut.*The Thing/,
     })
@@ -52,9 +69,9 @@ describe('discover', () => {
   })
 
   it('shows a feature card and a poster grid', async () => {
-    renderRoute('/discover')
+    renderRoute('/')
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Found for you' }),
+      await screen.findByRole('heading', { level: 1, name: 'Your movies, close at hand' }),
     ).toBeInTheDocument()
     expect(
       await screen.findByRole('link', { name: /Today’s featured deep cut.*The Thing/ }),
@@ -80,7 +97,7 @@ describe('discover', () => {
     // Detail stages tag changes until Save.
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
-    await act(() => router.navigate('/discover'))
+    await act(() => router.navigate('/'))
     expect(
       await screen.findByRole('link', { name: /Today’s featured deep cut.*Alien/ }),
     ).toBeInTheDocument()
@@ -90,13 +107,13 @@ describe('discover', () => {
   it.each(['?genres=27,53', '?genres=27;DROP', '?genres='])(
     'ignores %s: favourite genres are gone (ADR-0032)',
     async (qs) => {
-      renderRoute(`/discover${qs}`)
+      renderRoute(`/${qs}`)
       expect(await screen.findByText(/^Popular films worth staying up for\./)).toBeInTheDocument()
     },
   )
 })
 
-describe('discover with likes (ADR-0026)', () => {
+describe('home with likes (ADR-0026)', () => {
   it('ranks films recommended by your likes, with a real match and the reason', async () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/1091')
@@ -105,7 +122,7 @@ describe('discover with likes (ADR-0026)', () => {
     // Detail stages tag changes until Save.
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
-    await act(() => router.navigate('/discover'))
+    await act(() => router.navigate('/'))
 
     expect(
       await screen.findByText('Picked from the films you liked, beyond the obvious.'),
@@ -130,7 +147,7 @@ describe('discover with likes (ADR-0026)', () => {
   })
 })
 
-describe('discover with a liked film in a series (ADR-0032)', () => {
+describe('home with a liked film in a series (ADR-0032)', () => {
   it('suggests the released sequels, but not an undated announced one', async () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/4488')
@@ -138,7 +155,7 @@ describe('discover with a liked film in a series (ADR-0032)', () => {
     await user.click(within(group).getByRole('button', { name: 'Like' }))
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
-    await act(() => router.navigate('/discover'))
+    await act(() => router.navigate('/'))
 
     // TMDB recommends nothing for it here, so both picks come from the series.
     const feature = await screen.findByRole('link', { name: /Today’s featured deep cut/ })

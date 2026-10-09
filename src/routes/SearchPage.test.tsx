@@ -12,20 +12,22 @@ const SEARCH_ON = { features: { searchPage: true } }
 describe('search → detail', () => {
   const box = () => screen.getByRole('combobox', { name: 'Find a movie to view and tag' })
 
-  it('/ lands on Discover, and /search goes there while the Search page is hidden', async () => {
+  it('/ is Home, and /search returns Home while the Search page is hidden', async () => {
     const { router } = renderRoute('/')
-    expect(await screen.findByRole('heading', { level: 1, name: 'Found for you' })).toBeVisible()
-    expect(router.state.location.pathname).toBe('/discover')
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Your movies, close at hand' }),
+    ).toBeVisible()
+    expect(router.state.location.pathname).toBe('/')
     await act(() => router.navigate('/search?q=thing'))
-    expect(router.state.location.pathname).toBe('/discover')
+    expect(router.state.location.pathname).toBe('/')
   })
 
-  it('/ lands on Search while its flag is on', async () => {
+  it('/ remains Home while the optional Search page flag is on', async () => {
     const { router } = renderRoute('/', SEARCH_ON)
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Find your next film' }),
+      await screen.findByRole('heading', { level: 1, name: 'Your movies, close at hand' }),
     ).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/search')
+    expect(router.state.location.pathname).toBe('/')
   })
 
   it('searches from the URL, lists results, and opens a film', async () => {

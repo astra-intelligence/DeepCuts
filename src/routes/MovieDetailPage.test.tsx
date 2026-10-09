@@ -71,7 +71,7 @@ describe('movie detail', () => {
     // The action row stays in place for the fade and disappears only when Detail unmounts.
     expect(screen.getByRole('button', { name: 'Saving…' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
-    await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
 
     // What was saved is really saved: My Lists has it after the overlay closes.
     await act(() => router.navigate('/lists?tag=liked'))
@@ -86,7 +86,7 @@ describe('movie detail', () => {
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
-    await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
     await act(() => router.navigate('/lists?tag=watchlist'))
     expect(await screen.findByText(/will appear here/)).toBeInTheDocument()
   })
@@ -109,7 +109,7 @@ describe('movie detail', () => {
     const { router } = renderRoute('/movie/1091')
     await screen.findByRole('heading', { level: 1, name: 'The Thing' })
     await user.click(screen.getByRole('button', { name: 'Back to previous screen' }))
-    await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
   })
 
   it('Escape closes the Detail overlay with the same fade', async () => {
@@ -120,7 +120,7 @@ describe('movie detail', () => {
     await waitFor(() =>
       expect(document.querySelector('.detail-page')).toHaveAttribute('data-closing'),
     )
-    await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
   })
 
   it('has one back button (top), which returns to the previous screen', async () => {

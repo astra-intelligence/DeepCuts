@@ -11,10 +11,7 @@ export type Features = {
    * a production build leaves the labs' code out entirely (see router.tsx). Tests can turn it off.
    */
   labs: boolean
-  /**
-   * The Search page (/search, "Quick add") and its tab. Off since 2026-10-07: the owner prefers
-   * Discover as the home page. The header search still opens films while it's off.
-   */
+  /** The optional Search page (/search, "Quick add"). The header search always opens films. */
   searchPage: boolean
 }
 
@@ -27,12 +24,10 @@ export const FEATURES: Features = {
 
 /**
  * Where "home" is: the page the app opens on, and where Back, sign-out and error pages go when
- * there's nowhere better. Search while its page is on, otherwise Discover.
+ * there's nowhere better. Welcome is always Home; Search is never a primary destination.
  */
-export function homeOf(features: Features = FEATURES) {
-  return features.searchPage
-    ? ({ path: '/search', label: 'Search' } as const)
-    : ({ path: '/discover', label: 'Discover' } as const)
+export function homeOf() {
+  return { path: '/', label: 'Home' } as const
 }
 
 /** Home for the app's real flags (see `homeOf`). */
