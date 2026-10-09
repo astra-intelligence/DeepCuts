@@ -55,10 +55,11 @@ export function DiscoverPage() {
   })
   // The first film is featured; the rest fill the grid.
   const [feature, ...rest] = withCredits
-  // Feature and grid resolve independently. Each keeps its skeleton until every piece of content
-  // it can reveal is ready, so director/writer lines never arrive late and move content below.
-  const featureLoading = loading || (feature !== undefined && details[0]?.isPending)
-  const gridLoading = loading || (rest.length > 0 && details.slice(1).some((q) => q.isPending))
+  // Skeletons cover only the request that determines which films belong in the list. Holding the
+  // poster for secondary credits delays the page's largest paint; cards instead reserve the two
+  // credit lines below and fill them independently when each detail request completes.
+  const featureLoading = loading
+  const gridLoading = loading
 
   return (
     <>
@@ -119,7 +120,7 @@ export function DiscoverPage() {
   )
 }
 
-/** Size-matched placeholder for the featured card while its film and credits load. */
+/** Size-matched placeholder for the featured card while its film list loads. */
 function FeatureSkeleton() {
   return (
     <div
@@ -187,16 +188,26 @@ function Because({ titles }: { titles: string[] | undefined }) {
  * left out when TMDB has no such credit, and both are left out until the details load.
  */
 function CreditLines({ credits }: { credits: Credits | undefined }) {
-  if (!credits) return null
   const lines = [
-    { label: credits.directors.length > 1 ? 'Directors' : 'Director', names: credits.directors },
-    { label: credits.writers.length > 1 ? 'Writers' : 'Writer', names: credits.writers },
+    {
+      label: (credits?.directors.length ?? 0) > 1 ? 'Directors' : 'Director',
+      names: credits?.directors ?? [],
+    },
+    {
+      label: (credits?.writers.length ?? 0) > 1 ? 'Writers' : 'Writer',
+      names: credits?.writers ?? [],
+    },
   ].filter((l) => l.names.length > 0)
-  return lines.map((l) => (
-    <span key={l.label} className="mt-1 block text-sm text-fg-muted">
-      {l.label}: <span className="text-fg">{l.names.join(', ')}</span>
+  return (
+    // Two reserved text rows let credits arrive without moving this card or anything below it.
+    <span data-credit-lines="" className="mt-1 block min-h-10">
+      {lines.map((l) => (
+        <span key={l.label} className="block text-sm text-fg-muted">
+          {l.label}: <span className="text-fg">{l.names.join(', ')}</span>
+        </span>
+      ))}
     </span>
-  ))
+  )
 }
 
 // The large card at the top: the film's image with its title, match and reasons over a fade.
@@ -215,7 +226,18 @@ function FeatureCard({ item }: { item: Item }) {
         <picture>
           {/* Tall poster on phones; the wide backdrop from md, where the card is landscape. */}
           {backdrop && <source media="(min-width: 768px)" srcSet={backdrop} />}
-          <img src={poster ?? backdrop ?? undefined} alt="" className="size-full object-cover" />
+          <img
+            src={poster ?? backdrop ?? undefined}
+            srcSet={
+              movie.poster_path
+                ? `${imageUrl(movie.poster_path, 'w342')} 342w, ${imageUrl(movie.poster_path, 'w500')} 500w, ${poster} 780w`
+                : undefined
+            }
+            sizes="(min-width: 768px) 0px, calc(100vw - 2.5rem)"
+            fetchPriority="high"
+            alt=""
+            className="size-full object-cover"
+          />
         </picture>
       )}
       {/* Fades the image into the page color so the text on top stays readable. */}

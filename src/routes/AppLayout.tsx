@@ -60,7 +60,7 @@ export function AppLayout() {
           aria-label="Deep Cuts, go to Discover"
           className="inline-flex min-h-11.5 shrink-0 items-center lg:min-h-11"
         >
-          <Logo className="h-7 w-auto md:h-8" />
+          <Logo decorative className="h-7 w-auto md:h-8" />
         </Link>
         {/* Grows to fill the row up to a readable width; the auto margins then centre it.
             `min-w-0` lets it shrink below the input's built-in width (else it overflows at 320px). */}

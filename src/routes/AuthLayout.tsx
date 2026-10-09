@@ -30,7 +30,7 @@ export function AuthLayout({ title, children }: { title: string; children: React
           aria-label={`Deep Cuts, go to ${HOME.label}`}
           className="inline-flex min-h-11 items-center"
         >
-          <Logo className="h-7 w-auto" />
+          <Logo decorative className="h-7 w-auto" />
         </Link>
       </header>
 

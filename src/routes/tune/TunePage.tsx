@@ -64,7 +64,7 @@ export function TunePage() {
           aria-label="Deep Cuts, go to Discover"
           className="inline-flex min-h-11 items-center"
         >
-          <Logo className="h-7 w-auto" />
+          <Logo decorative className="h-7 w-auto" />
         </Link>
         <AccountChip />
       </header>
