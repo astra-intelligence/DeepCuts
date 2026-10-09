@@ -380,19 +380,47 @@
   .vhs-bottom {
     background: color-mix(in srgb, var(--color-print-paper) 22%, var(--color-surface));
   }
-  /* The open end: the black cassette inside, with its paper spine label running lengthwise. */
+  /* The open end: the black cassette inside, with a label sticker running lengthwise. The
+     sticker matches the spine: the film's genre color with its title printed on it. */
   .vhs-edge {
-    background:
-      linear-gradient(
-          90deg,
-          transparent 24%,
-          color-mix(in srgb, var(--color-print-paper) 85%, var(--color-surface)) 24% 76%,
-          transparent 76%
-        )
-        center / 100% 86% no-repeat,
-      color-mix(in srgb, var(--color-fg) 5%, var(--color-surface));
+    background: color-mix(in srgb, var(--color-fg) 5%, var(--color-surface));
     box-shadow: inset 0 0 calc(var(--d) * 0.15) var(--color-surface);
   }
+  .vhs-edge-label {
+    display: block;
+  }
+}
+
+/* The cassette's label sticker (cardboard sleeve only): genre color, slightly bleached toward the
+   paper like the genre sticker on the cover, with the title in dark ink. Hidden on the
+   clamshell, whose closed case covers the cassette.
+   It's laid out as a normal horizontal label (86% of the box height long, half the depth wide)
+   and then turned 90° so the title reads top to bottom like the spine. Laying text out
+   vertically inside a box this narrow placed it unreliably, spilling off one side. */
+.vhs-edge-label {
+  display: none;
+  /* Centered on the face, then turned around its own middle. */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  rotate: 90deg;
+  width: calc(var(--h) * 0.86);
+  height: calc(var(--d) * 0.52);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  padding-inline: calc(var(--d) * 0.25);
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--tone) 85%, var(--color-print-paper));
+  color: var(--color-print-ink);
+  font-family: var(--font-brand);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: calc(var(--d) * 0.3);
+  line-height: calc(var(--d) * 0.52);
 }
 
 /* ---- Shadow ------------------------------------------------------------------------------ */

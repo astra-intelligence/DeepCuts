@@ -159,7 +159,9 @@ function VhsCard({ movie }: { movie: MovieSummary }) {
         <span className="vhs-box">
           <span className="vhs-face vhs-top" />
           <span className="vhs-face vhs-bottom vhs-plastic" />
-          <span className="vhs-face vhs-edge vhs-plastic" />
+          <span className="vhs-face vhs-edge vhs-plastic">
+            <span className="vhs-edge-label">{movie.title}</span>
+          </span>
           <span className="vhs-face vhs-spine">
             <span className="vhs-spine-band">{year.slice(2) && `’${year.slice(2)}`}</span>
             <span className="vhs-spine-title">{movie.title}</span>
