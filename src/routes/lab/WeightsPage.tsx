@@ -1,4 +1,5 @@
-// The weights lab (/discover/weights): sliders for the recommendation scorer's weights.
+// The weights lab (/lab/weights, dev server only): sliders for the recommendation scorer's
+// weights. Like every lab it never ships: the route only exists under `npm run dev` (router.tsx).
 import { useState } from 'react'
 import {
   Button,
@@ -10,10 +11,10 @@ import {
 } from 'react-aria-components'
 import { Link, useSearchParams } from 'react-router'
 import { z } from 'zod'
-import { releaseYear } from '../api/tmdb'
-import { EmptyState } from '../components/EmptyState'
-import { HOME } from '../config/features'
-import { PageHeading } from '../components/PageHeading'
+import { releaseYear } from '../../api/tmdb'
+import { EmptyState } from '../../components/EmptyState'
+import { HOME } from '../../config/features'
+import { PageHeading } from '../../components/PageHeading'
 import {
   DEFAULT_WEIGHTS,
   DIVERSITY_PENALTY,
@@ -21,8 +22,8 @@ import {
   SCORE_PARTS,
   type ScorePart,
   type Weights,
-} from '../domain/scorer'
-import { useTaste, type Recommendation } from '../session/useRecommendations'
+} from '../../domain/scorer'
+import { useTaste, type Recommendation } from '../../session/useRecommendations'
 
 // The weights lab (ADR-0026 follow-up): the owner tunes the scorer against their own tags and
 // sees the picks re-rank live. Settings live in the URL (whole numbers, so links stay readable):
@@ -91,7 +92,7 @@ const paramsSchema = z.object({
   [DIVERSITY_KEY]: level(toPercent(DIVERSITY_PENALTY), 20),
 })
 
-/** The weights lab page. Behind the `weightsLab` feature flag. */
+/** The weights lab page. Dev server only (`FEATURES.labs`). */
 export function WeightsPage() {
   const [params, setParams] = useSearchParams()
   const { diversity, ...levels } = paramsSchema.parse(Object.fromEntries(params))
@@ -290,7 +291,7 @@ function Summary({ weights, diversityPenalty }: { weights: Weights; diversityPen
           Copy settings
         </Button>
         <Link
-          to="/discover/weights"
+          to="/lab/weights"
           replace
           preventScrollReset
           className="inline-flex min-h-11 items-center rounded-button px-3.5 text-sm font-semibold text-info"

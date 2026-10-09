@@ -11,7 +11,6 @@ import { RouteError } from './routes/PlaceholderPages'
 // Each loader imports one page module and hands React Router its component.
 const search = async () => ({ Component: (await import('./routes/SearchPage')).SearchPage })
 const discover = async () => ({ Component: (await import('./routes/DiscoverPage')).DiscoverPage })
-const weights = async () => ({ Component: (await import('./routes/WeightsPage')).WeightsPage })
 const lists = async () => ({ Component: (await import('./routes/ListsPage')).ListsPage })
 const account = async () => ({ Component: (await import('./routes/AccountPage')).AccountPage })
 const signIn = async () => ({ Component: (await import('./routes/SignInPage')).SignInPage })
@@ -20,10 +19,19 @@ const detail = async () => ({
   Component: (await import('./routes/MovieDetailPage')).MovieDetailPage,
 })
 const tune = async () => ({ Component: (await import('./routes/tune/TunePage')).TunePage })
-// Design labs: prototypes the owner tunes on the dev server. `import.meta.env.DEV` is false in
-// a production build, so these routes and their code are left out of the shipped app.
+// Labs: design and tuning tools for the owner, on the dev server only (FEATURES.labs). In a
+// production build `import.meta.env.DEV` is false, so this list is empty and the labs' code is
+// left out of the bundle altogether, not just unlinked.
 const vhsLab = async () => ({ Component: (await import('./routes/lab/VhsLabPage')).VhsLabPage })
-const labRoutes: RouteObject[] = import.meta.env.DEV ? [{ path: 'lab/vhs', lazy: vhsLab }] : []
+const weights = async () => ({
+  Component: (await import('./routes/lab/WeightsPage')).WeightsPage,
+})
+const LAB_ROUTES: RouteObject[] = import.meta.env.DEV
+  ? [
+      { path: 'lab/vhs', lazy: vhsLab },
+      { path: 'lab/weights', lazy: weights },
+    ]
+  : []
 
 /**
  * Builds the route table. The landing page is "home": Discover, or Search while the Search page
@@ -42,15 +50,18 @@ export function createRoutes(features: Features = FEATURES): RouteObject[] {
       children: [
         { index: true, element: <Navigate to={home} replace /> },
         { path: 'discover', lazy: discover },
-        features.weightsLab
-          ? { path: 'discover/weights', lazy: weights }
-          : { path: 'discover/weights', element: <Navigate to="/discover" replace /> },
+        // The weights lab's old address (it was live until 2026-10-09): to the lab on the dev
+        // server, to Discover everywhere else.
+        {
+          path: 'discover/weights',
+          element: <Navigate to={features.labs ? '/lab/weights' : '/discover'} replace />,
+        },
         features.searchPage
           ? { path: 'search', lazy: search }
           : { path: 'search', element: <Navigate to={home} replace /> },
         { path: 'lists', lazy: lists },
         { path: 'account', lazy: account },
-        ...labRoutes,
+        ...(features.labs ? LAB_ROUTES : []),
         // Any unknown URL shows the "not found" page inside the shell.
         { path: '*', element: <RouteError /> },
       ],

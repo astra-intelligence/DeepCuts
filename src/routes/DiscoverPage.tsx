@@ -94,10 +94,11 @@ export function DiscoverPage() {
           </ul>
         </section>
       )}
-      {usePicks && FEATURES.weightsLab && (
+      {/* The weights lab is a dev-server tool, so the link only shows there (FEATURES.labs). */}
+      {usePicks && FEATURES.labs && (
         <p className="mt-6 text-sm text-fg-muted">
           Curious how these are ranked?{' '}
-          <Link to="/discover/weights" className="text-info underline">
+          <Link to="/lab/weights" className="text-info underline">
             Tune the weights
           </Link>
         </p>

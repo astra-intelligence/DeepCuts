@@ -236,16 +236,8 @@ test('liking a film tunes Discover, with a match and the reason (ADR-0026)', asy
   await expectNoA11yViolations(page)
   await expectNoHorizontalOverflow(page)
 
-  // The weights lab re-ranks the same picks live; settings go in the URL.
-  await page.getByRole('link', { name: 'Tune the weights' }).click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Tune the weights' })).toBeVisible()
-  await expect(page.getByRole('table')).toBeVisible()
-  const deepCut = page.getByRole('slider', { name: 'Deep cut' })
-  await deepCut.focus()
-  await page.keyboard.press('ArrowRight')
-  await expect(page).toHaveURL(/deepCut=13/)
-  await expectNoA11yViolations(page)
-  await expectNoHorizontalOverflow(page)
+  // The labs are dev-server tools: the live site doesn't link to them or serve them.
+  await expect(page.getByRole('link', { name: 'Tune the weights' })).toHaveCount(0)
 })
 
 test('tag and genre colors reach the page (runtime CSS variables, ADR-0020/0027)', async ({
@@ -270,5 +262,17 @@ test('tag and genre colors reach the page (runtime CSS variables, ADR-0020/0027)
       getComputedStyle(b.querySelector('svg') as Element).color,
     ])
     expect(icon, name).not.toBe(text)
+  }
+})
+
+test('the dev-only labs are not part of the production site', async ({ page }) => {
+  // The weights lab's old live address now goes to Discover.
+  await page.goto('/discover/weights')
+  await expect(page).toHaveURL(/\/discover$/)
+  for (const path of ['/lab/weights', '/lab/vhs']) {
+    await page.goto(path)
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Something went wrong' }),
+    ).toBeVisible()
   }
 })
