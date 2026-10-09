@@ -170,7 +170,7 @@ function VhsCard({ movie }: { movie: MovieSummary }) {
       to={`/movie/${movie.id}`}
       style={genreTone(movie.genre_ids)}
       onPointerMove={follow}
-      className="vhs-card flex min-w-0 flex-1 flex-col rounded-control"
+      className="vhs-card group flex min-w-0 flex-1 flex-col rounded-control focus-visible:shadow-none focus-visible:outline-none"
     >
       {/* The box is decorative (aria-hidden): the title below names the link. */}
       <span aria-hidden="true" className="vhs-scene block">
@@ -201,13 +201,19 @@ function VhsCard({ movie }: { movie: MovieSummary }) {
           </span>
         </span>
       </span>
-      <h3
-        title={movie.title}
-        className="mt-4 mb-1 line-clamp-2 min-h-10 text-sm leading-snug font-semibold"
-      >
-        {movie.title}
-      </h3>
-      <p className="min-h-5 text-sm text-fg-muted">{meta.join(' · ')}</p>
+      {/* Keyboard focus: instead of the app's usual ring around the whole link, which would
+          box in the turning 3D box too, the ring goes around this text block only (owner's call,
+          2026-10-09). The box still turns to the keyboard pose. Same ring as the app's
+          (3px focus color, 3px offset), so it reads as the standard focus indicator. */}
+      <div className="mt-4 rounded-control group-focus-visible:outline-3 group-focus-visible:outline-offset-3 group-focus-visible:outline-focus">
+        <h3
+          title={movie.title}
+          className="mb-1 line-clamp-2 min-h-10 text-sm leading-snug font-semibold"
+        >
+          {movie.title}
+        </h3>
+        <p className="min-h-5 text-sm text-fg-muted">{meta.join(' · ')}</p>
+      </div>
     </Link>
   )
 }
