@@ -33,8 +33,8 @@
   --vhs-depth: 0.24; /* depth as a share of the width */
   --vhs-rest-y: 6deg; /* turn at rest, so the spine always shows a little */
   --vhs-rest-x: -2deg; /* tilt at rest (negative = top toward you) */
-  --vhs-lean-y: 14deg; /* mouse: extra turn with the cursor at the left/right edge */
-  --vhs-lean-x: 8deg; /* mouse: tilt with the cursor at the top/bottom edge */
+  --vhs-lean-y: 24deg; /* mouse: turn with the cursor at the left/right edge */
+  --vhs-lean-x: 12deg; /* mouse: tilt with the cursor at the top/bottom edge */
   --vhs-focus-y: 18deg; /* keyboard focus: fixed turn */
   --vhs-focus-x: -4deg;
   --vhs-scroll-x: 8deg; /* touch: tilt at the top and bottom of the screen */
@@ -81,8 +81,10 @@
 }
 
 /* Mouse: look around the box. The page sets --px/--py from -1 to 1 for where the pointer is over
-   the box (left/top = -1). Starting from the resting angle, the side under the cursor presses
-   away from you, as if pushed, and the far side swings toward you, up to the lean angles:
+   the box (left/top = -1). The box squares up to face you with the cursor in the middle, and
+   the side under the cursor presses away from you, as if pushed, while the far side swings
+   toward you, up to the lean angles. Centered on face-on (not the resting angle) so both sides
+   get the same swing, which is what makes it feel like looking around the box:
      cursor right  → the right side pushes back, showing more of the spine
      cursor left   → the left side pushes back, showing the open end
      cursor bottom → the bottom pushes back, showing the top edge (cursor top: the bottom edge)
@@ -91,8 +93,8 @@
    smooths the pointer's jumps; leaving the box eases it back to rest at the normal speed. */
 @media (hover: hover) {
   .vhs-card:hover .vhs-box {
-    --turn-y: calc(var(--vhs-rest-y) + var(--vhs-lean-y) * var(--px, 0));
-    --turn-x: calc(var(--vhs-rest-x) - var(--vhs-lean-x) * var(--py, 0));
+    --turn-y: calc(var(--vhs-lean-y) * var(--px, 0));
+    --turn-x: calc(var(--vhs-lean-x) * var(--py, 0) * -1);
     --rise: var(--vhs-lift);
     transition-duration: 160ms;
     transition-timing-function: ease-out;

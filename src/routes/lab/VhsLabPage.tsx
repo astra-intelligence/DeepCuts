@@ -25,7 +25,7 @@ interface Settings {
   depth: number
   restY: number
   restX: number
-  /** Mouse: the extra turn (cursor at a side edge) and tilt (top/bottom edge) on top of rest. */
+  /** Mouse: the turn (cursor at a side edge) and tilt (top/bottom edge), from face-on. */
   leanY: number
   leanX: number
   /** Keyboard focus: the fixed turn and tilt. */
@@ -51,8 +51,8 @@ const DEFAULTS: Settings = {
   depth: 0.24,
   restY: 6,
   restX: -2,
-  leanY: 14,
-  leanX: 8,
+  leanY: 24,
+  leanX: 12,
   focusY: 18,
   focusX: -4,
   scrollX: 8,
@@ -206,7 +206,7 @@ function Controls({
   const sliders: [keyof Settings, string, number, number, number, string][] = [
     ['restY', 'Turn at rest', 0, 20, 1, '°'],
     ['restX', 'Tilt at rest', -10, 10, 1, '°'],
-    ['leanY', 'Mouse: extra turn at the sides', 0, 40, 1, '°'],
+    ['leanY', 'Mouse: turn at the sides', 0, 40, 1, '°'],
     ['leanX', 'Mouse: tilt at top/bottom', 0, 25, 1, '°'],
     ['focusY', 'Keyboard: turn on focus', 0, 40, 1, '°'],
     ['focusX', 'Keyboard: tilt on focus', -15, 15, 1, '°'],
