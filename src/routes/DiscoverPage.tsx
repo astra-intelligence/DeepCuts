@@ -206,10 +206,9 @@ function PosterCard({ item }: { item: Item }) {
       // The box follows the mouse over this link and turns when it has keyboard focus.
       data-vhs-target=""
       // Keyboard focus shows on the text block below the box, not around the whole tile, where
-      // the ring would box in the turning 3D box (owner's call, 2026-10-09). A hovered box
-      // swings a little into the gap, so its tile rises above the next one (focus already does,
-      // through the base focus styles).
-      className="group relative flex min-w-0 flex-1 flex-col rounded-control hover:z-1 focus-visible:shadow-none focus-visible:outline-none"
+      // the ring would box in the turning 3D box (owner's call, 2026-10-09). While the mouse
+      // turns the box, the VHS box styles raise the tile above its neighbours.
+      className="group relative flex min-w-0 flex-1 flex-col rounded-control focus-visible:shadow-none focus-visible:outline-none"
     >
       <VhsBox movie={movie} />
       {/* The focus ring: the app's usual ring (3px focus color, 3px gap), drawn around the text

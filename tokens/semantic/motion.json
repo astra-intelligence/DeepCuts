@@ -40,13 +40,6 @@
         "$type": "cubicBezier",
         "$value": "{easing.out}"
       }
-    },
-    "follow": {
-      "duration": {
-        "$type": "duration",
-        "$value": "{duration.150}",
-        "$description": "A VHS box following the mouse: short, to smooth the pointer's jumps without lagging"
-      }
     }
   }
 }
