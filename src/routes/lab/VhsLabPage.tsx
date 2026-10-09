@@ -192,7 +192,11 @@ function VhsCard({ movie }: { movie: MovieSummary }) {
   )
 }
 
-/** The knobs, plus a one-line summary of the current settings to paste back to Claude. */
+/**
+ * The knobs, plus a one-line summary of the current settings to paste back to Claude. The app's
+ * base styles hide the focus ring on bare inputs, so every label wraps its input and carries
+ * `focus-ring-within` to draw the ring around the whole control (index.css).
+ */
 function Controls({
   s,
   set,
@@ -231,7 +235,7 @@ function Controls({
             ['clamshell', 'Rental clamshell (plastic, vinyl overlay)'],
           ] as const
         ).map(([value, label]) => (
-          <label key={value} className="flex items-center gap-2">
+          <label key={value} className="focus-ring-within flex items-center gap-2 rounded-control">
             <input
               type="radio"
               name="case"
@@ -246,7 +250,10 @@ function Controls({
       <fieldset className="flex flex-col gap-1.5 text-sm">
         <legend className="mb-1 font-semibold">Box shape</legend>
         {SHAPES.map((shape) => (
-          <label key={shape.label} className="flex items-center gap-2">
+          <label
+            key={shape.label}
+            className="focus-ring-within flex items-center gap-2 rounded-control"
+          >
             <input
               type="radio"
               name="shape"
@@ -263,7 +270,7 @@ function Controls({
       </fieldset>
       <fieldset className="flex flex-col gap-1.5 text-sm">
         <legend className="mb-1 font-semibold">Keyboard and touch</legend>
-        <label className="flex items-center gap-2">
+        <label className="focus-ring-within flex items-center gap-2 rounded-control">
           <input
             type="checkbox"
             checked={s.freeze}
@@ -272,7 +279,7 @@ function Controls({
           />
           Show every box in its keyboard-focus pose
         </label>
-        <label className="flex items-center gap-2">
+        <label className="focus-ring-within flex items-center gap-2 rounded-control">
           <input
             type="checkbox"
             checked={s.scroll}
@@ -281,7 +288,7 @@ function Controls({
           />
           Phones: tilt the boxes while scrolling
         </label>
-        <label className="flex items-center gap-2">
+        <label className="focus-ring-within flex items-center gap-2 rounded-control">
           <input
             type="checkbox"
             checked={s.scrollPreview}
@@ -293,7 +300,7 @@ function Controls({
         </label>
       </fieldset>
       {sliders.map(([key, label, min, max, step, unit]) => (
-        <label key={key} className="flex flex-col gap-1 text-sm">
+        <label key={key} className="focus-ring-within flex flex-col gap-1 rounded-control text-sm">
           <span className="flex justify-between">
             {label}
             <output className="text-fg-muted tabular-nums">
