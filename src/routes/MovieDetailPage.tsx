@@ -13,7 +13,6 @@ import { Icon } from '../components/Icon'
 import { HOME } from '../config/features'
 import { Logo } from '../components/Logo'
 import { MovieSearch } from '../components/MovieSearch'
-import { useRouteFocus } from '../hooks/useRouteFocus'
 import { SkipLink } from './AppLayout'
 import { DetailTags } from './DetailTags'
 import './MovieDetailPage.css'
@@ -116,17 +115,55 @@ function DetailLayout({
   closing: boolean
   onDismiss: (destination?: string) => void
 }) {
-  useRouteFocus()
+  const layoutRef = useRef<HTMLDivElement>(null)
+  const backRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    // Detail is an overlay-like route. Its Back control is the first meaningful action, so it
+    // receives focus rather than letting the page-heading route helper steal it after data loads.
+    backRef.current?.focus()
+  }, [])
+
+  useEffect(() => {
+    const trapTab = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return
+      const layout = layoutRef.current
+      if (!layout?.contains(document.activeElement)) return
+      // Query only keyboard-reachable controls inside this route. The selector deliberately omits
+      // tabindex=-1 headings and decorative content, while preserving the visible Skip link.
+      const focusable = [
+        ...layout.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ].filter((element) => !element.hasAttribute('inert'))
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (!first || !last) return
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', trapTab)
+    return () => document.removeEventListener('keydown', trapTab)
+  }, [])
+
   return (
     // Once the fade begins this route is no longer actionable; the destination will receive
     // focus through its normal route-focus handling after the animation completes.
     <div
+      ref={layoutRef}
       className="detail-page relative mx-auto min-h-svh w-full max-w-360 overflow-x-clip"
       data-closing={closing || undefined}
       inert={closing}
     >
       <SkipLink />
       <Button
+        ref={backRef}
         onPress={() => onDismiss()}
         aria-label="Back to previous screen"
         className="absolute top-[max(1.125rem,env(safe-area-inset-top))] left-5 z-10 grid size-12 place-items-center rounded-full border border-border-control bg-surface-raised/80 backdrop-blur-md md:fixed"

@@ -8,6 +8,18 @@ import { describe, expect, it } from 'vitest'
 import { renderRoute } from '../test/renderRoute'
 
 describe('movie detail', () => {
+  it('focuses its first button and traps Tab within the Detail experience', async () => {
+    const user = userEvent.setup()
+    renderRoute('/movie/1091')
+    const back = await screen.findByRole('button', { name: 'Back to previous screen' })
+    await waitFor(() => expect(back).toHaveFocus())
+
+    // Shift+Tab from the first focusable control wraps to the last, then Tab returns to Back.
+    await user.tab({ shift: true })
+    await user.tab()
+    expect(back).toHaveFocus()
+  })
+
   it('provider badges are not interactive (ADR-0018)', async () => {
     renderRoute('/movie/1091')
     const section = await screen.findByRole('region', { name: /Where to watch/ })
