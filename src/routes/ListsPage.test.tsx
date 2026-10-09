@@ -1,9 +1,9 @@
 // Tests for My Lists: tagged films appear under their list, `?tag=` filters, and an unknown
-// `?tag=` falls back to Want to see.
+// `?tag=` falls back to Want to see, and from `md` the films are cassettes, not rows.
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderRoute } from '../test/renderRoute'
 
 describe('my lists', () => {
@@ -38,5 +38,30 @@ describe('my lists', () => {
       'aria-current',
       'true',
     )
+  })
+
+  describe('from md (cassettes)', () => {
+    // jsdom has no matchMedia, which useMediaQuery reads as a phone; pretend to be md and up.
+    afterEach(() => vi.unstubAllGlobals())
+
+    it('shows each film as a cassette with its credits', async () => {
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: query === '(min-width: 48rem)',
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }))
+      const user = userEvent.setup()
+      const { router } = renderRoute('/movie/1091')
+      const group = await screen.findByRole('group', { name: 'Your tags' })
+      await user.click(within(group).getByRole('button', { name: 'Seen it' }))
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+      await screen.findByText(/^Saved\./)
+
+      await act(() => router.navigate('/lists?tag=seen'))
+      const tile = await screen.findByRole('link', { name: /The Thing.*1982 · Horror/ })
+      // The cassette tile, not the row: it carries the VHS box hook and the credit lines.
+      expect(tile).toHaveAttribute('data-vhs-target')
+      expect(tile).toHaveTextContent('Director: John Carpenter')
+    })
   })
 })

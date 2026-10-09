@@ -1,26 +1,26 @@
 // Home (/): a concise personal movie shelf with a watchlist preview and recommendations.
 //
-// A large featured film on top, then a grid of 16 more. With likes, the picks come from the
+// Top Ten, then the watchlist, then a featured film and six more as cassettes. With likes, the picks come from the
 // recommendation scorer (ADR-0026) and show a "% match" and why. Without likes, it shows popular
 // films (minus disliked ones) and suggests liking a few films. Every card names the film's
 // director and writer, from its details (the same cached call the Detail page makes).
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { movieQueries } from '../api/queries'
-import { creditsOf, imageUrl, releaseYear, type Credits, type MovieSummary } from '../api/tmdb'
+import { creditsOf, imageUrl, releaseYear, summaryOf } from '../api/tmdb'
 import { FEATURES } from '../config/features'
+import { CassetteCard, type CassetteItem } from '../components/CassetteCard'
 import { EmptyState } from '../components/EmptyState'
+import { Eyebrow } from '../components/Eyebrow'
+import { Because, CreditLines } from '../components/FilmCredits'
 import { GenreSticker } from '../components/GenreSticker'
 import { Icon } from '../components/Icon'
 import { PageHeading } from '../components/PageHeading'
 import { MovieLink } from '../components/MovieLink'
-import { VhsBox } from '../components/VhsBox'
 import { genreTone, primaryGenreName } from '../domain/genres'
+import { MD_UP, useMediaQuery } from '../hooks/useMediaQuery'
 import { useTagQueries } from '../session/tagQueries'
 import { useRecommendations } from '../session/useRecommendations'
-
-// For the eyebrow, e.g. "Tuesday's edit".
-const WEEKDAY = new Intl.DateTimeFormat('en-US', { weekday: 'long' })
 
 /**
  * Home puts personal value before browsing (ADR-0033). Its compact recommendation section uses
@@ -38,7 +38,7 @@ export function HomePage() {
   const usePicks = tuned.hasLikes && (tuned.loading || tuned.recommendations.length > 0)
   // While the scorer is still loading (both passes, ADR-0028), show nothing rather than early
   // picks that would reshuffle when the re-rank arrives.
-  const items: Item[] = usePicks
+  const items: CassetteItem[] = usePicks
     ? (tuned.loading ? [] : tuned.recommendations).map((r) => ({
         movie: r.movie,
         match: r.match,
@@ -66,8 +66,8 @@ export function HomePage() {
   return (
     <>
       <title>Home · Deep Cuts</title>
+      {/* No eyebrow: Home's section labels use that style, so one at the top is clutter. */}
       <PageHeading
-        eyebrow={`${WEEKDAY.format(new Date())}’s shelf`}
         title="Your movies, close at hand"
         lede="The films you love, want to see, and a few worth going deeper for."
       />
@@ -89,21 +89,22 @@ export function HomePage() {
       {featureLoading ? <FeatureSkeleton /> : feature && <FeatureCard item={feature} />}
       {(gridLoading || rest.length > 0) && (
         <section aria-labelledby="deeper" className="mt-6">
-          <h2 id="deeper" className="text-lg font-semibold">
+          <Eyebrow as="h2" id="deeper" tone="contextual">
             Go a little deeper
-          </h2>
-          <p className="mb-2.5 text-sm text-fg-muted">
-            {usePicks
-              ? 'Picked from the films you liked, beyond the obvious.'
-              : 'Popular films worth staying up for. Like a few films to tune these picks to you.'}
-          </p>
+          </Eyebrow>
+          {/* Only the untuned feed explains itself: it's the one line that tells you what to do. */}
+          {!usePicks && (
+            <p className="mb-2.5 text-sm text-fg-muted">
+              Like a few films to tune these picks to you.
+            </p>
+          )}
           {gridLoading ? (
             <PosterGridSkeleton />
           ) : (
             <ul className="grid grid-cols-2 gap-x-4 gap-y-5.5 md:grid-cols-4 lg:grid-cols-5">
               {rest.slice(0, 6).map((item) => (
                 <li key={item.movie.id} className="flex">
-                  <PosterCard item={item} />
+                  <CassetteCard item={item} />
                 </li>
               ))}
             </ul>
@@ -130,12 +131,9 @@ function TopTenPreview() {
       aria-labelledby="top-ten"
       className="mt-6 rounded-card border border-card-border bg-card-bg p-4 shadow-card md:p-5"
     >
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 id="top-ten" className="font-display text-2xl">
-          Top Ten
-        </h2>
-        <span className="text-sm font-semibold text-fg-muted">Your favourites</span>
-      </div>
+      <Eyebrow as="h2" id="top-ten" tone="contextual" className="">
+        Top Ten
+      </Eyebrow>
       <p className="mt-2 max-w-prose text-sm leading-relaxed text-fg-muted">
         Your all-time favourites, in your order. Building and sharing this list is the next project.
       </p>
@@ -143,8 +141,13 @@ function TopTenPreview() {
   )
 }
 
-/** A short, useful preview of the existing watchlist, with My Lists as the full destination. */
+/**
+ * A short, useful preview of the existing watchlist, with My Lists as the full destination.
+ * Rows on phones; from `md`, cassettes in the same columns as the picks below, so every cassette
+ * on the page is one size (owner, 2026-10-09: phones unchanged).
+ */
 function WatchlistPreview() {
+  const mdUp = useMediaQuery(MD_UP)
   const queries = useTagQueries()
   const ids = useQuery(queries.list('watchlist')).data ?? []
   // Three rows keep Home scannable; My Lists remains the complete collection.
@@ -155,12 +158,9 @@ function WatchlistPreview() {
   return (
     <section aria-labelledby="watchlist" className="mt-6">
       <div className="flex items-baseline justify-between gap-4 border-b border-border pb-2">
-        <div>
-          <h2 id="watchlist" className="text-lg font-semibold">
-            Movies I want to watch
-          </h2>
-          <p className="mt-0.5 text-sm text-fg-muted">Saved for the right night.</p>
-        </div>
+        <Eyebrow as="h2" id="watchlist" tone="contextual" className="">
+          Movies I want to watch
+        </Eyebrow>
         <Link
           to="/lists?tag=watchlist"
           className="inline-flex min-h-11 items-center text-sm font-semibold text-info underline"
@@ -168,7 +168,15 @@ function WatchlistPreview() {
           See all
         </Link>
       </div>
-      {movies.length > 0 ? (
+      {movies.length > 0 && mdUp ? (
+        <ul className="mt-3 grid grid-cols-4 gap-x-4 gap-y-5.5 lg:grid-cols-5">
+          {movies.map((movie) => (
+            <li key={movie.id} className="flex">
+              <CassetteCard item={{ movie: summaryOf(movie), credits: creditsOf(movie) }} />
+            </li>
+          ))}
+        </ul>
+      ) : movies.length > 0 ? (
         <ul className="mt-3 grid gap-3 md:grid-cols-3">
           {movies.map((movie) => (
             <li
@@ -239,54 +247,8 @@ function PosterGridSkeleton() {
   )
 }
 
-/** A film in the feed, with its match and reasons when it came from the scorer. */
-interface Item {
-  movie: MovieSummary
-  match?: number
-  because?: string[]
-  /** Director and writer names, once the film's details have loaded. */
-  credits?: Credits
-}
-
-/** "Because you liked Alien and The Thing" */
-function Because({ titles }: { titles: string[] | undefined }) {
-  if (!titles?.length) return null
-  return (
-    <span className="mt-1 block text-sm text-fg-muted">
-      Because you liked <cite className="text-fg not-italic">{titles.join(' and ')}</cite>
-    </span>
-  )
-}
-
-/**
- * "Director: John Carpenter" and "Writer: Bill Lancaster" (plural with two names). A line is
- * left out when TMDB has no such credit, and both are left out until the details load.
- */
-function CreditLines({ credits }: { credits: Credits | undefined }) {
-  const lines = [
-    {
-      label: (credits?.directors.length ?? 0) > 1 ? 'Directors' : 'Director',
-      names: credits?.directors ?? [],
-    },
-    {
-      label: (credits?.writers.length ?? 0) > 1 ? 'Writers' : 'Writer',
-      names: credits?.writers ?? [],
-    },
-  ].filter((l) => l.names.length > 0)
-  return (
-    // Two reserved text rows let credits arrive without moving this card or anything below it.
-    <span data-credit-lines="" className="mt-1 block min-h-10">
-      {lines.map((l) => (
-        <span key={l.label} className="block text-sm text-fg-muted">
-          {l.label}: <span className="text-fg">{l.names.join(', ')}</span>
-        </span>
-      ))}
-    </span>
-  )
-}
-
 // The large card at the top: the film's image with its title, match and reasons over a fade.
-function FeatureCard({ item }: { item: Item }) {
+function FeatureCard({ item }: { item: CassetteItem }) {
   const { movie } = item
   const poster = imageUrl(movie.poster_path, 'w780')
   const backdrop = imageUrl(movie.backdrop_path, 'w1280')
@@ -340,49 +302,6 @@ function FeatureCard({ item }: { item: Item }) {
         <Because titles={item.because} />
         <CreditLines credits={item.credits} />
         <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-info">
-          <Icon name="eye" className="size-4" /> View details
-        </span>
-      </div>
-    </Link>
-  )
-}
-
-// One tile in the grid: the film as a VHS box (VhsBox, design approved 2026-10-09), then its
-// title, year · genre, match, the first reason, director and writer.
-function PosterCard({ item }: { item: Item }) {
-  const { movie } = item
-  const meta = [releaseYear(movie.release_date), primaryGenreName(movie.genre_ids)].filter(Boolean)
-  return (
-    <Link
-      to={`/movie/${movie.id}`}
-      style={genreTone(movie.genre_ids)}
-      // The box follows the mouse over this link and turns when it has keyboard focus.
-      data-vhs-target=""
-      // Keyboard focus shows on the text block below the box, not around the whole tile, where
-      // the ring would box in the turning 3D box (owner's call, 2026-10-09). While the mouse
-      // turns the box, the VHS box styles raise the tile above its neighbours.
-      className="group relative flex min-w-0 flex-1 flex-col rounded-control focus-visible:shadow-none focus-visible:outline-none"
-    >
-      <VhsBox movie={movie} />
-      {/* The focus ring: the app's usual ring (3px focus color, 3px gap), drawn around the text
-          while the link has keyboard focus. It's the whole visible indicator, so it must never
-          be clipped or covered (WCAG 2.4.7, 2.4.11; ADR-0009). */}
-      <div className="mt-3 flex flex-1 flex-col rounded-control group-focus-visible:outline-3 group-focus-visible:outline-offset-3 group-focus-visible:outline-focus">
-        {/* Two lines at most, then an ellipsis. The clamp is visual only: the full title stays
-            in the page, so it's still the link's accessible name, and `title` shows it on hover. */}
-        <h3
-          title={movie.title}
-          className="mb-1 line-clamp-2 min-h-10 text-sm leading-snug font-semibold"
-        >
-          {movie.title}
-        </h3>
-        <p className="min-h-5 text-sm text-fg-muted">{meta.join(' · ')}</p>
-        {item.match !== undefined && (
-          <p className="text-sm font-bold text-accent">{item.match}% match</p>
-        )}
-        <Because titles={item.because?.slice(0, 1)} />
-        <CreditLines credits={item.credits} />
-        <span className="mt-auto inline-flex items-center gap-1.5 pt-2.5 text-sm font-semibold text-info">
           <Icon name="eye" className="size-4" /> View details
         </span>
       </div>

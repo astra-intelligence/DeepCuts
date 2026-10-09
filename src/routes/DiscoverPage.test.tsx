@@ -108,7 +108,9 @@ describe('home', () => {
     'ignores %s: favourite genres are gone (ADR-0032)',
     async (qs) => {
       renderRoute(`/${qs}`)
-      expect(await screen.findByText(/^Popular films worth staying up for\./)).toBeInTheDocument()
+      expect(
+        await screen.findByText('Like a few films to tune these picks to you.'),
+      ).toBeInTheDocument()
     },
   )
 })
@@ -124,10 +126,11 @@ describe('home with likes (ADR-0026)', () => {
     await screen.findByText(/^Saved\./)
     await act(() => router.navigate('/'))
 
-    expect(
-      await screen.findByText('Picked from the films you liked, beyond the obvious.'),
-    ).toBeInTheDocument()
     const feature = await screen.findByRole('link', { name: /Today’s featured deep cut/ })
+    // Tuned picks drop the "like a few films" hint.
+    expect(
+      screen.queryByText('Like a few films to tune these picks to you.'),
+    ).not.toBeInTheDocument()
     expect(feature).toHaveTextContent(/\d+% match/)
     expect(feature).toHaveTextContent('Because you liked The Thing')
     // The re-rank loaded the top candidates' directors (ADR-0028): The Fog shares John Carpenter
