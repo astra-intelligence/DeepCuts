@@ -115,16 +115,21 @@
     transform: rotateX(var(--vhs-scroll-x)) rotateY(var(--vhs-rest-y));
   }
 }
+/* The tilt runs from a box's top edge appearing to its bottom edge leaving, but reaches its
+   full angle only while the box is wholly on screen (`contain`): with the default range, half
+   the sweep happened off screen and the visible tilt was too slight to notice. */
 @supports (animation-timeline: view()) {
   @media (hover: none) {
     .vhs-lab[data-scroll] .vhs-box {
       animation: vhs-shelf linear both;
       animation-timeline: view();
+      animation-range: contain;
     }
   }
   .vhs-lab[data-scroll][data-scroll-preview] .vhs-box {
     animation: vhs-shelf linear both;
     animation-timeline: view();
+    animation-range: contain;
   }
 }
 

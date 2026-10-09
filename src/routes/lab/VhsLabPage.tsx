@@ -6,7 +6,14 @@
 // itself is plain CSS in vhs-box.css; this page only renders the faces and feeds the knobs to it
 // as CSS variables. Once a look is approved it moves into tokens and the real PosterCard.
 import { useQuery } from '@tanstack/react-query'
-import { useState, type CSSProperties, type PointerEvent } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+  type ReactNode,
+} from 'react'
 import { Link } from 'react-router'
 import { movieQueries } from '../../api/queries'
 import { imageUrl, releaseYear, type MovieSummary } from '../../api/tmdb'
@@ -78,11 +85,18 @@ const SHAPES = [
   { label: 'Poster (2:3, no crop)', aspect: 0.667, depth: 0.24 },
 ]
 
-/** The lab page: control panel on top, a grid of boxes under it. */
+/**
+ * The lab page. On wide screens (lg) the control panel is a sticky sidebar beside the boxes, so
+ * they stay in view while you tune; on narrower screens the panel sits above them.
+ */
 export function VhsLabPage() {
   const [s, setS] = useState<Settings>(DEFAULTS)
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) =>
     setS((prev) => ({ ...prev, [key]: value }))
+  // Which panel section has focus. While you adjust a Keyboard or Touch control, the boxes
+  // preview that motion, since otherwise nothing on screen would change: the keyboard pose
+  // needs a focused box (and focus is on the slider), and the scroll tilt only runs on phones.
+  const [tuning, setTuning] = useState<Section | null>(null)
   const films = (useQuery(movieQueries.discover()).data?.results ?? []).slice(0, 15)
 
   // The knobs as the CSS variables vhs-box.css reads.
@@ -100,6 +114,8 @@ export function VhsLabPage() {
     '--vhs-perspective': `${s.perspective}px`,
     '--vhs-speed': `${s.speed}ms`,
   } as CSSProperties
+  const freeze = s.freeze || tuning === 'keyboard'
+  const scrollPreview = s.scroll && (s.scrollPreview || tuning === 'touch')
 
   return (
     <div
@@ -107,23 +123,25 @@ export function VhsLabPage() {
       style={vars}
       data-case={s.caseType}
       data-scroll={s.scroll || undefined}
-      data-scroll-preview={s.scrollPreview || undefined}
-      data-freeze={s.freeze || undefined}
+      data-scroll-preview={scrollPreview || undefined}
+      data-freeze={freeze || undefined}
     >
       <title>VHS box lab · Deep Cuts</title>
       <PageHeading
         eyebrow="Design lab · dev only"
         title="VHS box hover"
-        lede="Move the mouse over a box to look around it, tab to one for the keyboard turn (Option+Tab in Safari), and scroll on a phone. Tune it below, then send me the settings line."
+        lede="Move the mouse over a box to look around it, tab to one for the keyboard turn (Option+Tab in Safari), and scroll on a phone. Tune it here, then send me the settings line."
       />
-      <Controls s={s} set={set} reset={() => setS(DEFAULTS)} />
-      <ul className="mt-8 grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-4 lg:grid-cols-5">
-        {films.map((movie) => (
-          <li key={movie.id} className="flex">
-            <VhsCard movie={movie} />
-          </li>
-        ))}
-      </ul>
+      <div className="mt-4 grid gap-8 lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start">
+        <Controls s={s} set={set} reset={() => setS(DEFAULTS)} onTuning={setTuning} />
+        <ul className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4">
+          {films.map((movie) => (
+            <li key={movie.id} className="flex">
+              <VhsCard movie={movie} />
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   )
 }
@@ -194,116 +212,93 @@ function VhsCard({ movie }: { movie: MovieSummary }) {
   )
 }
 
+/** The panel's sections. Focus inside Keyboard or Touch previews that motion on the boxes. */
+type Section = 'box' | 'mouse' | 'keyboard' | 'touch'
+
+/** A slider: [setting, label, min, max, step, unit]. */
+type Slider = [keyof Settings, string, number, number, number, string]
+
+const SLIDERS: Record<Section, Slider[]> = {
+  box: [
+    ['depth', 'Depth (share of width)', 0.12, 0.35, 0.005, ''],
+    ['restY', 'Turn at rest', 0, 20, 1, '°'],
+    ['restX', 'Tilt at rest', -10, 10, 1, '°'],
+    ['perspective', 'Perspective', 500, 2500, 50, 'px'],
+  ],
+  mouse: [
+    ['leanY', 'Turn at the sides', 0, 40, 1, '°'],
+    ['leanX', 'Tilt at top and bottom', 0, 25, 1, '°'],
+    ['lift', 'Lift (also on focus)', 0, 20, 1, 'px'],
+    ['speed', 'Speed back to rest', 150, 1200, 25, 'ms'],
+  ],
+  keyboard: [
+    ['focusY', 'Turn on focus', 0, 40, 1, '°'],
+    ['focusX', 'Tilt on focus', -15, 15, 1, '°'],
+  ],
+  touch: [['scrollX', 'Tilt at the top and bottom of the screen', 0, 25, 1, '°']],
+}
+
 /**
- * The knobs, plus a one-line summary of the current settings to paste back to Claude. The app's
- * base styles hide the focus ring on bare inputs, so every label wraps its input and carries
+ * The knobs, in sections, plus a one-line summary of the current settings to paste back to
+ * Claude. On wide screens it's a sticky sidebar that scrolls on its own. The app's base styles
+ * hide the focus ring on bare inputs, so every label wraps its input and carries
  * `focus-ring-within` to draw the ring around the whole control (index.css).
+ * @param onTuning - Called with the section that has focus (null when focus leaves the panel).
  */
 function Controls({
   s,
   set,
   reset,
+  onTuning,
 }: {
   s: Settings
   set: <K extends keyof Settings>(key: K, value: Settings[K]) => void
   reset: () => void
+  onTuning: (section: Section | null) => void
 }) {
-  // Every slider: [setting, label, min, max, step, unit].
-  const sliders: [keyof Settings, string, number, number, number, string][] = [
-    ['restY', 'Turn at rest', 0, 20, 1, '°'],
-    ['restX', 'Tilt at rest', -10, 10, 1, '°'],
-    ['leanY', 'Mouse: turn at the sides', 0, 40, 1, '°'],
-    ['leanX', 'Mouse: tilt at top/bottom', 0, 25, 1, '°'],
-    ['focusY', 'Keyboard: turn on focus', 0, 40, 1, '°'],
-    ['focusX', 'Keyboard: tilt on focus', -15, 15, 1, '°'],
-    ['scrollX', 'Touch: tilt while scrolling', 0, 20, 1, '°'],
-    ['depth', 'Depth (share of width)', 0.12, 0.35, 0.005, ''],
-    ['lift', 'Lift on hover/focus', 0, 20, 1, 'px'],
-    ['perspective', 'Perspective', 500, 2500, 50, 'px'],
-    ['speed', 'Speed', 150, 1200, 25, 'ms'],
-  ]
+  // Focus or a press in a section previews that section's motion; focus or a press anywhere
+  // else stops it. Presses count separately because Safari doesn't focus sliders and checkboxes
+  // on click. Native focusin/focusout/pointerdown bubble, so a few listeners cover every control.
+  const form = useRef<HTMLFormElement>(null)
+  useEffect(() => {
+    const el = form.current
+    if (!el) return
+    const sectionOf = (target: EventTarget | null) =>
+      ((target as HTMLElement | null)?.closest<HTMLElement>('[data-section]')?.dataset.section as
+        Section | undefined) ?? null
+    const onIn = (e: FocusEvent) => onTuning(sectionOf(e.target))
+    const onOut = (e: FocusEvent) => {
+      if (!el.contains(e.relatedTarget as Node | null)) onTuning(null)
+    }
+    const onPress = (e: Event) =>
+      onTuning(el.contains(e.target as Node) ? sectionOf(e.target) : null)
+    el.addEventListener('focusin', onIn)
+    el.addEventListener('focusout', onOut)
+    document.addEventListener('pointerdown', onPress)
+    return () => {
+      el.removeEventListener('focusin', onIn)
+      el.removeEventListener('focusout', onOut)
+      document.removeEventListener('pointerdown', onPress)
+    }
+  }, [onTuning])
+
   const summary = `case=${s.caseType} shape=${s.aspect} depth=${s.depth} rest=${s.restY}°/${s.restX}° mouse=${s.leanY}°/${s.leanX}° focus=${s.focusY}°/${s.focusX}° scroll=${s.scroll ? `${s.scrollX}°` : 'off'} lift=${s.lift}px perspective=${s.perspective}px speed=${s.speed}ms`
 
-  return (
-    <form
-      className="mt-4 grid gap-4 rounded-card border border-card-border bg-card-bg p-4 shadow-card md:grid-cols-2 lg:grid-cols-3"
-      onSubmit={(e) => e.preventDefault()}
+  // One section of the panel. Its `data-section` tells the form's focus handler (below) which
+  // motion you're tuning.
+  const section = (id: Section, legend: string, hint: string, extra?: ReactNode) => (
+    <fieldset
+      data-section={id}
+      className="flex flex-col gap-3 border-t border-border pt-4 text-sm first:border-t-0 first:pt-0"
     >
-      <fieldset className="flex flex-col gap-1.5 text-sm">
-        <legend className="mb-1 font-semibold">Case</legend>
-        {(
-          [
-            ['sleeve', 'Cardboard sleeve (matte card)'],
-            ['clamshell', 'Rental clamshell (plastic, vinyl overlay)'],
-          ] as const
-        ).map(([value, label]) => (
-          <label key={value} className="focus-ring-within flex items-center gap-2 rounded-control">
-            <input
-              type="radio"
-              name="case"
-              checked={s.caseType === value}
-              onChange={() => set('caseType', value)}
-              className="accent-slider-fill"
-            />
-            {label}
-          </label>
-        ))}
-      </fieldset>
-      <fieldset className="flex flex-col gap-1.5 text-sm">
-        <legend className="mb-1 font-semibold">Box shape</legend>
-        {SHAPES.map((shape) => (
-          <label
-            key={shape.label}
-            className="focus-ring-within flex items-center gap-2 rounded-control"
-          >
-            <input
-              type="radio"
-              name="shape"
-              checked={s.aspect === shape.aspect}
-              onChange={() => {
-                set('aspect', shape.aspect)
-                set('depth', shape.depth)
-              }}
-              className="accent-slider-fill"
-            />
-            {shape.label}
-          </label>
-        ))}
-      </fieldset>
-      <fieldset className="flex flex-col gap-1.5 text-sm">
-        <legend className="mb-1 font-semibold">Keyboard and touch</legend>
-        <label className="focus-ring-within flex items-center gap-2 rounded-control">
-          <input
-            type="checkbox"
-            checked={s.freeze}
-            onChange={(e) => set('freeze', e.target.checked)}
-            className="accent-slider-fill"
-          />
-          Show every box in its keyboard-focus pose
-        </label>
-        <label className="focus-ring-within flex items-center gap-2 rounded-control">
-          <input
-            type="checkbox"
-            checked={s.scroll}
-            onChange={(e) => set('scroll', e.target.checked)}
-            className="accent-slider-fill"
-          />
-          Phones: tilt the boxes while scrolling
-        </label>
-        <label className="focus-ring-within flex items-center gap-2 rounded-control">
-          <input
-            type="checkbox"
-            checked={s.scrollPreview}
-            disabled={!s.scroll}
-            onChange={(e) => set('scrollPreview', e.target.checked)}
-            className="accent-slider-fill"
-          />
-          Preview the scroll tilt on this screen
-        </label>
-      </fieldset>
-      {sliders.map(([key, label, min, max, step, unit]) => (
-        <label key={key} className="focus-ring-within flex flex-col gap-1 rounded-control text-sm">
-          <span className="flex justify-between">
+      <legend className="contents">
+        <span className="font-semibold">{legend}</span>
+      </legend>
+      <p className="-mt-2 text-fg-muted">{hint}</p>
+      {extra}
+      {SLIDERS[id].map(([key, label, min, max, step, unit]) => (
+        <label key={key} className="focus-ring-within flex flex-col gap-1 rounded-control">
+          <span className="flex justify-between gap-2">
             {label}
             <output className="text-fg-muted tabular-nums">
               {String(s[key])}
@@ -321,7 +316,110 @@ function Controls({
           />
         </label>
       ))}
-      <div className="flex flex-col gap-2 text-sm md:col-span-2 lg:col-span-3">
+    </fieldset>
+  )
+
+  // A radio or checkbox row.
+  const option = (control: ReactNode, label: string, key?: string) => (
+    <label key={key} className="focus-ring-within flex items-center gap-2 rounded-control">
+      {control}
+      {label}
+    </label>
+  )
+
+  return (
+    <form
+      ref={form}
+      className="flex flex-col gap-5 rounded-card border border-card-border bg-card-bg p-4 shadow-card lg:sticky lg:top-24 lg:max-h-[calc(100dvh-12rem)] lg:overflow-y-auto"
+      onSubmit={(e) => e.preventDefault()}
+    >
+      {section(
+        'box',
+        'Box',
+        'The case, its shape and how it sits at rest.',
+        <>
+          <div className="flex flex-col gap-1.5" role="radiogroup" aria-label="Case">
+            {(
+              [
+                ['sleeve', 'Cardboard sleeve (matte card)'],
+                ['clamshell', 'Rental clamshell (plastic, vinyl overlay)'],
+              ] as const
+            ).map(([value, label]) =>
+              option(
+                <input
+                  type="radio"
+                  name="case"
+                  checked={s.caseType === value}
+                  onChange={() => set('caseType', value)}
+                  className="accent-slider-fill"
+                />,
+                label,
+                value,
+              ),
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5" role="radiogroup" aria-label="Box shape">
+            {SHAPES.map((shape) =>
+              option(
+                <input
+                  type="radio"
+                  name="shape"
+                  checked={s.aspect === shape.aspect}
+                  onChange={() => {
+                    set('aspect', shape.aspect)
+                    set('depth', shape.depth)
+                  }}
+                  className="accent-slider-fill"
+                />,
+                shape.label,
+                shape.label,
+              ),
+            )}
+          </div>
+        </>,
+      )}
+      {section('mouse', 'Mouse', 'Hover a box and move around it to try these.')}
+      {section(
+        'keyboard',
+        'Keyboard',
+        'Every box shows the keyboard pose while you adjust these.',
+        option(
+          <input
+            type="checkbox"
+            checked={s.freeze}
+            onChange={(e) => set('freeze', e.target.checked)}
+            className="accent-slider-fill"
+          />,
+          'Keep showing it on every box',
+        ),
+      )}
+      {section(
+        'touch',
+        'Touch (phones)',
+        'Boxes tilt as they scroll past. The preview runs while you adjust this; scroll the page to see the tilt change.',
+        <>
+          {option(
+            <input
+              type="checkbox"
+              checked={s.scroll}
+              onChange={(e) => set('scroll', e.target.checked)}
+              className="accent-slider-fill"
+            />,
+            'Tilt the boxes while scrolling',
+          )}
+          {option(
+            <input
+              type="checkbox"
+              checked={s.scrollPreview}
+              disabled={!s.scroll}
+              onChange={(e) => set('scrollPreview', e.target.checked)}
+              className="accent-slider-fill"
+            />,
+            'Keep the preview on (here, with a mouse)',
+          )}
+        </>,
+      )}
+      <div className="flex flex-col gap-2 border-t border-border pt-4 text-sm">
         <code className="rounded-control bg-surface-overlay p-2 break-all text-fg-muted">
           {summary}
         </code>
