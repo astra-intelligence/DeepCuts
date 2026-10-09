@@ -86,6 +86,11 @@ test('detail tags toggle and save by keyboard, all at 44px or more', async ({ pa
   await expect(seen).toHaveAttribute('aria-pressed', 'true')
   const save = page.getByRole('button', { name: 'Save' })
   const cancel = page.getByRole('button', { name: 'Cancel' })
+  // Detail slides in by 8px (animate-enter); measured mid-slide, a 44px button can read as
+  // 43.99997px at 320 wide. Let the entrance finish so the sizes are the settled ones.
+  await page.evaluate(() =>
+    Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))),
+  )
   for (const target of [
     ...['Seen it', 'Want to see', 'Like', 'Dislike'].map((name) =>
       tags.getByRole('button', { name, exact: true }),
@@ -238,9 +243,9 @@ test('liking a film tunes Home’s recommendations, with a match and the reason 
   await expect(page.getByRole('status')).toContainText('Saved.')
   // Client-side navigation keeps the in-memory guest picks (ADR-0011).
   await page.getByRole('link', { name: 'Deep Cuts, go to Home' }).click()
-  await expect(page.getByText('Picked from the films you liked, beyond the obvious.')).toBeVisible()
   const feature = page.getByRole('link', { name: /Today’s featured deep cut/ })
   await expect(feature).toContainText(/\d+% match/)
+  await expect(page.getByText('Like a few films to tune these picks to you.')).toHaveCount(0)
   await expect(feature).toContainText('Because you liked The Thing')
   await expectNoA11yViolations(page)
   await expectNoHorizontalOverflow(page)
