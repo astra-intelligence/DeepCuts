@@ -262,15 +262,22 @@ test('tag and genre colors reach the page (runtime CSS variables, ADR-0020/0027)
     return names.filter((n) => !root.getPropertyValue(n).trim())
   })
   expect(missing).toEqual([])
-  // Each unselected toggle's icon wears its tag color, not the button's muted text color.
+  // Each unselected toggle's icon wears its own tag color. Compare against the tag's resolved
+  // color rather than the label's: Like's tag color is the same near-white as label text.
   const group = page.getByRole('group', { name: 'Your tags' })
-  for (const name of ['Seen it', 'Want to see', 'Like', 'Dislike']) {
+  const tags = { 'Seen it': 'seen', 'Want to see': 'watchlist', Like: 'liked', Dislike: 'disliked' }
+  for (const [name, tag] of Object.entries(tags)) {
     const button = group.getByRole('button', { name, exact: true })
-    const [text, icon] = await button.evaluate((b) => [
-      getComputedStyle(b).color,
-      getComputedStyle(b.querySelector('svg') as Element).color,
-    ])
-    expect(icon, name).not.toBe(text)
+    const [expected, icon] = await button.evaluate((b, t) => {
+      // Resolve the variable through a probe element so both sides are rgb() strings.
+      const probe = document.createElement('span')
+      probe.style.color = `var(--color-tag-${t})`
+      document.body.append(probe)
+      const resolved = getComputedStyle(probe).color
+      probe.remove()
+      return [resolved, getComputedStyle(b.querySelector('svg') as Element).color]
+    }, tag)
+    expect(icon, name).toBe(expected)
   }
 })
 
