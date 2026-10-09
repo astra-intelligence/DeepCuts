@@ -25,44 +25,57 @@ interface Settings {
   depth: number
   restY: number
   restX: number
-  hoverY: number
-  hoverX: number
-  /** Follow mode: the most the box turns (cursor at a side edge) and tilts (top/bottom edge). */
+  /** Mouse: the extra turn (cursor at a side edge) and tilt (top/bottom edge) on top of rest. */
   leanY: number
   leanX: number
+  /** Keyboard focus: the fixed turn and tilt. */
+  focusY: number
+  focusX: number
+  /** Touch: the tilt at the top and bottom of the screen while scrolling. */
+  scrollX: number
   lift: number
   perspective: number
   speed: number
-  /** Follow the mouse (look around the box), or turn to a fixed pose on hover. */
-  mode: 'turn' | 'follow'
-  /** Show every box in its hover pose, to compare without hovering. */
+  /** Touch: tilt the boxes as they scroll past (phones only). */
+  scroll: boolean
+  /** Show the scroll tilt on this screen too, to try it with a mouse wheel. */
+  scrollPreview: boolean
+  /** Show every box in its keyboard-focus pose, to compare without tabbing. */
   freeze: boolean
 }
 
-// Starting values: real cardboard-sleeve proportions, following the mouse (see vhs-box.css).
+// Starting values: real cardboard-sleeve proportions and gentle angles (see vhs-box.css).
 const DEFAULTS: Settings = {
   caseType: 'sleeve',
-  aspect: 0.55,
-  depth: 0.23,
+  aspect: 0.547,
+  depth: 0.24,
   restY: 6,
   restX: -2,
-  hoverY: 24,
-  hoverX: -6,
-  leanY: 32,
-  leanX: 16,
-  lift: 6,
+  leanY: 14,
+  leanX: 8,
+  focusY: 18,
+  focusX: -4,
+  scrollX: 8,
+  lift: 4,
   perspective: 1100,
   speed: 450,
-  mode: 'follow',
+  scroll: true,
+  scrollPreview: false,
   freeze: false,
 }
 
-// Box shapes to choose from. Posters are 2:3; real tape boxes are narrower, so the art is cropped
-// at the sides (as it was on real covers).
+// Box shapes to choose from, W × H × D, checked 2026-10-09. Picking one sets both the shape
+// (width / height) and the depth (share of the width). Posters are 2:3; real tape boxes are
+// narrower, so the art is cropped at the sides (as it was on real covers).
+// Sources: the sleeve and clamshell from Pacdora's VHS box template
+// (https://www.pacdora.com/tools/vhs-box-template); the wide rental clamshell from a case
+// maker's listing, 8 3/16" × 5 11/16" × 1 3/32"
+// (https://www.duplication.com/vhs-clamshell-case-brand-new.html).
 const SHAPES = [
-  { label: 'Clamshell (135 × 208 mm)', value: 0.6 },
-  { label: 'Sleeve (105 × 190 mm)', value: 0.55 },
-  { label: 'Poster (2:3, no crop)', value: 0.667 },
+  { label: 'Cardboard sleeve (104 × 190 × 25 mm)', aspect: 0.547, depth: 0.24 },
+  { label: 'Clamshell (120 × 201 × 27 mm)', aspect: 0.597, depth: 0.225 },
+  { label: 'Wide rental clamshell (144 × 208 × 28 mm)', aspect: 0.692, depth: 0.193 },
+  { label: 'Poster (2:3, no crop)', aspect: 0.667, depth: 0.24 },
 ]
 
 /** The lab page: control panel on top, a grid of boxes under it. */
@@ -78,10 +91,11 @@ export function VhsLabPage() {
     '--vhs-depth': s.depth,
     '--vhs-rest-y': `${s.restY}deg`,
     '--vhs-rest-x': `${s.restX}deg`,
-    '--vhs-hover-y': `${s.hoverY}deg`,
-    '--vhs-hover-x': `${s.hoverX}deg`,
     '--vhs-lean-y': `${s.leanY}deg`,
     '--vhs-lean-x': `${s.leanX}deg`,
+    '--vhs-focus-y': `${s.focusY}deg`,
+    '--vhs-focus-x': `${s.focusX}deg`,
+    '--vhs-scroll-x': `${s.scrollX}deg`,
     '--vhs-lift': `${-s.lift}px`,
     '--vhs-perspective': `${s.perspective}px`,
     '--vhs-speed': `${s.speed}ms`,
@@ -92,14 +106,15 @@ export function VhsLabPage() {
       className="vhs-lab"
       style={vars}
       data-case={s.caseType}
-      data-mode={s.mode}
+      data-scroll={s.scroll || undefined}
+      data-scroll-preview={s.scrollPreview || undefined}
       data-freeze={s.freeze || undefined}
     >
       <title>VHS box lab · Deep Cuts</title>
       <PageHeading
         eyebrow="Design lab · dev only"
         title="VHS box hover"
-        lede="Hover a box (or tab to it) to see the turn. Tune it below, then send me the settings line."
+        lede="Move the mouse over a box to look around it, tab to one for the keyboard turn, and scroll on a phone. Tune it below, then send me the settings line."
       />
       <Controls s={s} set={set} reset={() => setS(DEFAULTS)} />
       <ul className="mt-8 grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-4 lg:grid-cols-5">
@@ -119,7 +134,7 @@ function VhsCard({ movie }: { movie: MovieSummary }) {
   const year = releaseYear(movie.release_date)
   const meta = [year, primaryGenreName(movie.genre_ids)].filter(Boolean)
 
-  // Follow mode: where the pointer is over the box, from -1 (left/top) to 1 (right/bottom).
+  // Mouse: where the pointer is over the box, from -1 (left/top) to 1 (right/bottom).
   // Measured against the box, not the whole link, so the title lines below don't count; over
   // the title it stays at the bottom edge (clamped to 1). Written straight to CSS variables
   // rather than React state, so moving the mouse doesn't re-render anything.
@@ -191,16 +206,17 @@ function Controls({
   const sliders: [keyof Settings, string, number, number, number, string][] = [
     ['restY', 'Turn at rest', 0, 20, 1, '°'],
     ['restX', 'Tilt at rest', -10, 10, 1, '°'],
-    ['leanY', 'Follow: max turn (sides)', 0, 50, 1, '°'],
-    ['leanX', 'Follow: max tilt (top/bottom)', 0, 30, 1, '°'],
-    ['hoverY', 'Fixed: turn on hover', 0, 45, 1, '°'],
-    ['hoverX', 'Fixed: tilt on hover', -15, 15, 1, '°'],
-    ['depth', 'Depth (share of width)', 0.12, 0.35, 0.01, ''],
-    ['lift', 'Lift on hover', 0, 20, 1, 'px'],
+    ['leanY', 'Mouse: extra turn at the sides', 0, 40, 1, '°'],
+    ['leanX', 'Mouse: tilt at top/bottom', 0, 25, 1, '°'],
+    ['focusY', 'Keyboard: turn on focus', 0, 40, 1, '°'],
+    ['focusX', 'Keyboard: tilt on focus', -15, 15, 1, '°'],
+    ['scrollX', 'Touch: tilt while scrolling', 0, 20, 1, '°'],
+    ['depth', 'Depth (share of width)', 0.12, 0.35, 0.005, ''],
+    ['lift', 'Lift on hover/focus', 0, 20, 1, 'px'],
     ['perspective', 'Perspective', 500, 2500, 50, 'px'],
     ['speed', 'Speed', 150, 1200, 25, 'ms'],
   ]
-  const summary = `case=${s.caseType} shape=${s.aspect} depth=${s.depth} rest=${s.restY}°/${s.restX}° ${s.mode === 'follow' ? `lean=${s.leanY}°/${s.leanX}°` : `hover=${s.hoverY}°/${s.hoverX}°`} lift=${s.lift}px perspective=${s.perspective}px speed=${s.speed}ms mode=${s.mode}`
+  const summary = `case=${s.caseType} shape=${s.aspect} depth=${s.depth} rest=${s.restY}°/${s.restX}° mouse=${s.leanY}°/${s.leanX}° focus=${s.focusY}°/${s.focusX}° scroll=${s.scroll ? `${s.scrollX}°` : 'off'} lift=${s.lift}px perspective=${s.perspective}px speed=${s.speed}ms`
 
   return (
     <form
@@ -230,12 +246,15 @@ function Controls({
       <fieldset className="flex flex-col gap-1.5 text-sm">
         <legend className="mb-1 font-semibold">Box shape</legend>
         {SHAPES.map((shape) => (
-          <label key={shape.value} className="flex items-center gap-2">
+          <label key={shape.label} className="flex items-center gap-2">
             <input
               type="radio"
               name="shape"
-              checked={s.aspect === shape.value}
-              onChange={() => set('aspect', shape.value)}
+              checked={s.aspect === shape.aspect}
+              onChange={() => {
+                set('aspect', shape.aspect)
+                set('depth', shape.depth)
+              }}
               className="accent-slider-fill"
             />
             {shape.label}
@@ -243,32 +262,34 @@ function Controls({
         ))}
       </fieldset>
       <fieldset className="flex flex-col gap-1.5 text-sm">
-        <legend className="mb-1 font-semibold">Motion</legend>
-        {(
-          [
-            ['follow', 'Follow the mouse (look around the box)'],
-            ['turn', 'Fixed turn to show the spine'],
-          ] as const
-        ).map(([value, label]) => (
-          <label key={value} className="flex items-center gap-2">
-            <input
-              type="radio"
-              name="mode"
-              checked={s.mode === value}
-              onChange={() => set('mode', value)}
-              className="accent-slider-fill"
-            />
-            {label}
-          </label>
-        ))}
-        <label className="mt-1 flex items-center gap-2">
+        <legend className="mb-1 font-semibold">Keyboard and touch</legend>
+        <label className="flex items-center gap-2">
           <input
             type="checkbox"
             checked={s.freeze}
             onChange={(e) => set('freeze', e.target.checked)}
             className="accent-slider-fill"
           />
-          Show every box in its hover pose
+          Show every box in its keyboard-focus pose
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={s.scroll}
+            onChange={(e) => set('scroll', e.target.checked)}
+            className="accent-slider-fill"
+          />
+          Phones: tilt the boxes while scrolling
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={s.scrollPreview}
+            disabled={!s.scroll}
+            onChange={(e) => set('scrollPreview', e.target.checked)}
+            className="accent-slider-fill"
+          />
+          Preview the scroll tilt on this screen
         </label>
       </fieldset>
       {sliders.map(([key, label, min, max, step, unit]) => (

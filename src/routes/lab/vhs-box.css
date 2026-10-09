@@ -8,28 +8,37 @@
    each face is a flat element folded back from one edge of the front cover:
      front  - the cover art, at the layout plane (z = 0)
      spine  - folded back from the left edge (shows when the box turns right)
-     edge   - folded back from the right edge (the clamshell's opening side)
+     edge   - folded back from the right edge (the sleeve's open end, the clamshell's opening)
      top    - folded back from the top edge (shows when the box tilts toward you)
      bottom - folded back from the bottom edge
    Each fold swings the face forward with its printed side out, then pushes it back by the
-   depth, so it spans from the front cover to the back. Sizes come from the box's width through container query units (100cqw = the tile width), so
-   the depth stays in proportion on every screen size.
+   depth, so it spans from the front cover to the back. Sizes come from the box's width through
+   container query units (100cqw = the tile width), so the depth stays in proportion on every
+   screen size.
 
-   Real proportions: a rental clamshell is about 135 × 208 × 30 mm (W × H × D), a cardboard
-   sleeve about 105 × 190 × 26 mm. That's width/height ≈ 0.55–0.65 and depth ≈ 22–25% of the
-   width, which are the defaults below. Colors come only from tokens (raw colors fail lint). */
+   Real proportions (W × H × D, checked 2026-10-09; see VhsLabPage.tsx for sources): a cardboard
+   sleeve is 104 × 190 × 25 mm (width/height 0.55, depth 24% of the width); a plastic clamshell
+   120 × 201 × 27 mm (0.60, 23%), and the wider rental clamshells up to 144 × 208 × 28 mm (0.69).
+   Colors come only from tokens (raw colors fail lint).
+
+   How it moves, by input:
+     mouse     - the box follows the cursor (look around it)
+     keyboard  - focus gives a fixed turn that shows the spine
+     touch     - no hover, so the boxes tilt as they scroll past, like walking along a shelf
+   Reduced motion turns all of it off: every box keeps its resting angle. */
 
 /* Knobs, set on the lab wrapper by the control panel. */
 .vhs-lab {
   --vhs-aspect: 0.55; /* box width / height */
-  --vhs-depth: 0.23; /* depth as a share of the width */
+  --vhs-depth: 0.24; /* depth as a share of the width */
   --vhs-rest-y: 6deg; /* turn at rest, so the spine always shows a little */
   --vhs-rest-x: -2deg; /* tilt at rest (negative = top toward you) */
-  --vhs-hover-y: 24deg;
-  --vhs-hover-x: -6deg;
-  --vhs-lean-y: 32deg; /* follow mode: turn with the cursor at the left/right edge */
-  --vhs-lean-x: 16deg; /* follow mode: tilt with the cursor at the top/bottom edge */
-  --vhs-lift: -6px; /* how far the box rises on hover */
+  --vhs-lean-y: 14deg; /* mouse: extra turn with the cursor at the left/right edge */
+  --vhs-lean-x: 8deg; /* mouse: tilt with the cursor at the top/bottom edge */
+  --vhs-focus-y: 18deg; /* keyboard focus: fixed turn */
+  --vhs-focus-x: -4deg;
+  --vhs-scroll-x: 8deg; /* touch: tilt at the top and bottom of the screen */
+  --vhs-lift: -4px; /* how far the box rises on hover and focus */
   --vhs-perspective: 1100px;
   --vhs-speed: 450ms;
 }
@@ -62,48 +71,71 @@
   transition: transform var(--vhs-speed) cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-/* The hover pose, on pointer hover (real mice only: a tap on a phone would leave it stuck), on
-   keyboard focus, and for every tile when "show the hover pose" is on. */
-@media (hover: hover) {
-  .vhs-card:hover .vhs-box {
-    --turn-y: var(--vhs-hover-y);
-    --turn-x: var(--vhs-hover-x);
-    --rise: var(--vhs-lift);
-  }
-}
+/* Keyboard: focus turns the box to a fixed pose that shows the spine. Also used for every box
+   when "show the keyboard-focus pose" is on. */
 .vhs-card:focus-visible .vhs-box,
 .vhs-lab[data-freeze] .vhs-box {
-  --turn-y: var(--vhs-hover-y);
-  --turn-x: var(--vhs-hover-x);
+  --turn-y: var(--vhs-focus-y);
+  --turn-x: var(--vhs-focus-x);
   --rise: var(--vhs-lift);
 }
 
-/* "Follow the mouse" mode (the default): look around the box with the cursor. The page sets
-   --px/--py from -1 to 1 for where the pointer is over the box (left/top = -1). The side under
-   the cursor presses away from you, as if pushed, and the far side swings toward you, up to
-   the lean angles:
-     cursor right  → the right side pushes back, showing the spine on the left
-     cursor left   → the left side pushes back, showing the open end on the right
+/* Mouse: look around the box. The page sets --px/--py from -1 to 1 for where the pointer is over
+   the box (left/top = -1). Starting from the resting angle, the side under the cursor presses
+   away from you, as if pushed, and the far side swings toward you, up to the lean angles:
+     cursor right  → the right side pushes back, showing more of the spine
+     cursor left   → the left side pushes back, showing the open end
      cursor bottom → the bottom pushes back, showing the top edge (cursor top: the bottom edge)
-   A short transition smooths the pointer's jumps; leaving the box eases it back to rest at the
-   normal speed. */
-.vhs-lab[data-mode='follow'] .vhs-card:hover .vhs-box {
-  --turn-y: calc(var(--vhs-lean-y) * var(--px, 0));
-  --turn-x: calc(var(--vhs-lean-x) * var(--py, 0) * -1);
-  transition-duration: 160ms;
-  transition-timing-function: ease-out;
+   Real mice only (`hover: hover`): a tap on a phone would leave a box stuck mid-turn. Listed
+   after the focus rule so the mouse wins when a focused box is also hovered. A short transition
+   smooths the pointer's jumps; leaving the box eases it back to rest at the normal speed. */
+@media (hover: hover) {
+  .vhs-card:hover .vhs-box {
+    --turn-y: calc(var(--vhs-rest-y) + var(--vhs-lean-y) * var(--px, 0));
+    --turn-x: calc(var(--vhs-rest-x) - var(--vhs-lean-x) * var(--py, 0));
+    --rise: var(--vhs-lift);
+    transition-duration: 160ms;
+    transition-timing-function: ease-out;
+  }
+}
+
+/* Touch: phones have no hover, so the boxes tilt as they scroll past instead. A box entering at
+   the bottom of the screen shows its top edge (you look down at it), one leaving at the top
+   shows its bottom edge, and it's face-on in the middle. Driven by the scroll position itself
+   (a scroll-driven animation), so there's no JavaScript and it stays in step with the finger.
+   Browsers without scroll-driven animations just show the resting angle. `data-scroll-preview`
+   lets the lab show it on a desktop too. */
+@keyframes vhs-shelf {
+  from {
+    transform: rotateX(calc(var(--vhs-scroll-x) * -1)) rotateY(var(--vhs-rest-y));
+  }
+  to {
+    transform: rotateX(var(--vhs-scroll-x)) rotateY(var(--vhs-rest-y));
+  }
+}
+@supports (animation-timeline: view()) {
+  @media (hover: none) {
+    .vhs-lab[data-scroll] .vhs-box {
+      animation: vhs-shelf linear both;
+      animation-timeline: view();
+    }
+  }
+  .vhs-lab[data-scroll][data-scroll-preview] .vhs-box {
+    animation: vhs-shelf linear both;
+    animation-timeline: view();
+  }
 }
 
 /* Reduced motion: the box keeps its resting angle; nothing moves. */
 @media (prefers-reduced-motion: reduce) {
   .vhs-box,
   .vhs-card:hover .vhs-box,
-  .vhs-lab[data-mode='follow'] .vhs-card:hover .vhs-box,
   .vhs-card:focus-visible .vhs-box,
   .vhs-lab[data-freeze] .vhs-box {
     --turn-y: var(--vhs-rest-y);
     --turn-x: var(--vhs-rest-x);
     --rise: 0px;
+    animation: none !important;
   }
 }
 
