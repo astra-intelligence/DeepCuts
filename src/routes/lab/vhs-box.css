@@ -339,10 +339,10 @@
    grain, no glare), and edges rubbed pale where the box slid against its shelf neighbours.
    The folded top and bottom edges show the card itself. */
 .vhs-lab[data-case='sleeve'] {
-  /* Slightly rounded corners: folded card is never knife-sharp. About 1.8% of the width, so
-     3–4px on a desktop tile and a little less on a phone. The front clips the art to it. */
+  /* Slightly rounded corners: folded card is never knife-sharp. About 1.2% of the width, so
+     2–3px on a desktop tile and a little less on a phone. The front clips the art to it. */
   .vhs-box {
-    --corner: calc(100cqw * 0.018);
+    --corner: calc(100cqw * 0.012);
   }
   .vhs-front,
   .vhs-spine,
