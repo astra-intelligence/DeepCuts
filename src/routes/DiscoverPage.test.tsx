@@ -9,6 +9,14 @@ import { renderRoute } from '../test/renderRoute'
 import { candidateDetailFixtures, movieFixture, searchFixture } from '../test/msw/fixtures'
 import { server } from '../test/msw/server'
 
+/** The first (top-ranked) pick in "Go a little deeper", once the picks have loaded. */
+async function firstPick() {
+  const grid = await screen.findByRole('region', { name: 'Go a little deeper' })
+  const [first] = await within(grid).findAllByRole('link')
+  if (!first) throw new Error('no picks')
+  return first
+}
+
 describe('home', () => {
   it('puts personal-list areas before its compact recommendation section', async () => {
     renderRoute('/')
@@ -27,7 +35,7 @@ describe('home', () => {
     expect(router.state.location.pathname).toBe('/')
   })
 
-  it('reserves both list sections while the film list loads', async () => {
+  it('reserves the picks while the film list loads', async () => {
     server.use(
       http.get('/api/tmdb/discover/movie', async () => {
         await delay(250)
@@ -37,14 +45,13 @@ describe('home', () => {
 
     renderRoute('/')
     expect(await screen.findByRole('status')).toHaveTextContent('Finding films…')
-    expect(document.querySelector('[data-loading-section="featured"]')).toBeInTheDocument()
     expect(document.querySelector('[data-loading-section="grid"]')).toBeInTheDocument()
-    await screen.findByRole('link', { name: /Today’s featured deep cut.*The Thing/ })
+    expect(await firstPick()).toHaveAccessibleName(/^The Thing/)
   })
 
   it('reveals films before secondary credits and reserves the late content space', async () => {
-    // Hold only the featured film's details. Its poster should remain available for an early LCP,
-    // while the fixed-height credit container prevents the late names from shifting the card.
+    // Hold only the first pick's details. Its cassette should show at once, while the
+    // fixed-height credit container prevents the late names from shifting the card.
     server.use(
       http.get('/api/tmdb/movie/:id', async ({ params }) => {
         if (params.id === String(movieFixture.id)) {
@@ -57,25 +64,23 @@ describe('home', () => {
     )
 
     renderRoute('/')
-    const feature = await screen.findByRole('link', {
-      name: /Today’s featured deep cut.*The Thing/,
-    })
+    const feature = await firstPick()
+    expect(feature).toHaveAccessibleName(/^The Thing/)
     await screen.findByRole('link', { name: /Alien.*1979 · Horror/ })
     expect(document.querySelector('[data-loading-section="grid"]')).not.toBeInTheDocument()
-    expect(document.querySelector('[data-loading-section="featured"]')).not.toBeInTheDocument()
     expect(feature.querySelector('[data-credit-lines]')).toHaveClass('min-h-10')
     expect(feature).not.toHaveTextContent('Director: John Carpenter')
     await waitFor(() => expect(feature).toHaveTextContent('Director: John Carpenter'))
   })
 
-  it('shows a feature card and a poster grid', async () => {
+  it('shows the picks as cassettes, with no featured card', async () => {
     renderRoute('/')
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Your movies, close at hand' }),
     ).toBeInTheDocument()
-    expect(
-      await screen.findByRole('link', { name: /Today’s featured deep cut.*The Thing/ }),
-    ).toBeInTheDocument()
+    expect(await firstPick()).toHaveAccessibleName(/^The Thing/)
+    // The big featured card is gone (owner, 2026-10-09): the top pick is the first cassette.
+    expect(screen.queryByText(/featured deep cut/i)).not.toBeInTheDocument()
     const grid = screen.getByRole('region', { name: 'Go a little deeper' })
     const alien = within(grid).getByRole('link', { name: /Alien.*1979 · Horror/ })
     // Each poster wears its VHS genre sticker, which stays out of the link's accessible name.
@@ -98,9 +103,7 @@ describe('home', () => {
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
     await act(() => router.navigate('/'))
-    expect(
-      await screen.findByRole('link', { name: /Today’s featured deep cut.*Alien/ }),
-    ).toBeInTheDocument()
+    expect(await firstPick()).toHaveAccessibleName(/^Alien/)
     expect(screen.queryByRole('link', { name: /The Thing/ })).not.toBeInTheDocument()
   })
 
@@ -126,7 +129,7 @@ describe('home with likes (ADR-0026)', () => {
     await screen.findByText(/^Saved\./)
     await act(() => router.navigate('/'))
 
-    const feature = await screen.findByRole('link', { name: /Today’s featured deep cut/ })
+    const feature = await firstPick()
     // Tuned picks drop the "like a few films" hint.
     expect(
       screen.queryByText('Like a few films to tune these picks to you.'),
@@ -134,9 +137,9 @@ describe('home with likes (ADR-0026)', () => {
     expect(feature).toHaveTextContent(/\d+% match/)
     expect(feature).toHaveTextContent('Because you liked The Thing')
     // The re-rank loaded the top candidates' directors (ADR-0028): The Fog shares John Carpenter
-    // with The Thing, which lifts it to the featured spot.
+    // with The Thing, which lifts it to the top spot.
     expect(feature).toHaveTextContent('The Fog')
-    // Picks only appear once both passes are in, so the featured film never changes under you.
+    // Picks only appear once both passes are in, so the top pick never changes under you.
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
     // Cards name the director and writer; the old "Directed by X, like Y" reason is gone.
     expect(feature).toHaveTextContent('Director: John Carpenter')
@@ -161,7 +164,7 @@ describe('home with a liked film in a series (ADR-0032)', () => {
     await act(() => router.navigate('/'))
 
     // TMDB recommends nothing for it here, so both picks come from the series.
-    const feature = await screen.findByRole('link', { name: /Today’s featured deep cut/ })
+    const feature = await firstPick()
     expect(feature).toHaveTextContent('Because you liked Friday the 13th')
     const titles = screen
       .getAllByRole('link', { name: /Friday the 13th Part/ })

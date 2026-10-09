@@ -1,20 +1,17 @@
 // Home (/): a concise personal movie shelf with a watchlist preview and recommendations.
 //
-// Top Ten, then the watchlist, then a featured film and six more as cassettes. With likes, the picks come from the
+// Top Ten, then the watchlist, then six picks as cassettes. With likes, the picks come from the
 // recommendation scorer (ADR-0026) and show a "% match" and why. Without likes, it shows popular
 // films (minus disliked ones) and suggests liking a few films. Every card names the film's
 // director and writer, from its details (the same cached call the Detail page makes).
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { movieQueries } from '../api/queries'
-import { creditsOf, imageUrl, releaseYear, summaryOf } from '../api/tmdb'
+import { creditsOf, releaseYear, summaryOf } from '../api/tmdb'
 import { FEATURES } from '../config/features'
 import { CassetteCard, type CassetteItem } from '../components/CassetteCard'
 import { EmptyState } from '../components/EmptyState'
 import { Eyebrow } from '../components/Eyebrow'
-import { Because, CreditLines } from '../components/FilmCredits'
-import { GenreSticker } from '../components/GenreSticker'
-import { Icon } from '../components/Icon'
 import { PageHeading } from '../components/PageHeading'
 import { MovieLink } from '../components/MovieLink'
 import { genreTone, primaryGenreName } from '../domain/genres'
@@ -22,14 +19,17 @@ import { MD_UP, useMediaQuery } from '../hooks/useMediaQuery'
 import { useTagQueries } from '../session/tagQueries'
 import { useRecommendations } from '../session/useRecommendations'
 
+// How many recommendations Home shows.
+const PICKS = 6
+
 /**
  * Home puts personal value before browsing (ADR-0033). Its compact recommendation section uses
  * the existing scorer (ADR-0026); without likes it uses popular films minus dislikes.
  */
 export function HomePage() {
-  // Seven = one feature plus six visual follow-on picks: enough to browse without becoming a
-  // second, endless destination on the new Home page.
-  const tuned = useRecommendations(7)
+  // Six picks: enough to browse without becoming a second, endless destination on Home. (The big
+  // featured card is gone, owner 2026-10-09: the top pick is simply the first cassette.)
+  const tuned = useRecommendations(PICKS)
   const popular = useQuery(movieQueries.discover())
   const excluded = useQuery(useTagQueries().feedExclusions()).data
 
@@ -49,19 +49,15 @@ export function HomePage() {
   // Director and writer for each card on show: one details call per film, cached for a day and
   // shared with Detail (and with the scorer's re-rank, so most picks are already loaded). A card
   // shows its film at once and the credit lines fill in when its details arrive.
-  const shown = items.slice(0, 7)
+  const shown = items.slice(0, PICKS)
   const details = useQueries({ queries: shown.map((i) => movieQueries.detail(i.movie.id)) })
-  const withCredits = shown.map((item, i) => {
+  const picks = shown.map((item, i) => {
     const data = details[i]?.data
     return data ? { ...item, credits: creditsOf(data) } : item
   })
-  // The first film is featured; the rest fill the grid.
-  const [feature, ...rest] = withCredits
   // Skeletons cover only the request that determines which films belong in the list. Holding the
   // poster for secondary credits delays the page's largest paint; cards instead reserve the two
   // credit lines below and fill them independently when each detail request completes.
-  const featureLoading = loading
-  const gridLoading = loading
 
   return (
     <>
@@ -73,7 +69,7 @@ export function HomePage() {
       />
       <TopTenPreview />
       <WatchlistPreview />
-      {(featureLoading || gridLoading) && (
+      {loading && (
         <p role="status" className="sr-only">
           Finding films…
         </p>
@@ -81,13 +77,12 @@ export function HomePage() {
       {!usePicks && popular.isError && (
         <EmptyState>Discover is unavailable right now. Try again in a moment.</EmptyState>
       )}
-      {!loading && !feature && !(!usePicks && popular.isError) && (
+      {!loading && picks.length === 0 && !(!usePicks && popular.isError) && (
         <EmptyState>
           No films left in your picks. Films you dislike stay on the Disliked list in My Lists.
         </EmptyState>
       )}
-      {featureLoading ? <FeatureSkeleton /> : feature && <FeatureCard item={feature} />}
-      {(gridLoading || rest.length > 0) && (
+      {(loading || picks.length > 0) && (
         <section aria-labelledby="deeper" className="mt-6">
           <Eyebrow as="h2" id="deeper" tone="contextual">
             Go a little deeper
@@ -98,11 +93,11 @@ export function HomePage() {
               Like a few films to tune these picks to you.
             </p>
           )}
-          {gridLoading ? (
+          {loading ? (
             <PosterGridSkeleton />
           ) : (
             <ul className="grid grid-cols-2 gap-x-4 gap-y-5.5 md:grid-cols-4 lg:grid-cols-5">
-              {rest.slice(0, 6).map((item) => (
+              {picks.map((item) => (
                 <li key={item.movie.id} className="flex">
                   <CassetteCard item={item} />
                 </li>
@@ -203,24 +198,6 @@ function WatchlistPreview() {
   )
 }
 
-/** Size-matched placeholder for the featured card while its film list loads. */
-function FeatureSkeleton() {
-  return (
-    <div
-      aria-hidden="true"
-      data-loading-section="featured"
-      className="relative aspect-4/5 w-full animate-pulse overflow-hidden rounded-card border border-card-border bg-card-bg md:aspect-auto md:h-110"
-    >
-      <div className="absolute right-5 bottom-5.5 left-5 space-y-3">
-        <div className="h-3 w-2/5 rounded-subtle bg-surface-selected" />
-        <div className="h-10 w-3/4 rounded-subtle bg-surface-selected" />
-        <div className="h-4 w-1/2 rounded-subtle bg-surface-selected" />
-        <div className="h-4 w-2/3 rounded-subtle bg-surface-selected" />
-      </div>
-    </div>
-  )
-}
-
 /** Six stable VHS-tile placeholders for Home's deliberately compact recommendation section. */
 function PosterGridSkeleton() {
   return (
@@ -229,7 +206,7 @@ function PosterGridSkeleton() {
       data-loading-section="grid"
       className="grid grid-cols-2 gap-x-4 gap-y-5.5 md:grid-cols-4 lg:grid-cols-5"
     >
-      {Array.from({ length: 6 }, (_, i) => (
+      {Array.from({ length: PICKS }, (_, i) => (
         <li key={i} className="flex">
           <div className="flex min-w-0 flex-1 animate-pulse flex-col">
             <div className="aspect-[0.547] w-full rounded-subtle border border-card-border bg-card-bg" />
@@ -244,67 +221,5 @@ function PosterGridSkeleton() {
         </li>
       ))}
     </ul>
-  )
-}
-
-// The large card at the top: the film's image with its title, match and reasons over a fade.
-function FeatureCard({ item }: { item: CassetteItem }) {
-  const { movie } = item
-  const poster = imageUrl(movie.poster_path, 'w780')
-  const backdrop = imageUrl(movie.backdrop_path, 'w1280')
-  const meta = [releaseYear(movie.release_date), primaryGenreName(movie.genre_ids)].filter(Boolean)
-  return (
-    <Link
-      to={`/movie/${movie.id}`}
-      style={genreTone(movie.genre_ids)}
-      className="relative block aspect-4/5 w-full overflow-hidden rounded-card border border-(--tone) bg-card-bg shadow-card md:aspect-auto md:h-110"
-    >
-      {(poster || backdrop) && (
-        <picture>
-          {/* Tall poster on phones; the wide backdrop from md, where the card is landscape. */}
-          {backdrop && <source media="(min-width: 768px)" srcSet={backdrop} />}
-          <img
-            src={poster ?? backdrop ?? undefined}
-            srcSet={
-              movie.poster_path
-                ? `${imageUrl(movie.poster_path, 'w342')} 342w, ${imageUrl(movie.poster_path, 'w500')} 500w, ${poster} 780w`
-                : undefined
-            }
-            sizes="(min-width: 768px) 0px, calc(100vw - 2.5rem)"
-            fetchPriority="high"
-            alt=""
-            className="size-full object-cover"
-          />
-        </picture>
-      )}
-      {/* Fades the image into the page color so the text on top stays readable. */}
-      <div className="absolute inset-0 bg-linear-to-b from-transparent from-35% via-surface/40 via-60% to-surface" />
-      {/* The VHS genre sticker, above the fade so it isn't dimmed. */}
-      <GenreSticker
-        genreIds={movie.genre_ids}
-        seed={movie.id}
-        size="lg"
-        className="absolute top-3.5 right-3.5"
-      />
-      <div className="absolute right-5 bottom-5.5 left-5">
-        <p className="mb-1 text-sm tracking-widest text-fg-muted uppercase">
-          {item.match !== undefined && (
-            <span className="mr-2 font-bold tracking-normal text-accent normal-case">
-              {item.match}% match ·
-            </span>
-          )}
-          Today’s featured deep cut
-        </p>
-        <h2 className="mb-2 font-display text-4xl leading-none text-balance md:text-5xl">
-          {movie.title}
-        </h2>
-        <span className="block text-sm text-fg-muted">{meta.join(' · ')}</span>
-        <Because titles={item.because} />
-        <CreditLines credits={item.credits} />
-        <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-info">
-          <Icon name="eye" className="size-4" /> View details
-        </span>
-      </div>
-    </Link>
   )
 }

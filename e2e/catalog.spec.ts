@@ -243,7 +243,8 @@ test('liking a film tunes Home’s recommendations, with a match and the reason 
   await expect(page.getByRole('status')).toContainText('Saved.')
   // Client-side navigation keeps the in-memory guest picks (ADR-0011).
   await page.getByRole('link', { name: 'Deep Cuts, go to Home' }).click()
-  const feature = page.getByRole('link', { name: /Today’s featured deep cut/ })
+  // The top pick is the first cassette in "Go a little deeper" (no featured card).
+  const feature = page.getByRole('region', { name: 'Go a little deeper' }).getByRole('link').first()
   await expect(feature).toContainText(/\d+% match/)
   await expect(page.getByText('Like a few films to tune these picks to you.')).toHaveCount(0)
   await expect(feature).toContainText('Because you liked The Thing')
