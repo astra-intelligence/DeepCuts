@@ -34,7 +34,7 @@ describe('movie detail', () => {
     expect(btn('Seen it')).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('stages changes behind Save and Cancel, then confirms and stays editable', async () => {
+  it('saves changes, announces them, then fades back to the source', async () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
@@ -49,25 +49,14 @@ describe('movie detail', () => {
     await user.click(btn('Like'))
     expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
 
-    // Save writes both tags, announces it, and moves focus back to the tags.
+    // Save writes both tags, announces it, then closes the Detail overlay.
     await user.click(btn('Seen it'))
     await user.click(btn('Like'))
     await user.click(screen.getByRole('button', { name: 'Save' }))
     expect(await screen.findByRole('status')).toHaveTextContent('Saved. The Thing: Seen it, Like.')
-    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
-    expect(btn('Seen it')).toHaveFocus()
+    await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
 
-    // Still editable: a new change clears the message and brings Save and Cancel back.
-    await user.click(btn('Dislike'))
-    expect(screen.getByRole('status')).toBeEmptyDOMElement()
-    expect(btn('Like')).toHaveAttribute('aria-pressed', 'false')
-    // Cancel puts the saved tags back.
-    await user.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(btn('Like')).toHaveAttribute('aria-pressed', 'true')
-    expect(btn('Dislike')).toHaveAttribute('aria-pressed', 'false')
-    expect(btn('Seen it')).toHaveFocus()
-
-    // What was saved is really saved: My Lists has it.
+    // What was saved is really saved: My Lists has it after the overlay closes.
     await act(() => router.navigate('/lists?tag=liked'))
     expect(await screen.findByRole('link', { name: /The Thing/ })).toBeInTheDocument()
   })
@@ -78,10 +67,7 @@ describe('movie detail', () => {
     const group = await screen.findByRole('group', { name: 'Your tags' })
     await user.click(within(group).getByRole('button', { name: 'Want to see' }))
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(within(group).getByRole('button', { name: 'Want to see' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    )
+    await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
     await act(() => router.navigate('/lists?tag=watchlist'))
     expect(await screen.findByText(/will appear here/)).toBeInTheDocument()
   })
@@ -104,6 +90,17 @@ describe('movie detail', () => {
     const { router } = renderRoute('/movie/1091')
     await screen.findByRole('heading', { level: 1, name: 'The Thing' })
     await user.click(screen.getByRole('button', { name: 'Back to previous screen' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
+  })
+
+  it('Escape closes the Detail overlay with the same fade', async () => {
+    const user = userEvent.setup()
+    const { router } = renderRoute('/movie/1091')
+    await screen.findByRole('heading', { level: 1, name: 'The Thing' })
+    await user.keyboard('{Escape}')
+    await waitFor(() =>
+      expect(document.querySelector('.detail-page')).toHaveAttribute('data-closing'),
+    )
     await waitFor(() => expect(router.state.location.pathname).toBe('/discover'))
   })
 

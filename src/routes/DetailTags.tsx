@@ -3,10 +3,10 @@
 // Changes are staged: tapping a tag only changes what's shown (following the ADR-0017 rules
 // through `applyTag`), and Save and Cancel appear as soon as anything differs from what's saved.
 // Save writes the changes and confirms them in a message ("Saved. The Thing: Seen it, Like."),
-// announced to screen readers; Cancel puts the saved tags back. The tags stay editable after a
-// save. Search keeps one-tap tagging that saves at once (owner's choice, 2026-10-07).
+// announced to screen readers; it then closes Detail. Cancel discards the draft and closes Detail.
+// Search keeps one-tap tagging that saves at once (owner's choice, 2026-10-07).
 import { useQuery } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { Button } from 'react-aria-components'
 import { Icon } from '../components/Icon'
 import { TagSaveError } from '../components/TagSaveError'
@@ -32,8 +32,17 @@ function savedMessage(title: string, tags: TagSet): string {
  * The film's tag toggles with staged Save and Cancel.
  * @param movieId - The TMDB id the tags belong to.
  * @param title - The film's title, used in the saved message.
+ * @param onDismiss - Closes the Detail route after Save or Cancel.
  */
-export function DetailTags({ movieId, title }: { movieId: number; title: string }) {
+export function DetailTags({
+  movieId,
+  title,
+  onDismiss,
+}: {
+  movieId: number
+  title: string
+  onDismiss: () => void
+}) {
   const saved = useQuery(useTagQueries().forMovie(movieId)).data ?? NO_TAGS
   const setTag = useSetTag()
   // The unsaved selection, or null when the toggles simply show what's saved.
@@ -42,14 +51,9 @@ export function DetailTags({ movieId, title }: { movieId: number; title: string 
   const [failed, setFailed] = useState(false)
   // The confirmation after a save. Cleared by the next change, so it never describes old tags.
   const [message, setMessage] = useState('')
-  const groupRef = useRef<HTMLDivElement>(null)
 
   const shown = draft ?? saved
   const dirty = draft !== null && !sameTags(draft, saved)
-
-  // Save and Cancel disappear once used. Focus would fall back to the page, so it moves to the
-  // first tag toggle instead: next to the message, and where the person was working.
-  const focusTags = () => groupRef.current?.querySelector('button')?.focus()
 
   function toggle(tag: SystemTag, on: boolean) {
     if (saving) return
@@ -77,7 +81,9 @@ export function DetailTags({ movieId, title }: { movieId: number; title: string 
       }
       setDraft(null)
       setMessage(savedMessage(title, draft))
-      focusTags()
+      // Commit the live-region text before starting the fade, so it has a real DOM update to
+      // announce even though this route leaves straight afterwards.
+      requestAnimationFrame(() => onDismiss())
     } catch {
       // The draft stays selected, so nothing the person picked is lost; the alert says to retry.
       setFailed(true)
@@ -89,12 +95,12 @@ export function DetailTags({ movieId, title }: { movieId: number; title: string 
   function cancel() {
     setDraft(null)
     setFailed(false)
-    focusTags()
+    onDismiss()
   }
 
   return (
     <>
-      <div ref={groupRef} role="group" aria-label="Your tags" className="grid grid-cols-4 gap-1.5">
+      <div role="group" aria-label="Your tags" className="grid grid-cols-4 gap-1.5">
         {TAGS.map((t) => (
           <TagToggle
             key={t.tag}
