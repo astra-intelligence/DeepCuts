@@ -84,11 +84,6 @@ export function SignInPage() {
         {pending ? 'Signing you in…' : ''}
       </p>
 
-      <p className="rounded-container border border-dashed border-border-control p-3 text-sm text-fg-muted">
-        <strong className="text-fg">Passkey sign-in is coming.</strong> Invited people will sign in
-        with their fingerprint, face or device PIN (ADR-0031).
-      </p>
-
       <p className="text-sm text-fg-muted">
         New here? {/* Passes `from` along, so registering also returns where sign-in started. */}
         <Link to="/register" state={{ from }} className="text-info underline">
