@@ -61,13 +61,17 @@ export { expect }
 /** Fails the test if axe finds any WCAG 2.2 A/AA violation on the page (ADR-0009). */
 export async function expectNoA11yViolations(page: Page, disableRules: string[] = []) {
   // Let entrance animations finish first: mid-fade (Detail's animate-enter), text is partly
-  // transparent and axe reports it as low contrast, which made the scan flaky. Endless ones
-  // (loading pulses) never finish, so they're skipped.
+  // transparent and axe reports it as low contrast, which made the scan flaky. Only time-based
+  // animations are awaited: endless ones (loading pulses) and scroll-driven ones (the VHS box's
+  // tilt on phones, which only moves when the page scrolls) never finish on their own.
   await page.evaluate(() =>
     Promise.all(
       document
         .getAnimations()
-        .filter((a) => a.effect?.getComputedTiming().endTime !== Infinity)
+        .filter(
+          (a) =>
+            a.timeline === document.timeline && a.effect?.getComputedTiming().endTime !== Infinity,
+        )
         .map((a) => a.finished.catch(() => undefined)),
     ),
   )
