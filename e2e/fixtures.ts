@@ -60,6 +60,17 @@ export { expect }
 
 /** Fails the test if axe finds any WCAG 2.2 A/AA violation on the page (ADR-0009). */
 export async function expectNoA11yViolations(page: Page, disableRules: string[] = []) {
+  // Let entrance animations finish first: mid-fade (Detail's animate-enter), text is partly
+  // transparent and axe reports it as low contrast, which made the scan flaky. Endless ones
+  // (loading pulses) never finish, so they're skipped.
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getComputedTiming().endTime !== Infinity)
+        .map((a) => a.finished.catch(() => undefined)),
+    ),
+  )
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .disableRules(disableRules)
