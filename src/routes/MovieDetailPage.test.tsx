@@ -1,11 +1,19 @@
 // Tests for the Detail page: tag toggles follow the rules, streaming logos aren't interactive,
-// back navigation, the disliked marker in Search (behind its flag), and
+// back navigation, the disliked marker in Search (behind its flag), the Top Ten sticker, and
 // "not found" for bad ids.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { createLocalTopTenRepository } from '../adapters/local/LocalTopTenRepository'
 import { renderRoute } from '../test/renderRoute'
+
+// The demo account's Top Ten in this browser (renderRoute signs in as the demo account), read and
+// seeded through its real store.
+const demoTopTen = () => createLocalTopTenRepository('account-demo-top-ten')
+const seedTopTen = async (ids: number[]) => {
+  for (const id of ids) await demoTopTen().add(id)
+}
 
 describe('movie detail', () => {
   it('focuses its first button and traps Tab within the Detail experience', async () => {
@@ -132,6 +140,68 @@ describe('movie detail', () => {
     expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Back to previous screen' }))
     await waitFor(() => expect(router.state.location.pathname).toBe('/lists'))
+  })
+
+  describe('Top Ten (ADR-0036)', () => {
+    it('adds the film, replaces the sticker with a notice, and keeps it after a reload', async () => {
+      const user = userEvent.setup()
+      const { unmount } = renderRoute('/movie/1091')
+      const sticker = await screen.findByRole('button', { name: 'Add to your Top 10' })
+      await user.click(sticker)
+
+      const notice = await screen.findByText('This is one of your top 10!')
+      // Focus follows the change, so keyboard and screen-reader users hear the result.
+      await waitFor(() => expect(notice).toHaveFocus())
+      expect(screen.queryByRole('button', { name: 'Add to your Top 10' })).not.toBeInTheDocument()
+      expect(await demoTopTen().list()).toEqual([1091])
+      // A Top Ten is not a tag: no tag was turned on.
+      const group = screen.getByRole('group', { name: 'Your tags' })
+      for (const button of within(group).getAllByRole('button'))
+        expect(button).toHaveAttribute('aria-pressed', 'false')
+
+      unmount()
+      renderRoute('/movie/1091')
+      expect(await screen.findByText('This is one of your top 10!')).toBeInTheDocument()
+    })
+
+    it('Remove takes the film out and brings the sticker back', async () => {
+      await seedTopTen([5, 1091, 7])
+      const user = userEvent.setup()
+      renderRoute('/movie/1091')
+      await user.click(await screen.findByRole('button', { name: 'Remove from Top Ten' }))
+      const sticker = await screen.findByRole('button', { name: 'Add to your Top 10' })
+      await waitFor(() => expect(sticker).toHaveFocus())
+      expect(await demoTopTen().list()).toEqual([5, 7])
+    })
+
+    it('a full Top Ten shows a note instead of the sticker', async () => {
+      await seedTopTen([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+      renderRoute('/movie/1091')
+      expect(await screen.findByText('Your Top Ten is full.')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Add to your Top 10' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Remove from Top Ten' })).not.toBeInTheDocument()
+    })
+
+    it('a failed save keeps the sticker and says so', async () => {
+      const user = userEvent.setup()
+      renderRoute('/movie/1091')
+      const sticker = await screen.findByRole('button', { name: 'Add to your Top 10' })
+      // Imitate a browser that refuses to store anything (e.g. storage full).
+      const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new Error('QuotaExceededError')
+      })
+      await user.click(sticker)
+      expect(await screen.findByRole('alert')).toHaveTextContent('Couldn’t update your Top Ten')
+      expect(sticker).toBeInTheDocument()
+      setItem.mockRestore()
+    })
+
+    it('a film in a full Top Ten can still be removed', async () => {
+      await seedTopTen([1, 2, 3, 4, 5, 6, 7, 8, 9, 1091])
+      renderRoute('/movie/1091')
+      expect(await screen.findByText('This is one of your top 10!')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Remove from Top Ten' })).toBeInTheDocument()
+    })
   })
 
   it.each(['/movie/abc', '/movie/-1', '/movie/999'])('shows not found for %s', async (path) => {

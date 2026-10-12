@@ -1,0 +1,26 @@
+{
+  "$description": "Tier 3: the Top Ten sticker on Detail (ADR-0036): a weathered gold rental-store label, rectangular and die-cut so it never reads as the round genre sticker. Its ink is the printed-matter ink; the face is the favourite gold, bleached toward the paper (which only raises the ink's contrast).",
+  "color": {
+    "$type": "color",
+    "top-ten-sticker": {
+      "face": {
+        "$value": "{color.favourite}",
+        "$description": "The gold label. Shown bleached 25% toward the paper; contrast is checked against this full-strength value, the worst case"
+      },
+      "paper": {
+        "$value": "{color.print.paper}",
+        "$description": "Sun-bleached patches and scuffs on the face"
+      },
+      "ink": {
+        "$value": "{color.print.ink}",
+        "$description": "The printed text and frame"
+      }
+    }
+  },
+  "shadow": {
+    "$type": "shadow",
+    "top-ten-sticker": {
+      "$value": "{elevation.raised}"
+    }
+  }
+}

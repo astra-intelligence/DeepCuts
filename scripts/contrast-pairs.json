@@ -115,6 +115,12 @@
   ["color-slider-thumb", "color-surface-default", 3],
   ["color-poster-border", "color-surface-default", 3],
   ["color-sticker-ink", "color-sticker-paper", 4.5],
+  ["color-top-ten-sticker-ink", "color-top-ten-sticker-face", 4.5],
+  [
+    "color-top-ten-sticker-ink",
+    { "mix": ["color-top-ten-sticker-face", 0.75, "color-top-ten-sticker-paper"] },
+    4.5
+  ],
   ["color-sticker-ink", { "mix": ["color-genre-action", 0.65, "color-sticker-paper"] }, 4.5],
   ["color-sticker-ink", { "mix": ["color-genre-adventure", 0.65, "color-sticker-paper"] }, 4.5],
   ["color-sticker-ink", { "mix": ["color-genre-animation", 0.65, "color-sticker-paper"] }, 4.5],
