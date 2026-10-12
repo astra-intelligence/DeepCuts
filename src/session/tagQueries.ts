@@ -1,43 +1,48 @@
 // Tag reads and writes through TanStack Query (ADR-0015).
 //
 // TanStack Query caches each read under a "query key" and re-fetches when that key is
-// invalidated. Keys include the session kind, so switching between guest, profile and account
-// never shows the other store's cached tags.
+// invalidated. Keys include a scope (signed out, or which account), so switching accounts never
+// shows the other store's cached tags.
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
+import type { Session } from '../adapters/SessionProvider'
 import type { TagRepository } from '../adapters/TagRepository'
 import type { SystemTag } from '../domain/tagRules'
 import { useSession } from './SessionContext'
 
 /**
  * The tag queries for one store, ready to pass to `useQuery`.
- * Every key starts with `['tags', kind]`, so a single invalidation refreshes them all.
+ * Every key starts with `['tags', scope]`, so a single invalidation refreshes them all.
  */
-export function tagQueries(repo: TagRepository, kind: string) {
+export function tagQueries(repo: TagRepository, scope: string) {
   return {
     /** The tags on one film (Detail page, Search rows). */
     forMovie: (tmdbId: number) =>
       queryOptions({
-        queryKey: ['tags', kind, 'movie', tmdbId],
+        queryKey: ['tags', scope, 'movie', tmdbId],
         queryFn: () => repo.getTags(tmdbId),
       }),
     /** The film ids on one list, newest first (My Lists, the scorer). */
     list: (tag: SystemTag) =>
-      queryOptions({ queryKey: ['tags', kind, 'list', tag], queryFn: () => repo.list(tag) }),
+      queryOptions({ queryKey: ['tags', scope, 'list', tag], queryFn: () => repo.list(tag) }),
     /** Every tag record, e.g. to count the films someone has tagged. */
-    all: () => queryOptions({ queryKey: ['tags', kind, 'all'], queryFn: () => repo.exportAll() }),
+    all: () => queryOptions({ queryKey: ['tags', scope, 'all'], queryFn: () => repo.exportAll() }),
     /** Film ids to keep out of feeds (disliked films). */
     feedExclusions: () =>
       queryOptions({
-        queryKey: ['tags', kind, 'feedExclusions'],
+        queryKey: ['tags', scope, 'feedExclusions'],
         queryFn: () => repo.feedExclusions(),
       }),
   }
 }
 
+/** The cache scope for a session's tags: `signedOut`, or one per account (e.g. `passkey:abc`). */
+export const tagScope = (session: Session) =>
+  session.kind === 'account' ? `${session.account.method}:${session.account.id}` : session.kind
+
 /** The tag queries for the current session's store. */
 export function useTagQueries() {
   const { tags, session } = useSession()
-  return tagQueries(tags, session.kind)
+  return tagQueries(tags, tagScope(session))
 }
 
 /**
@@ -53,10 +58,10 @@ export function useSetTag() {
       tags.setTag(tmdbId, tag, on),
     onSuccess: (next, { tmdbId }) => {
       // Show the new tags on this film straight away, without waiting for a re-fetch…
-      queryClient.setQueryData(tagQueries(tags, session.kind).forMovie(tmdbId).queryKey, next)
+      queryClient.setQueryData(tagQueries(tags, tagScope(session)).forMovie(tmdbId).queryKey, next)
       // …then refresh lists, counts and exclusions. Returning the promise keeps the mutation
       // "pending" until that's done.
-      return queryClient.invalidateQueries({ queryKey: ['tags', session.kind] })
+      return queryClient.invalidateQueries({ queryKey: ['tags', tagScope(session)] })
     },
   })
 }

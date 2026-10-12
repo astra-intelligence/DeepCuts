@@ -18,11 +18,10 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(async () => {
   cleanup()
   server.resetHandlers()
-  // Saved profiles and tags must not leak between tests (reset through the adapters, ADR-0013).
+  // Accounts and their tags must not leak between tests (reset through the adapters, ADR-0013).
   // Server tests run in plain Node, which has no browser storage.
   if (typeof window === 'undefined') return
   await createMockSessionProvider().signOut()
-  await createLocalTagRepository().clear()
   await createLocalTagRepository(undefined, undefined, 'account-demo-tags').clear()
 })
 afterAll(() => server.close())

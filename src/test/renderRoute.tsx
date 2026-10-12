@@ -1,17 +1,25 @@
 // Test helper: renders the real app at a URL, with its own fresh data cache, so a test can
 // navigate and click like a person would. Options swap in feature flags or a custom session.
+//
+// Tests start signed in to the demo account, because almost every page needs an account
+// (ADR-0034). Pass `initialSession: SIGNED_OUT` for the landing page and the sign-in flows.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
-import type { Session, SessionProvider } from '../adapters/SessionProvider'
+import type { Account, Session, SessionProvider } from '../adapters/SessionProvider'
 import { AppSessionProvider } from '../session/AppSessionProvider'
 import { FEATURES, type Features } from '../config/features'
 import { createRoutes } from '../router'
+
+/** The demo account, as the local mock signs it in (its lists live under `account-demo-tags`). */
+export const DEMO: Account = { id: 'demo', name: 'Mike Curts', method: 'demo' }
+const SIGNED_IN: Session = { kind: 'account', account: DEMO }
 
 interface Options {
   features?: Partial<Features>
   /** A custom session adapter, e.g. one whose sign-in fails. */
   sessionProvider?: SessionProvider
+  /** Defaults to signed in to the demo account. */
   initialSession?: Session
 }
 
@@ -25,7 +33,7 @@ export function renderRoute(path: string, options: Options = {}) {
       <QueryClientProvider client={queryClient}>
         <AppSessionProvider
           {...(options.sessionProvider && { provider: options.sessionProvider })}
-          {...(options.initialSession && { initialSession: options.initialSession })}
+          initialSession={options.initialSession ?? SIGNED_IN}
         >
           <RouterProvider router={router} />
         </AppSessionProvider>

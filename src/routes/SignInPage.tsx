@@ -1,7 +1,6 @@
 // The Sign-in page (/sign-in, ADR-0025): lists every sign-in method the session provider offers
 // (today only the demo account), links to registration (ADR-0031), then returns to the page
 // sign-in started from.
-import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Button } from 'react-aria-components'
 import { Link, Navigate, useNavigate } from 'react-router'
@@ -11,7 +10,6 @@ import { Icon } from '../components/Icon'
 import { useReturnPath } from '../hooks/useReturnPath'
 import { useRouteFocus } from '../hooks/useRouteFocus'
 import { useSession } from '../session/SessionContext'
-import { useTagQueries } from '../session/tagQueries'
 import { AuthLayout } from './AuthLayout'
 
 /** The sign-in page (ADR-0025, approved design): every method the session adapter offers. */
@@ -20,8 +18,6 @@ export function SignInPage() {
   const { session, signInMethods, signIn } = useSession()
   const navigate = useNavigate()
   const from = useReturnPath()
-  // How many films the person has tagged, to reassure them their picks come along.
-  const picks = new Set(useQuery(useTagQueries().all()).data?.map((r) => r.tmdbId)).size
   // Which method is signing in right now (disables the buttons), and whether the last try failed.
   const [pending, setPending] = useState<SignInMethodId | null>(null)
   const [failed, setFailed] = useState(false)
@@ -30,14 +26,14 @@ export function SignInPage() {
   // page returns to where sign-in started, and `pending` stays set until it does.)
   if (session.kind === 'account' && pending === null) return <Navigate to="/account" replace />
 
-  // Signs in, then goes back where sign-in started, telling that page how many films moved
-  // (SignedInNotice shows it). On failure nothing changes and an error is shown.
+  // Signs in, then goes back where sign-in started, telling that page to confirm it
+  // (SignedInNotice). On failure nothing changes and an error is shown.
   async function start(method: SignInMethodId) {
     setFailed(false)
     setPending(method)
     try {
-      const { moved } = await signIn(method)
-      navigate(from, { replace: true, state: { signedIn: { moved } } })
+      await signIn(method)
+      navigate(from, { replace: true, state: { signedIn: true } })
     } catch {
       setFailed(true)
       setPending(null)
@@ -99,23 +95,6 @@ export function SignInPage() {
           Create an account
         </Link>
       </p>
-
-      {picks > 0 && (
-        <p className="flex items-start gap-2.5 text-sm text-fg-muted">
-          <Icon name="check" className="mt-0.5 size-4.5 shrink-0 text-accent" />
-          Your {picks} {session.kind === 'profile' ? 'saved' : 'unsaved'}{' '}
-          {picks === 1 ? 'pick comes' : 'picks come'} with you when you sign in.
-        </p>
-      )}
-      {session.kind === 'guest' && (
-        <p className="text-sm text-fg-muted">
-          Prefer not to sign in?{' '}
-          <Link to="/account" className="text-info underline">
-            Keep your picks on this device
-          </Link>
-          .
-        </p>
-      )}
     </AuthLayout>
   )
 }

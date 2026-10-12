@@ -1,16 +1,16 @@
-// Provides the session to the whole app (ADR-0011, ADR-0016, ADR-0025).
+// Provides the session to the whole app (ADR-0016, ADR-0025, ADR-0034).
 //
-// It owns three things: the session provider (who is signed in), the guest's in-memory tag
-// store, and the current session. From those it picks the right tag store for the current
-// session (a passkey account's lists live on the server, ADR-0031), and moves picks between stores
-// when someone saves them or signs in, so their picks follow them instead of being lost.
+// It owns two things: the session provider (who is signed in) and the current session. From the
+// session it picks the tag store: a passkey account's lists live on the server (ADR-0031), the
+// demo and practice accounts' lists in this browser, and signed out there is an empty store that
+// refuses writes. Nothing moves between stores: there is no guest or device profile to move from.
 import { useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState, type ReactNode } from 'react'
 import { createCloudflareTagRepository } from '../adapters/cloudflare/CloudflareTagRepository'
 import { createMockSessionProvider } from '../adapters/local/MockSessionProvider'
 import { createLocalTagRepository } from '../adapters/local/LocalTagRepository'
-import { createInMemoryTagRepository } from '../adapters/memory/InMemoryTagRepository'
-import type { Session, SessionProvider } from '../adapters/SessionProvider'
+import { SIGNED_OUT, type Session, type SessionProvider } from '../adapters/SessionProvider'
+import { signedOutTags } from '../adapters/signedOutTags'
 import type { TagRepository } from '../adapters/TagRepository'
 import { SessionContext, type SessionValue } from './SessionContext'
 
@@ -20,20 +20,20 @@ interface Props {
   initialSession?: Session
   /** Defaults to the local mock provider; tests inject one that fails, for example. */
   provider?: SessionProvider
-  /** Opens a device-backed tag store; `key` separates the device profile from each account. */
-  createLocalTags?: (key?: string) => TagRepository
+  /** Opens a demo or practice account's tag store in this browser, under `key`. */
+  createLocalTags?: (key: string) => TagRepository
   /** Opens a passkey account's tag store on the server (ADR-0031); tests inject a fake. */
   createRemoteTags?: () => TagRepository
 }
 
-// Each account's tags live under their own storage key.
+// Each on-device account's tags live under their own storage key.
 const accountKey = (id: string) => `account-${id}-tags`
-const openLocal = (key?: string) => createLocalTagRepository(undefined, undefined, key)
+const openLocal = (key: string) => createLocalTagRepository(undefined, undefined, key)
 
 /** Wrap the app in this so every screen can call `useSession()`. */
 export function AppSessionProvider({
   children,
-  initialSession = { kind: 'guest' },
+  initialSession = SIGNED_OUT,
   provider: injected,
   createLocalTags = openLocal,
   createRemoteTags = createCloudflareTagRepository,
@@ -41,81 +41,41 @@ export function AppSessionProvider({
   const queryClient = useQueryClient()
   // Created once and kept for the life of the app.
   const [provider] = useState(() => injected ?? createMockSessionProvider())
-  // The guest store is replaced (emptied) after picks move out of it, or on sign-out.
-  const [guestTags, setGuestTags] = useState(() => createInMemoryTagRepository())
   const [session, setSession] = useState(initialSession)
 
   const value = useMemo<SessionValue>(() => {
-    // Which store a session's tags live in; null means the in-memory guest store.
-    const storeKey = (s: Session) =>
-      s.kind === 'account'
-        ? s.account.method === 'passkey'
-          ? `remote-${s.account.id}`
-          : accountKey(s.account.id)
-        : s.kind === 'profile'
-          ? 'tags'
-          : null
-    // The tag store for a session.
-    const tagsFor = (s: Session) => {
-      const key = storeKey(s)
-      if (key === null) return guestTags
-      if (key.startsWith('remote-')) return createRemoteTags()
-      return key === 'tags' ? createLocalTags() : createLocalTags(key)
-    }
-    const tags = tagsFor(session)
+    // The tag store for the current session.
+    const tags =
+      session.kind === 'signedOut'
+        ? signedOutTags
+        : session.account.method === 'passkey'
+          ? createRemoteTags()
+          : createLocalTags(accountKey(session.account.id))
 
-    // Picks follow the person: copy them into the next store, then clear the old one
-    // (ADR-0011, ADR-0016, ADR-0025). Returns how many films moved.
-    async function moveTo(next: Session) {
-      const records = await tags.exportAll()
-      // Same store (e.g. saving twice): nothing to move, and clearing would delete the picks.
-      if (storeKey(next) !== null && storeKey(next) === storeKey(session)) {
-        setSession(next)
-        return 0
-      }
-      await tagsFor(next).importAll(records)
-      await tags.clear()
-      setGuestTags(createInMemoryTagRepository())
+    // Switches to the next session. Cached tag queries belong to the old store, so they're all
+    // refreshed (their keys include the account id, see tagQueries.ts).
+    async function become(next: Session) {
       setSession(next)
-      // Cached tag queries belong to the old store; refresh them all.
       await queryClient.invalidateQueries({ queryKey: ['tags'] })
-      return new Set(records.map((r) => r.tmdbId)).size
     }
 
     return {
       session,
       tags,
       signInMethods: provider.signInMethods(),
-      async createProfile(displayName) {
-        await moveTo(await provider.createProfile(displayName))
-      },
-      async signIn(method) {
-        return { moved: await moveTo(await provider.signIn(method)) }
-      },
-      async register(details) {
-        return { moved: await moveTo(await provider.register(details)) }
-      },
-      async signOut() {
-        // The account keeps its lists; the device returns to an empty guest session.
-        setGuestTags(createInMemoryTagRepository())
-        setSession(await provider.signOut())
-        await queryClient.invalidateQueries({ queryKey: ['tags'] })
-      },
+      signIn: async (method) => become(await provider.signIn(method)),
+      register: async (details) => become(await provider.register(details)),
+      // The account keeps its lists; this device is signed out.
+      signOut: async () => become(await provider.signOut()),
       practiceRegistration: provider.practiceRegistration,
       rename: provider.rename
         ? async (name) => setSession((await provider.rename?.(name)) ?? session)
         : undefined,
       deleteAccount: provider.deleteAccount
-        ? async () => {
-            // The account and its lists are gone; the device starts over as an empty guest.
-            const next = (await provider.deleteAccount?.()) ?? { kind: 'guest' }
-            setGuestTags(createInMemoryTagRepository())
-            setSession(next)
-            await queryClient.invalidateQueries({ queryKey: ['tags'] })
-          }
+        ? async () => become((await provider.deleteAccount?.()) ?? SIGNED_OUT)
         : undefined,
     }
-  }, [session, guestTags, provider, createLocalTags, createRemoteTags, queryClient])
+  }, [session, provider, createLocalTags, createRemoteTags, queryClient])
 
   return <SessionContext value={value}>{children}</SessionContext>
 }

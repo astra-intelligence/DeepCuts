@@ -11,6 +11,8 @@ import { expect, expectNoA11yViolations, test } from './fixtures'
 
 // The flow shares one server-side rate limit (10 sign-in requests a minute), so run in order.
 test.describe.configure({ mode: 'serial' })
+// These tests start signed out: they register and sign in themselves.
+test.use({ signedIn: false })
 
 /** Creates a local invite with the real script and returns its path (`/register?invite=…`). */
 function newInvitePath(): string {

@@ -4,7 +4,7 @@
 import type { Preview } from '@storybook/react-vite'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router'
-import type { Session } from '../src/adapters/SessionProvider'
+import { SIGNED_OUT, type Session } from '../src/adapters/SessionProvider'
 import { AppSessionProvider } from '../src/session/AppSessionProvider'
 import '../src/index.css'
 
@@ -13,7 +13,7 @@ const preview: Preview = {
     (Story, { parameters }) => (
       // A fresh cache per story, so one story's data never leaks into another.
       <QueryClientProvider client={new QueryClient()}>
-        <AppSessionProvider initialSession={(parameters.session as Session) ?? { kind: 'guest' }}>
+        <AppSessionProvider initialSession={(parameters.session as Session) ?? SIGNED_OUT}>
           <MemoryRouter>
             {/* Page-like padding on the app's dark surface. */}
             <div className="min-h-dvh bg-surface p-6 text-fg">

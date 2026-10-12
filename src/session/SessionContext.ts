@@ -1,9 +1,9 @@
 // Session context (ADR-0016): makes the current session, and the tag store that belongs to it,
 // available to every screen through `useSession()`.
 //
-// Screens never pick a store themselves: a guest gets the in-memory store, a saved profile or a
-// demo/practice account gets its own localStorage store, and a passkey account gets its lists on
-// the server (ADR-0031). AppSessionProvider fills this context.
+// Screens never pick a store themselves: a demo or practice account gets its own localStorage
+// store, a passkey account gets its lists on the server (ADR-0031), and signed out gets an empty
+// store that refuses writes (ADR-0034). AppSessionProvider fills this context.
 import { createContext, useContext } from 'react'
 import type {
   Registration,
@@ -16,17 +16,15 @@ import type { TagRepository } from '../adapters/TagRepository'
 /** What `useSession()` gives a component. */
 export interface SessionValue {
   session: Session
-  /** Guest: in memory. Profile, demo or practice: localStorage. Passkey account: the server. */
+  /** Demo or practice: localStorage. Passkey account: the server. Signed out: empty, read-only. */
   tags: TagRepository
   /** The sign-in options to show on the sign-in page. */
   signInMethods: readonly SignInMethod[]
-  /** "Save my picks": moves the guest's picks onto this device. */
-  createProfile(displayName?: string): Promise<void>
-  /** Moves the current picks into the account. Resolves with how many films moved. */
-  signIn(method: SignInMethodId): Promise<{ moved: number }>
-  /** Creates an account from the registration form, then moves picks in like sign-in does. */
-  register(details: Registration): Promise<{ moved: number }>
-  /** Back to an empty guest session; the account keeps its lists. */
+  /** Signs in with one of `signInMethods`. Rejects, changing nothing, when sign-in doesn't finish. */
+  signIn(method: SignInMethodId): Promise<void>
+  /** Creates an account from the registration form and signs it in. */
+  register(details: Registration): Promise<void>
+  /** Signs this device out; the account keeps its lists. */
   signOut(): Promise<void>
   /** True when registration only makes a practice account on this device (the local mock). */
   practiceRegistration: boolean

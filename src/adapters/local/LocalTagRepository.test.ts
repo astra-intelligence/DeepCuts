@@ -6,21 +6,25 @@ import { createLocalTagRepository } from './LocalTagRepository'
 
 beforeEach(() => localStorage.clear())
 
-tagRepositoryContract('LocalTagRepository', (now) => createLocalTagRepository(undefined, now))
+// The demo account's key; any account key behaves the same.
+const KEY = 'account-demo-tags'
+const open = (now?: () => string) => createLocalTagRepository(undefined, now, KEY)
+
+tagRepositoryContract('LocalTagRepository', (now) => open(now))
 
 describe('LocalTagRepository storage', () => {
   it('persists under a versioned key and survives a new instance', async () => {
-    await createLocalTagRepository().setTag(7, 'liked', true)
-    expect(localStorage.getItem('deepcuts:v1:tags')).toContain('"tmdbId":7')
-    expect([...(await createLocalTagRepository().getTags(7))]).toEqual(['liked'])
+    await open().setTag(7, 'liked', true)
+    expect(localStorage.getItem(`deepcuts:v1:${KEY}`)).toContain('"tmdbId":7')
+    expect([...(await open().getTags(7))]).toEqual(['liked'])
   })
 
   it.each(['not json', '{"tags":1}', '[{"tmdbId":-1,"tag":"seen","createdAt":"x"}]'])(
     'resets corrupt data (%s) to empty',
     async (raw) => {
-      localStorage.setItem('deepcuts:v1:tags', raw)
-      expect(await createLocalTagRepository().list('seen')).toEqual([])
-      expect(localStorage.getItem('deepcuts:v1:tags')).toBeNull()
+      localStorage.setItem(`deepcuts:v1:${KEY}`, raw)
+      expect(await open().list('seen')).toEqual([])
+      expect(localStorage.getItem(`deepcuts:v1:${KEY}`)).toBeNull()
     },
   )
 })

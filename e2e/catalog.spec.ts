@@ -4,7 +4,7 @@
 import type { Page } from '@playwright/test'
 import { expect, expectNoA11yViolations, expectNoHorizontalOverflow, test } from './fixtures'
 
-for (const path of ['/sign-in', '/register', '/', '/movie/1091', '/lists', '/account']) {
+for (const path of ['/', '/movie/1091', '/lists', '/account']) {
   test(`${path} has no axe violations and no horizontal overflow`, async ({ page }) => {
     await page.goto(path)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
@@ -12,6 +12,49 @@ for (const path of ['/sign-in', '/register', '/', '/movie/1091', '/lists', '/acc
     await expectNoHorizontalOverflow(page)
   })
 }
+
+test.describe('signed out (ADR-0034)', () => {
+  test.use({ signedIn: false })
+
+  for (const path of ['/', '/sign-in', '/register']) {
+    test(`${path} has no axe violations and no horizontal overflow`, async ({ page }) => {
+      await page.goto(path)
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+      await expectNoA11yViolations(page)
+      await expectNoHorizontalOverflow(page)
+    })
+  }
+
+  test('the landing page explains the three panels, with Sign in as the one action (ADR-0035)', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    await expect(page.getByRole('heading', { level: 2 })).toHaveText([
+      'Top Ten',
+      'Movies I want to watch',
+      'Discovery',
+    ])
+    // No search, no tab bar: they only lead to signed-in pages.
+    await expect(page.getByRole('combobox')).toHaveCount(0)
+    await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(0)
+    const signIn = page.getByRole('main').getByRole('link', { name: 'Sign in' })
+    expect((await signIn.boundingBox())?.height).toBeGreaterThanOrEqual(44)
+    // Three panels side by side from `lg` (1024px), stacked below it.
+    const tops = await page
+      .getByRole('region')
+      .evaluateAll((panels) => panels.map((p) => Math.round(p.getBoundingClientRect().top)))
+    const wide = (page.viewportSize()?.width ?? 0) >= 1024
+    expect(new Set(tops).size).toBe(wide ? 1 : 3)
+  })
+
+  test('a signed-in page sends you to sign in, then back to it', async ({ page }) => {
+    await page.goto('/lists?tag=liked')
+    await expect(page).toHaveURL(/\/sign-in$/)
+    await page.getByRole('button', { name: /Continue with a demo account/ }).click()
+    await expect(page).toHaveURL(/\/lists\?tag=liked$/)
+    await expect(page.getByText('Signed in as Mike.')).toBeVisible()
+  })
+})
 
 test('/ opens Home, and the hidden Search page redirects there (FEATURES.searchPage)', async ({
   page,
@@ -127,7 +170,6 @@ test('a disliked film appears only on the Disliked list, with the tag accent', a
   await page.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByRole('status')).toContainText('Saved.')
   await expect(page).toHaveURL(/\/$/)
-  // Client-side navigation keeps the in-memory guest picks (ADR-0011).
   await page
     .getByRole('navigation', { name: 'Main' })
     .getByRole('link', { name: 'My Lists' })
@@ -140,93 +182,82 @@ test('a disliked film appears only on the Disliked list, with the tag accent', a
   await expect(page.getByText(/will appear here/)).toBeVisible()
 })
 
-test('Save my picks survives a reload; guest picks do not (ADR-0011, ADR-0022)', async ({
-  page,
-}) => {
-  await page.goto('/movie/1091')
-  await wantToSeeTheThing(page)
-  await page.goto('/movie/1091')
-  await page.reload()
-  const wanted = page
-    .getByRole('group', { name: 'Your tags' })
-    .getByRole('button', { name: 'Want to see' })
-  await expect(wanted).toHaveAttribute('aria-pressed', 'false')
+test.describe('signing in and registering', () => {
+  // Both start signed out.
+  test.use({ signedIn: false })
 
-  await wantToSeeTheThing(page)
-  // Client-side navigation keeps the in-memory guest picks (ADR-0011).
-  await page.getByRole('banner').getByRole('link', { name: 'Sign in' }).click()
-  await page.getByRole('link', { name: 'Keep your picks on this device' }).click()
-  await page.getByRole('button', { name: 'Save my picks' }).click()
-  await expect(page.getByText('Saved on this device', { exact: true })).toBeVisible()
-  await expectNoA11yViolations(page)
-  await page.goto('/movie/1091')
-  await expect(wanted).toHaveAttribute('aria-pressed', 'true')
-})
+  test('sign in with the demo account, keyboard only; survives a reload; sign out (ADR-0025)', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    await page.getByRole('banner').getByRole('link', { name: 'Sign in' }).focus()
+    await page.keyboard.press('Enter')
 
-test('sign in with the demo account, keyboard only; survives a reload; sign out (ADR-0025)', async ({
-  page,
-}) => {
-  await page.goto('/movie/1091')
-  await wantToSeeTheThing(page)
-  await page.getByRole('banner').getByRole('link', { name: 'Sign in' }).focus()
-  await page.keyboard.press('Enter')
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Sign in to Deep Cuts' }),
+    ).toBeFocused()
+    await expect(page.getByText('Practice sign-in. No real account is created.')).toBeVisible()
+    await expectNoA11yViolations(page)
+    await page.getByRole('button', { name: /Continue with a demo account/ }).focus()
+    await page.keyboard.press('Enter')
 
-  await expect(page.getByRole('heading', { level: 1, name: 'Sign in to Deep Cuts' })).toBeFocused()
-  await expect(page.getByText('Practice sign-in. No real account is created.')).toBeVisible()
-  await expectNoA11yViolations(page)
-  await page.getByRole('button', { name: /Continue with a demo account/ }).focus()
-  await page.keyboard.press('Enter')
+    await expect(page).toHaveURL(/\/$/)
+    await expect(page.getByText('Signed in as Mike.')).toBeVisible()
+    const chip = page.getByRole('banner').getByRole('link', { name: 'Mike, open your account' })
+    await expect(chip).toBeVisible()
+    expect((await chip.boundingBox())?.height).toBeGreaterThanOrEqual(44)
 
-  await expect(page).toHaveURL(/\/$/)
-  await expect(page.getByText('Signed in as Mike. Your 1 pick is in your account.')).toBeVisible()
-  const chip = page.getByRole('banner').getByRole('link', { name: 'Mike, open your account' })
-  await expect(chip).toBeVisible()
-  expect((await chip.boundingBox())?.height).toBeGreaterThanOrEqual(44)
+    await page.goto('/movie/1091')
+    await wantToSeeTheThing(page)
+    await page.reload()
+    await expect(chip).toBeVisible()
+    // The account keeps the pick: My Lists opens on Want to see.
+    await page.goto('/lists')
+    await expect(page.getByRole('link', { name: /The Thing/ })).toBeVisible()
 
-  await page.reload()
-  await expect(chip).toBeVisible()
-  // The pick moved into the account: My Lists opens on Want to see.
-  await page.goto('/lists')
-  await expect(page.getByRole('link', { name: /The Thing/ })).toBeVisible()
+    await chip.click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Mike Curts' })).toBeVisible()
+    await expectNoA11yViolations(page)
+    await page.getByRole('button', { name: 'Sign out' }).click()
+    await page.getByRole('button', { name: 'Yes, sign out' }).click()
+    // Signing out lands on the landing page, and stays signed out after a reload.
+    await expect(page).toHaveURL(/\/$/)
+    await expect(page.getByRole('banner').getByRole('link', { name: 'Sign in' })).toBeVisible()
+    await expectNoHorizontalOverflow(page)
+    await page.reload()
+    await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(0)
+  })
 
-  await chip.click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Mike Curts' })).toBeVisible()
-  await expectNoA11yViolations(page)
-  await page.getByRole('button', { name: 'Sign out' }).click()
-  await page.getByRole('button', { name: 'Yes, sign out' }).click()
-  await expect(page.getByRole('banner').getByRole('link', { name: 'Sign in' })).toBeVisible()
-  await expectNoHorizontalOverflow(page)
-})
+  test('register from an invite link with the keyboard; errors pass axe; the practice account survives a reload (ADR-0031)', async ({
+    page,
+  }) => {
+    // Submitting with no invite shows the errors and puts the cursor in the first field.
+    await page.goto('/register')
+    await expect(page.getByRole('heading', { level: 1, name: 'Create an account' })).toBeVisible()
+    await page.getByRole('button', { name: 'Create passkey' }).focus()
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('textbox', { name: 'Name' })).toBeFocused()
+    await expect(page.getByText('Enter the code from your invite link.')).toBeVisible()
+    await expectNoA11yViolations(page)
+    await expectNoHorizontalOverflow(page)
 
-test('register from an invite link with the keyboard; errors pass axe; the practice account survives a reload (ADR-0031)', async ({
-  page,
-}) => {
-  // Submitting with no invite shows the errors and puts the cursor in the first field.
-  await page.goto('/register')
-  await expect(page.getByRole('heading', { level: 1, name: 'Create an account' })).toBeVisible()
-  await page.getByRole('button', { name: 'Create passkey' }).focus()
-  await page.keyboard.press('Enter')
-  await expect(page.getByRole('textbox', { name: 'Name' })).toBeFocused()
-  await expect(page.getByText('Enter the code from your invite link.')).toBeVisible()
-  await expectNoA11yViolations(page)
-  await expectNoHorizontalOverflow(page)
+    // An invite link fills in the code, then the code leaves the address bar.
+    await page.goto('/register?invite=AAAAAAAAAAAAAAAAAAAAAA')
+    await expect(page.getByRole('textbox', { name: 'Invite code' })).toHaveValue(
+      'AAAAAAAAAAAAAAAAAAAAAA',
+    )
+    await expect(page).toHaveURL(/\/register$/)
+    await page.getByRole('textbox', { name: 'Name' }).focus()
+    await page.keyboard.type('Ada Lovelace')
+    await page.keyboard.press('Enter')
 
-  // An invite link fills in the code, then the code leaves the address bar.
-  await page.goto('/register?invite=AAAAAAAAAAAAAAAAAAAAAA')
-  await expect(page.getByRole('textbox', { name: 'Invite code' })).toHaveValue(
-    'AAAAAAAAAAAAAAAAAAAAAA',
-  )
-  await expect(page).toHaveURL(/\/register$/)
-  await page.getByRole('textbox', { name: 'Name' }).focus()
-  await page.keyboard.type('Ada Lovelace')
-  await page.keyboard.press('Enter')
-
-  await expect(page).toHaveURL(/\/$/)
-  await expect(page.getByText('Signed in as Ada.')).toBeVisible()
-  await page.reload()
-  const chip = page.getByRole('banner').getByRole('link', { name: 'Ada, open your account' })
-  await chip.click()
-  await expect(page.getByText('Practice account, made on this device')).toBeVisible()
+    await expect(page).toHaveURL(/\/$/)
+    await expect(page.getByText('Signed in as Ada.')).toBeVisible()
+    await page.reload()
+    const chip = page.getByRole('banner').getByRole('link', { name: 'Ada, open your account' })
+    await chip.click()
+    await expect(page.getByText('Practice account, made on this device')).toBeVisible()
+  })
 })
 
 test('liking a film tunes Home’s recommendations, with a match and the reason (ADR-0026)', async ({
@@ -241,10 +272,13 @@ test('liking a film tunes Home’s recommendations, with a match and the reason 
   // Detail stages tag changes until Save.
   await page.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByRole('status')).toContainText('Saved.')
-  // Client-side navigation keeps the in-memory guest picks (ADR-0011).
   await page.getByRole('link', { name: 'Deep Cuts, go to Home' }).click()
-  // The top pick is the first cassette in "Go a little deeper" (no featured card).
-  const feature = page.getByRole('region', { name: 'Go a little deeper' }).getByRole('link').first()
+  // The top pick is the first row in Discovery (no featured card).
+  const feature = page
+    .getByRole('region', { name: 'Discovery' })
+    .getByRole('listitem')
+    .first()
+    .getByRole('link')
   await expect(feature).toContainText(/\d+% match/)
   await expect(page.getByText('Like a few films to tune these picks to you.')).toHaveCount(0)
   await expect(feature).toContainText('Because you liked The Thing')
@@ -265,6 +299,8 @@ test('tag and genre colors reach the page (runtime CSS variables, ADR-0020/0027)
     const root = getComputedStyle(document.documentElement)
     const names = ['seen', 'watchlist', 'liked', 'disliked'].map((t) => `--color-tag-${t}`)
     names.push('--color-genre', '--color-genre-horror', '--color-genre-drama')
+    // FeaturePanel sets `--panel` from these at runtime (ADR-0035).
+    names.push('--color-panel-top-ten', '--color-panel-watchlist', '--color-panel-discovery')
     return names.filter((n) => !root.getPropertyValue(n).trim())
   })
   expect(missing).toEqual([])

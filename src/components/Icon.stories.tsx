@@ -15,6 +15,8 @@ const NAMES: IconName[] = [
   'check',
   'user',
   'x',
+  'star',
+  'sparkle',
 ]
 
 const meta = { title: 'Components/Icon', component: Icon, args: { name: 'search' } } satisfies Meta<

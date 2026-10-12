@@ -1,11 +1,12 @@
 // Tests for registration (ADR-0031): every field validated at once with focus on the first
 // problem, the invite link filling in the code (then leaving the URL), a valid form making a
-// practice account that keeps the person's picks, the honest "practice" label, and failures.
+// practice account and returning to where sign-in started, the honest "practice" label, and
+// failures.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { createMockSessionProvider } from '../adapters/local/MockSessionProvider'
-import type { SessionProvider } from '../adapters/SessionProvider'
+import { SIGNED_OUT, type SessionProvider } from '../adapters/SessionProvider'
 import { renderRoute } from '../test/renderRoute'
 
 const INVITE = 'AAAAAAAAAAAAAAAAAAAAAA'
@@ -23,7 +24,7 @@ async function fill(
 
 describe('registration (ADR-0031)', () => {
   it('says it is practice only, never a real account', async () => {
-    renderRoute('/register')
+    renderRoute('/register', { initialSession: SIGNED_OUT })
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Create an account' }),
     ).toBeInTheDocument()
@@ -32,7 +33,7 @@ describe('registration (ADR-0031)', () => {
 
   it('shows every problem at once and focuses the first one', async () => {
     const user = userEvent.setup()
-    const { router } = renderRoute('/register')
+    const { router } = renderRoute('/register', { initialSession: SIGNED_OUT })
     await fill(user, { name: '', invite: 'not-a-code' })
     await user.click(screen.getByRole('button', { name: 'Create passkey' }))
 
@@ -45,32 +46,23 @@ describe('registration (ADR-0031)', () => {
     expect(router.state.location.pathname).toBe('/register')
   })
 
-  it('registers, carries picks over and returns to where sign-in started', async () => {
+  it('registers and returns to where sign-in started', async () => {
     const user = userEvent.setup()
-    const { router } = renderRoute('/search?q=thing', { features: { searchPage: true } })
-    await user.click(await screen.findByRole('button', { name: 'Want to see The Thing' }))
-    await user.click(within(screen.getByRole('banner')).getByRole('link', { name: 'Sign in' }))
+    const { router } = renderRoute('/lists?tag=liked', { initialSession: SIGNED_OUT })
     await user.click(await screen.findByRole('link', { name: 'Create an account' }))
-
-    expect(await screen.findByText(/Your 1 unsaved pick comes with your new account/)).toBeVisible()
     await fill(user)
     await user.click(screen.getByRole('button', { name: 'Create passkey' }))
 
-    await waitFor(() => expect(router.state.location.pathname).toBe('/search'))
-    expect(router.state.location.search).toBe('?q=thing')
+    await waitFor(() => expect(router.state.location.pathname).toBe('/lists'))
+    expect(router.state.location.search).toBe('?tag=liked')
+    expect(await screen.findByText('Signed in as Ada.')).toBeInTheDocument()
     expect(
-      await screen.findByText(/Signed in as Ada\. Your 1 pick is in your account\./),
+      within(screen.getByRole('banner')).getByRole('link', { name: 'Ada, open your account' }),
     ).toBeInTheDocument()
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Want to see The Thing' })).toHaveAttribute(
-        'aria-pressed',
-        'true',
-      ),
-    )
   })
 
   it('fills in the code from an invite link, then removes it from the URL', async () => {
-    const { router } = renderRoute(`/register?invite=${INVITE}`)
+    const { router } = renderRoute(`/register?invite=${INVITE}`, { initialSession: SIGNED_OUT })
     expect(await screen.findByRole('textbox', { name: 'Invite code' })).toHaveValue(INVITE)
     await waitFor(() => expect(router.state.location.search).toBe(''))
   })
@@ -81,7 +73,10 @@ describe('registration (ADR-0031)', () => {
       ...createMockSessionProvider(),
       register: () => Promise.reject(new Error('offline')),
     }
-    const { router } = renderRoute('/register', { sessionProvider: failing })
+    const { router } = renderRoute('/register', {
+      sessionProvider: failing,
+      initialSession: SIGNED_OUT,
+    })
     await fill(user)
     await user.click(screen.getByRole('button', { name: 'Create passkey' }))
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -101,12 +96,7 @@ describe('registration (ADR-0031)', () => {
   })
 
   it('sends someone who is already signed in to their account', async () => {
-    const { router } = renderRoute('/register', {
-      initialSession: {
-        kind: 'account',
-        account: { id: 'demo', name: 'Mike Curts', method: 'demo' },
-      },
-    })
+    const { router } = renderRoute('/register')
     await waitFor(() => expect(router.state.location.pathname).toBe('/account'))
   })
 })

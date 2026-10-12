@@ -7,7 +7,7 @@ import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createCloudflareSessionProvider } from '../adapters/cloudflare/CloudflareSessionProvider'
-import type { Session } from '../adapters/SessionProvider'
+import { SIGNED_OUT, type Session } from '../adapters/SessionProvider'
 import { createFakeAccountsApi } from '../test/msw/fakeAccountsApi'
 import { server } from '../test/msw/server'
 import { renderRoute } from '../test/renderRoute'
@@ -34,6 +34,7 @@ describe('registration with real accounts', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/register', {
       sessionProvider: createCloudflareSessionProvider(),
+      initialSession: SIGNED_OUT,
     })
     await screen.findByRole('heading', { level: 1, name: 'Create an account' })
     expect(screen.queryByText(/No passkey or real account is created/)).not.toBeInTheDocument()
@@ -48,7 +49,10 @@ describe('registration with real accounts', () => {
   it('explains a refused invite on the invite field, and focuses it', async () => {
     api.state.rejectInvite = true
     const user = userEvent.setup()
-    renderRoute('/register', { sessionProvider: createCloudflareSessionProvider() })
+    renderRoute('/register', {
+      sessionProvider: createCloudflareSessionProvider(),
+      initialSession: SIGNED_OUT,
+    })
     await screen.findByRole('heading', { level: 1, name: 'Create an account' })
     await user.type(screen.getByRole('textbox', { name: 'Name' }), 'Ada')
     await user.type(screen.getByRole('textbox', { name: 'Invite code' }), INVITE)
@@ -66,6 +70,7 @@ describe('sign-in with real accounts', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/sign-in', {
       sessionProvider: createCloudflareSessionProvider(),
+      initialSession: SIGNED_OUT,
     })
     const [first] = await screen.findAllByRole('button', { name: /Sign in with a passkey|demo/ })
     if (!first) throw new Error('no sign-in buttons')
@@ -108,7 +113,7 @@ describe('account settings (A2b)', () => {
     expect(api.state.signedIn?.name).toBe('Pat Key')
   })
 
-  it('deletes the account only after a confirm, then goes home as a guest', async () => {
+  it('deletes the account only after a confirm, then lands on the landing page', async () => {
     const user = userEvent.setup()
     const { router } = renderAccount()
     await user.click(await screen.findByRole('button', { name: 'Delete account' }))

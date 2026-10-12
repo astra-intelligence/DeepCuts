@@ -1,32 +1,38 @@
-// Tests for Home's recommendation area: popular films without likes, scored picks with likes,
-// (scored picks with a match and the reason).
-import { screen, waitFor, within } from '@testing-library/react'
+// Tests for Home (signed in): its three panels in order and in one grid (ADR-0035), and the
+// Discovery panel: popular films without likes, scored picks with a match and the reason with
+// likes.
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { delay, http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { renderRoute } from '../test/renderRoute'
-import { candidateDetailFixtures, movieFixture, searchFixture } from '../test/msw/fixtures'
+import { searchFixture } from '../test/msw/fixtures'
 import { server } from '../test/msw/server'
 
-/** The first (top-ranked) pick in "Go a little deeper", once the picks have loaded. */
+/** The first (top-ranked) pick in the Discovery panel, once the picks have loaded. */
 async function firstPick() {
-  const grid = await screen.findByRole('region', { name: 'Go a little deeper' })
-  const [first] = await within(grid).findAllByRole('link')
+  const panel = await screen.findByRole('region', { name: 'Discovery' })
+  // The first row's link (the skeleton rows are aria-hidden, so they never match).
+  const [first] = await within(panel).findAllByRole('listitem')
   if (!first) throw new Error('no picks')
-  return first
+  return within(first).getByRole('link')
 }
 
 describe('home', () => {
-  it('puts personal-list areas before its compact recommendation section', async () => {
+  it('shows Top Ten, the watchlist and Discovery as panels, in that order, in one grid', async () => {
     renderRoute('/')
     const topTen = await screen.findByRole('heading', { level: 2, name: 'Top Ten' })
     const watchlist = screen.getByRole('heading', { level: 2, name: 'Movies I want to watch' })
-    const recommendations = screen.getByRole('heading', { level: 2, name: 'Go a little deeper' })
+    const recommendations = screen.getByRole('heading', { level: 2, name: 'Discovery' })
     expect(topTen.compareDocumentPosition(watchlist)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
     expect(watchlist.compareDocumentPosition(recommendations)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     )
+    // One list of three panels: stacked on phones, three columns from `lg` (ADR-0035).
+    const grid = topTen.closest('ul')
+    expect(grid).toHaveClass('lg:grid-cols-3')
+    expect(grid?.children).toHaveLength(3)
   })
 
   it('returns a retired Discover URL to Home', async () => {
@@ -45,52 +51,25 @@ describe('home', () => {
 
     renderRoute('/')
     expect(await screen.findByRole('status')).toHaveTextContent('Finding films…')
-    expect(document.querySelector('[data-loading-section="grid"]')).toBeInTheDocument()
+    expect(document.querySelector('[data-loading-section="rows"]')).toBeInTheDocument()
     expect(await firstPick()).toHaveAccessibleName(/^The Thing/)
   })
 
-  it('reveals films before secondary credits and reserves the late content space', async () => {
-    // Hold only the first pick's details. Its cassette should show at once, while the
-    // fixed-height credit container prevents the late names from shifting the card.
-    server.use(
-      http.get('/api/tmdb/movie/:id', async ({ params }) => {
-        if (params.id === String(movieFixture.id)) {
-          await delay(750)
-          return HttpResponse.json(movieFixture)
-        }
-        const candidate = candidateDetailFixtures[Number(params.id)]
-        return candidate ? HttpResponse.json(candidate) : undefined
-      }),
-    )
-
-    renderRoute('/')
-    const feature = await firstPick()
-    expect(feature).toHaveAccessibleName(/^The Thing/)
-    await screen.findByRole('link', { name: /Alien.*1979 · Horror/ })
-    expect(document.querySelector('[data-loading-section="grid"]')).not.toBeInTheDocument()
-    expect(feature.querySelector('[data-credit-lines]')).toHaveClass('min-h-10')
-    expect(feature).not.toHaveTextContent('Director: John Carpenter')
-    await waitFor(() => expect(feature).toHaveTextContent('Director: John Carpenter'))
-  })
-
-  it('shows the picks as cassettes, with no featured card', async () => {
+  it('shows the picks as compact rows, with no featured card or credits', async () => {
     renderRoute('/')
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Your movies, close at hand' }),
     ).toBeInTheDocument()
     expect(await firstPick()).toHaveAccessibleName(/^The Thing/)
-    // The big featured card is gone (owner, 2026-10-09): the top pick is the first cassette.
+    // The big featured card is gone (owner, 2026-10-09): the top pick is the first row.
     expect(screen.queryByText(/featured deep cut/i)).not.toBeInTheDocument()
-    const grid = screen.getByRole('region', { name: 'Go a little deeper' })
-    const alien = within(grid).getByRole('link', { name: /Alien.*1979 · Horror/ })
-    // Each poster wears its VHS genre sticker, which stays out of the link's accessible name.
-    expect(alien.querySelector('[data-genre-sticker="horror"]')).toHaveTextContent('Horror')
-    // Director and writer fill in from the film's details, without any likes.
-    await waitFor(() => expect(alien).toHaveTextContent('Director: Ridley Scott'))
-    expect(alien).toHaveTextContent('Writer: Dan O’Bannon')
-    // The title is clamped to two lines visually; the full title stays in the page and on hover.
-    const title = within(alien).getByRole('heading', { level: 3, name: 'Alien' })
-    expect(title).toHaveClass('line-clamp-2')
+    const panel = screen.getByRole('region', { name: 'Discovery' })
+    const alien = within(panel).getByRole('link', { name: /Alien.*1979 · Horror/ })
+    // Rows are compact (ADR-0035): no director/writer lines, so no extra details calls.
+    expect(alien).not.toHaveTextContent('Director:')
+    // The title is cut to one line visually; the full title stays in the page and on hover.
+    const title = within(alien).getByText('Alien')
+    expect(title).toHaveClass('truncate')
     expect(title).toHaveAttribute('title', 'Alien')
   })
 
@@ -141,13 +120,8 @@ describe('home with likes (ADR-0026)', () => {
     expect(feature).toHaveTextContent('The Fog')
     // Picks only appear once both passes are in, so the top pick never changes under you.
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
-    // Cards name the director and writer; the old "Directed by X, like Y" reason is gone.
-    expect(feature).toHaveTextContent('Director: John Carpenter')
-    expect(feature).not.toHaveTextContent('Directed by')
-    const grid = screen.getByRole('region', { name: 'Go a little deeper' })
-    const halloween = within(grid).getByRole('link', { name: /Halloween/ })
-    await waitFor(() => expect(halloween).toHaveTextContent('Writers: John Carpenter, Debra Hill'))
-    expect(halloween).toHaveTextContent('Director: John Carpenter')
+    const panel = screen.getByRole('region', { name: 'Discovery' })
+    expect(within(panel).getByRole('link', { name: /Halloween/ })).toHaveTextContent(/\d+% match/)
     // The liked film itself is never recommended back.
     expect(screen.queryByRole('link', { name: /^The Thing/ })).not.toBeInTheDocument()
   })

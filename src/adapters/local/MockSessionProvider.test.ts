@@ -1,9 +1,9 @@
-// Tests for the local session provider: the shared SessionProvider contract, a saved profile
-// surviving a new instance, a stale demo account name being refreshed, registration never
+// Tests for the local session provider: the shared SessionProvider contract, a retired device
+// profile being ignored (ADR-0034), a stale demo account name being refreshed, registration never
 // storing the invite code, and versionedStore's migration hook.
 import { beforeEach, expect, it } from 'vitest'
 import { sessionProviderContract } from '../sessionProvider.contract'
-import { createMockSessionProvider } from './MockSessionProvider'
+import { createMockSessionProvider, RETIRED_PROFILE_KEYS } from './MockSessionProvider'
 import { versionedStore } from './versionedStore'
 import { z } from 'zod'
 
@@ -11,12 +11,12 @@ beforeEach(() => localStorage.clear())
 
 sessionProviderContract('MockSessionProvider', () => createMockSessionProvider())
 
-it('a profile survives a new instance (saved on this device)', async () => {
-  await createMockSessionProvider().createProfile('Mike')
-  expect(await createMockSessionProvider().getSession()).toEqual({
-    kind: 'profile',
-    displayName: 'Mike',
-  })
+it('a device profile saved by an older version is ignored, not read or deleted (ADR-0034)', async () => {
+  localStorage.setItem('deepcuts:v1:profile', JSON.stringify({ displayName: 'Mike' }))
+  localStorage.setItem('deepcuts:v1:tags', '[]')
+  expect(await createMockSessionProvider().getSession()).toEqual({ kind: 'signedOut' })
+  for (const key of RETIRED_PROFILE_KEYS)
+    expect(localStorage.getItem(`deepcuts:v1:${key}`)).not.toBeNull()
 })
 
 it('a demo account saved under an old name comes back with the current name', async () => {

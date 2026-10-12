@@ -1,9 +1,8 @@
 // The session provider for real accounts (ADR-0031, Stage 6 A4): passkeys against the accounts API
 // (`/api/auth/*`, Cloudflare Pages Functions + D1).
 //
-// Only passkey accounts live on the server. Everything else stays on this device and is handed to
-// the local provider unchanged: guests, "Save my picks" profiles, and the demo account, which
-// reviewers can try without signing up (ADR-0025).
+// Only passkey accounts live on the server. The demo account, which reviewers can try without an
+// invite (ADR-0025), stays on this device and is handed to the local provider unchanged.
 //
 // The browser side of WebAuthn comes from @simplewebauthn/browser: `startRegistration` asks the
 // device to create a passkey, `startAuthentication` asks it to use one. Cancelling that prompt
@@ -14,6 +13,7 @@ import { createMockSessionProvider } from '../local/MockSessionProvider'
 import { AccountsApiError } from './AccountsApiError'
 import {
   registrationSchema,
+  SIGNED_OUT,
   type Registration,
   type Session,
   type SessionProvider,
@@ -56,8 +56,6 @@ const accountSession = (user: z.infer<typeof userSchema>): Session => ({
   account: { id: user.id, name: user.name, method: 'passkey' },
 })
 
-const GUEST: Session = { kind: 'guest' }
-
 // Passkey first: it's the real account. The demo stays for reviewers (ADR-0025).
 const PASSKEY: SignInMethod = {
   id: 'passkey',
@@ -67,7 +65,7 @@ const PASSKEY: SignInMethod = {
 
 /**
  * Builds the Cloudflare session provider.
- * @param local - The on-device provider for guests, profiles and the demo (tests inject one).
+ * @param local - The on-device provider for the demo account (tests inject one).
  */
 export function createCloudflareSessionProvider(
   local: SessionProvider = createMockSessionProvider(),
@@ -77,11 +75,10 @@ export function createCloudflareSessionProvider(
       try {
         return accountSession(await api('GET', '/api/auth/session', userSchema))
       } catch {
-        // Signed out (401), or the API can't be reached: whatever this device has saved.
+        // Signed out (401), or the API can't be reached: the demo account if this device has one.
         return local.getSession()
       }
     },
-    createProfile: (displayName) => local.createProfile(displayName),
     practiceRegistration: false,
     signInMethods: () => [PASSKEY, ...local.signInMethods()],
     async signIn(method) {
@@ -96,7 +93,7 @@ export function createCloudflareSessionProvider(
         challengeId,
         response,
       })
-      // The device profile's picks move into the account (AppSessionProvider), so it's retired.
+      // Only one account at a time: a demo sign-in on this device ends here.
       await local.signOut()
       return accountSession(user)
     },
@@ -121,7 +118,7 @@ export function createCloudflareSessionProvider(
       // End the server session if there is one (harmless otherwise), and anything on the device.
       await api('POST', '/api/auth/sign-out', z.unknown()).catch(() => undefined)
       await local.signOut()
-      return GUEST
+      return SIGNED_OUT
     },
     async rename(name) {
       return accountSession(await api('PATCH', '/api/auth/me', userSchema, { name }))
@@ -129,7 +126,7 @@ export function createCloudflareSessionProvider(
     async deleteAccount() {
       await api('DELETE', '/api/auth/me', z.unknown())
       await local.signOut()
-      return GUEST
+      return SIGNED_OUT
     },
   }
 }
