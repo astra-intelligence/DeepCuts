@@ -10,8 +10,11 @@ import { server } from '../../test/msw/server'
 import { createMockSessionProvider } from '../local/MockSessionProvider'
 import { sessionProviderContract } from '../sessionProvider.contract'
 import { tagRepositoryContract } from '../tagRepository.contract'
+import { topTenRepositoryContract } from '../topTenRepository.contract'
+import { TopTenFullError } from '../../domain/topTen'
 import { createCloudflareSessionProvider } from './CloudflareSessionProvider'
 import { createCloudflareTagRepository, TagApiError } from './CloudflareTagRepository'
+import { createCloudflareTopTenRepository, TopTenApiError } from './CloudflareTopTenRepository'
 
 // The device's answer to the passkey prompt. Tests make it reject to imitate "Cancel".
 const prompt = vi.hoisted(() => ({
@@ -158,5 +161,36 @@ describe('CloudflareTagRepository', () => {
     const record = { tmdbId: 1, tag: 'seen' as const, createdAt: '2026-01-01T00:00:00.000Z' }
     await createCloudflareTagRepository().importAll(Array(12_000).fill(record))
     expect(sizes).toEqual([5000, 5000, 2000])
+  })
+})
+
+describe('CloudflareTopTenRepository', () => {
+  topTenRepositoryContract('CloudflareTopTenRepository', () => {
+    const fake = createFakeAccountsApi()
+    fake.state.signedIn = { id: 'u', name: 'U' }
+    server.use(...fake.handlers)
+    return createCloudflareTopTenRepository()
+  })
+
+  it('turns 409 top_ten_full into TopTenFullError, and other failures into TopTenApiError', async () => {
+    const repo = createCloudflareTopTenRepository()
+    server.use(
+      http.put('/api/top-ten', () => HttpResponse.json({ error: 'top_ten_full' }, { status: 409 })),
+      http.delete('/api/top-ten', () => HttpResponse.json({ error: 'nope' }, { status: 500 })),
+    )
+    await expect(repo.add(1)).rejects.toBeInstanceOf(TopTenFullError)
+    await expect(repo.remove(1)).rejects.toMatchObject({ status: 500 })
+    // Signed out on the server: a plain API error, never an empty list that looks like success.
+    await expect(repo.list()).rejects.toBeInstanceOf(TopTenApiError)
+  })
+
+  it('refuses an answer that is not a valid list', async () => {
+    server.use(
+      http.get('/api/top-ten', () => HttpResponse.json({ films: [1, 1] })),
+      http.put('/api/top-ten', () => new HttpResponse('<html>', { status: 200 })),
+    )
+    const repo = createCloudflareTopTenRepository()
+    await expect(repo.list()).rejects.toMatchObject({ status: 502 })
+    await expect(repo.add(1)).rejects.toMatchObject({ status: 502 })
   })
 })

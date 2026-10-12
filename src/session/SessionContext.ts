@@ -1,5 +1,5 @@
-// Session context (ADR-0016): makes the current session, and the tag store that belongs to it,
-// available to every screen through `useSession()`.
+// Session context (ADR-0016): makes the current session, and the tag and Top Ten stores that
+// belong to it, available to every screen through `useSession()`.
 //
 // Screens never pick a store themselves: a demo or practice account gets its own localStorage
 // store, a passkey account gets its lists on the server (ADR-0031), and signed out gets an empty
@@ -12,12 +12,15 @@ import type {
   SignInMethodId,
 } from '../adapters/SessionProvider'
 import type { TagRepository } from '../adapters/TagRepository'
+import type { TopTenRepository } from '../adapters/TopTenRepository'
 
 /** What `useSession()` gives a component. */
 export interface SessionValue {
   session: Session
   /** Demo or practice: localStorage. Passkey account: the server. Signed out: empty, read-only. */
   tags: TagRepository
+  /** The Top Ten (ADR-0036), stored in the same place as `tags`. Signed out: empty, read-only. */
+  topTen: TopTenRepository
   /** The sign-in options to show on the sign-in page. */
   signInMethods: readonly SignInMethod[]
   /** Signs in with one of `signInMethods`. Rejects, changing nothing, when sign-in doesn't finish. */

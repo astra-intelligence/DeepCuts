@@ -1,9 +1,11 @@
-// The tag store while signed out (ADR-0034): empty, and it refuses every write.
+// The tag store and Top Ten store while signed out (ADR-0034, ADR-0036): empty, and they refuse
+// every write.
 //
-// Signed out, only the landing page and the account pages render, and none of them tag films. So
-// this store is never expected to receive a write. If one arrives anyway (a bug, or a page that
+// Signed out, only the landing page and the account pages render, and none of them tag films or
+// change a Top Ten. So these stores are never expected to receive a write. If one arrives anyway (a bug, or a page that
 // slipped past the route guard), it fails loudly instead of quietly keeping picks nobody can save.
 import type { TagRepository } from './TagRepository'
+import type { TopTenRepository } from './TopTenRepository'
 
 /** Thrown by any write to the signed-out store. */
 export class SignedOutError extends Error {
@@ -26,4 +28,11 @@ export const signedOutTags: TagRepository = {
   setTag: refuse,
   importAll: refuse,
   clear: refuse,
+}
+
+/** The signed-out Top Ten: always empty, and adding or removing a film throws `SignedOutError`. */
+export const signedOutTopTen: TopTenRepository = {
+  list: async () => [],
+  add: refuse,
+  remove: refuse,
 }
