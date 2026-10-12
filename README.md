@@ -2,7 +2,7 @@
 
 A fast, very visual, one-thumb movie tracker. Tag films (Seen it, Want to see, Like, Dislike) in a tap or two, and it surfaces deep cuts you've never heard of.
 
-> Status: **live at https://deep-cuts.example** since 2026-10-08 (Cloudflare Pages, invite-only passkey accounts; not indexed by search engines). Recommendations from your likes (ADR-0032), film details, tagging, My Lists and a demo sign-in all work locally too. [ADR-0033](docs/adr/0033-welcome-is-the-primary-home.md) makes Welcome the primary home and recommendation surface, with no separate Discover route. A responsive, mobile-first website (ADR-0021).
+> Status: **live at https://deep-cuts.example** since 2026-10-08 (Cloudflare Pages, invite-only passkey accounts; not indexed by search engines). Recommendations from your likes (ADR-0032), film details, tagging, My Lists and a demo sign-in all work locally too. [ADR-0033](docs/adr/0033-welcome-is-the-primary-home.md) makes Welcome the primary home and recommendation surface, with no separate Discover route. You're either signed in or signed out ([ADR-0034](docs/adr/0034-two-session-states-signed-in-or-out.md)): signed out, `/` is a landing page that explains Top Ten, Movies I want to watch and Discovery in the same panels Home uses ([ADR-0035](docs/adr/0035-landing-and-three-panel-home.md)). A responsive, mobile-first website (ADR-0021).
 
 ## Run locally
 
