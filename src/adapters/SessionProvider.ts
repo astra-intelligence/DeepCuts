@@ -1,16 +1,11 @@
-// The session contract (ADR-0013, ADR-0025): who is using the app.
+// The session contract (ADR-0013, ADR-0025, ADR-0034): who is using the app.
 //
-// There are three kinds of session:
-// - guest: picks live only in memory and vanish on reload (ADR-0011, an honest guest mode);
-// - profile: "Save my picks" keeps them in this browser (ADR-0022);
+// There are two kinds of session (ADR-0034):
+// - signedOut: the landing page and the account pages only; nothing is read or saved;
 // - account: signed in. A real account signs in with a passkey (ADR-0031, Cloudflare D1). The
 //   shared "demo" account (ADR-0025) and the "practice" account the local mock makes from the
 //   registration form are stand-ins that live only on this device.
 import { z } from 'zod'
-
-// The name is optional: "Save my picks" creates a profile without asking for one (ADR-0022).
-// Trimmed and capped so stored data stays small and safe to show.
-export const displayNameSchema = z.string().trim().max(40)
 
 /** A signed-in account as stored and shown. `id` is restricted so it's safe in storage keys. */
 export const accountSchema = z.object({
@@ -50,18 +45,16 @@ export interface SignInMethod {
   description: string
 }
 
-/** The current session: a guest, a profile saved on this device, or a signed-in account. */
-export type Session =
-  | { kind: 'guest' }
-  | { kind: 'profile'; displayName: string }
-  | { kind: 'account'; account: Account }
+/** The current session: signed out, or signed in to an account (ADR-0034). */
+export type Session = { kind: 'signedOut' } | { kind: 'account'; account: Account }
+
+/** The one signed-out session; providers return this rather than building their own. */
+export const SIGNED_OUT: Session = { kind: 'signedOut' }
 
 /** Everything the app can do with sessions, independent of how sign-in actually works. */
 export interface SessionProvider {
-  /** The session saved from last time, or a guest session. */
+  /** The account signed in last time, or signed out. */
   getSession(): Promise<Session>
-  /** Saves picks on this device ("Save my picks"). Throws a ZodError for an over-long name. */
-  createProfile(displayName?: string): Promise<Session>
   /** The sign-in options to offer, in display order. */
   signInMethods(): readonly SignInMethod[]
   /** Rejects for a method this provider doesn't offer, or when sign-in doesn't complete. */
@@ -71,7 +64,7 @@ export interface SessionProvider {
    * for invalid details. The local mock keeps only the name; the invite code is discarded.
    */
   register(details: Registration): Promise<Session>
-  /** Back to guest mode on this device. A signed-in account keeps its lists. */
+  /** Signs out on this device. The account keeps its lists. */
   signOut(): Promise<Session>
   /**
    * True when `register` only makes a practice account on this device (the local mock), so the

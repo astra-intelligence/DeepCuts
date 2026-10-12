@@ -7,10 +7,8 @@
 // which the site can't reach, so the copy tells them where to remove it.
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Button, FieldError, Form, Input, Label, TextField } from 'react-aria-components'
-import { useNavigate } from 'react-router'
 import { z } from 'zod'
 import { registrationSchema } from '../adapters/SessionProvider'
-import { HOME } from '../config/features'
 import { useSession } from '../session/SessionContext'
 
 // Same field styles as the registration form.
@@ -104,7 +102,6 @@ function ChangeName({ name, rename }: { name: string; rename: (name: string) => 
 
 // Delete, with a confirm step and honest copy about what happens.
 function DeleteAccount({ deleteAccount }: { deleteAccount: () => Promise<void> }) {
-  const navigate = useNavigate()
   const [confirming, setConfirming] = useState(false)
   const [pending, setPending] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -119,8 +116,8 @@ function DeleteAccount({ deleteAccount }: { deleteAccount: () => Promise<void> }
     setFailed(false)
     setPending(true)
     try {
+      // Once it's gone, the route guard (RequireAccount) takes this page to the landing page.
       await deleteAccount()
-      navigate(HOME.path)
     } catch {
       setFailed(true)
       setPending(false)

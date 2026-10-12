@@ -1,46 +1,48 @@
-// Tests for the sign-in flow: signing in, picks moving to the account, returning to where sign-in
-// started (same-app paths only), failures, and the signed-in Account page with sign out.
+// Tests for the sign-in flow (ADR-0025, ADR-0034): a signed-in page sends a signed-out visitor
+// to sign in and back again (same-app paths only), failures change nothing, and the signed-in
+// Account page signs out to the landing page.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { describe, expect, it } from 'vitest'
 import { createMockSessionProvider } from '../adapters/local/MockSessionProvider'
-import type { SessionProvider } from '../adapters/SessionProvider'
+import { SIGNED_OUT, type SessionProvider } from '../adapters/SessionProvider'
 import { renderRoute } from '../test/renderRoute'
 
 const header = () => screen.getByRole('banner')
 
 describe('sign in (ADR-0025)', () => {
-  it('signs in from the header, carries picks over and returns to the same page', async () => {
+  it('sends a signed-out visitor from a signed-in page to sign in, then back to it (ADR-0034)', async () => {
     const user = userEvent.setup()
-    const { router } = renderRoute('/search?q=thing', { features: { searchPage: true } })
-    await user.click(await screen.findByRole('button', { name: 'Want to see The Thing' }))
-    await user.click(within(header()).getByRole('link', { name: 'Sign in' }))
-
+    const { router } = renderRoute('/lists?tag=watchlist', { initialSession: SIGNED_OUT })
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Sign in to Deep Cuts' }),
     ).toBeInTheDocument()
-    expect(await screen.findByText(/Your 1 unsaved pick comes with you/)).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/sign-in')
     await user.click(screen.getByRole('button', { name: /Continue with a demo account/ }))
 
-    await waitFor(() => expect(router.state.location.pathname).toBe('/search'))
-    expect(router.state.location.search).toBe('?q=thing')
-    const notice = await screen.findByText(/Signed in as Mike\. Your 1 pick is in your account\./)
+    await waitFor(() => expect(router.state.location.pathname).toBe('/lists'))
+    expect(router.state.location.search).toBe('?tag=watchlist')
+    const notice = await screen.findByText('Signed in as Mike.')
     expect(notice).toHaveAttribute('role', 'status')
     expect(
       within(header()).getByRole('link', { name: 'Mike, open your account' }),
     ).toBeInTheDocument()
-    // The account's picks load asynchronously after the session switches.
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Want to see The Thing' })).toHaveAttribute(
-        'aria-pressed',
-        'true',
-      ),
-    )
   })
 
+  it.each(['/movie/1091', '/account', '/lists'])(
+    'signed out, %s redirects to sign in',
+    async (path) => {
+      const { router } = renderRoute(path, { initialSession: SIGNED_OUT })
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Sign in to Deep Cuts' }),
+      ).toBeInTheDocument()
+      expect(router.state.location.pathname).toBe('/sign-in')
+    },
+  )
+
   it('labels the demo method as practice, never as a real account', async () => {
-    renderRoute('/sign-in')
+    renderRoute('/sign-in', { initialSession: SIGNED_OUT })
     const demo = await screen.findByRole('button', { name: /Continue with a demo account/ })
     expect(demo).toHaveTextContent('Practice sign-in. No real account is created.')
   })
@@ -51,7 +53,10 @@ describe('sign in (ADR-0025)', () => {
       ...createMockSessionProvider(),
       signIn: () => Promise.reject(new Error('popup closed')),
     }
-    const { router } = renderRoute('/sign-in', { sessionProvider: failing })
+    const { router } = renderRoute('/sign-in', {
+      sessionProvider: failing,
+      initialSession: SIGNED_OUT,
+    })
     await user.click(await screen.findByRole('button', { name: /Continue with a demo account/ }))
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Sign-in didn’t finish. Nothing was changed.',
@@ -60,21 +65,16 @@ describe('sign in (ADR-0025)', () => {
   })
 
   it('sends someone who is already signed in to their account', async () => {
-    const { router } = renderRoute('/sign-in', {
-      initialSession: {
-        kind: 'account',
-        account: { id: 'demo', name: 'Mike Curts', method: 'demo' },
-      },
-    })
+    const { router } = renderRoute('/sign-in')
     await waitFor(() => expect(router.state.location.pathname).toBe('/account'))
   })
 
   it('only returns to same-app paths (history state is untrusted)', async () => {
     const user = userEvent.setup()
-    const { router } = renderRoute('/lists')
+    const { router } = renderRoute('/', { initialSession: SIGNED_OUT })
     await act(() => router.navigate('/sign-in', { state: { from: '//evil.example' } }))
     await user.click(await screen.findByRole('button', { name: /Continue with a demo account/ }))
-    // An unsafe `from` falls back to home: Discover while the Search page is off.
+    // An unsafe `from` falls back to home.
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
   })
 })
@@ -82,12 +82,7 @@ describe('sign in (ADR-0025)', () => {
 describe('signed-in account page', () => {
   it('shows the account and signs out after confirming', async () => {
     const user = userEvent.setup()
-    const { router } = renderRoute('/account', {
-      initialSession: {
-        kind: 'account',
-        account: { id: 'demo', name: 'Mike Curts', method: 'demo' },
-      },
-    })
+    const { router } = renderRoute('/account')
     expect(await screen.findByRole('heading', { level: 1, name: 'Mike Curts' })).toBeInTheDocument()
     expect(screen.getByText('Signed in with the demo account')).toBeInTheDocument()
     expect(screen.getByText(/lists are kept on this device/)).toBeInTheDocument()
@@ -100,7 +95,11 @@ describe('signed-in account page', () => {
 
     await user.click(screen.getByRole('button', { name: 'Sign out' }))
     await user.click(screen.getByRole('button', { name: 'Yes, sign out' }))
+    // Signing out lands on the landing page, not on a sign-in prompt for /account (ADR-0034).
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
     expect(within(header()).getByRole('link', { name: 'Sign in' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Your movies, close at hand' }),
+    ).toBeInTheDocument()
   })
 })

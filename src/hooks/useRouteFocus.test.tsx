@@ -14,7 +14,7 @@ describe('useRouteFocus', () => {
   it('focuses the new page heading after navigation', async () => {
     const { router } = renderRoute('/lists')
     await act(() => router.navigate('/account'))
-    const heading = await screen.findByRole('heading', { level: 1, name: 'Keep your cuts' })
+    const heading = await screen.findByRole('heading', { level: 1, name: 'Mike Curts' })
     await waitFor(() => expect(heading).toHaveFocus())
   })
 

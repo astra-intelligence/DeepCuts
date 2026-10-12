@@ -8,10 +8,6 @@ import { describe, expect, it } from 'vitest'
 import rateLimitConfig from '../../workers/rate-limit/wrangler.toml?raw'
 import { LIMITS, MAX_SERIES, RERANK } from './useRecommendations'
 
-// Home shows six pick cassettes, each needing its
-// details for the credit lines. Counted in full: most are already loaded by the re-rank, but an
-// explore slot can come from outside it.
-const HOME_CARDS = 6
 // Other calls a first load can make: the popular feed, the session check, and the account's
 // tag records (cached for 30 s, so one call, plus one spare for a refresh).
 const OTHER_CALLS = 4
@@ -35,8 +31,9 @@ describe('first Home load vs the rate limit', () => {
   it('fits a heavy profile, with headroom', () => {
     // One details call per tagged film, one per liked series, one per re-rank candidate.
     const tagged = LIMITS.liked + LIMITS.watchlist + LIMITS.disliked
-    const worstCase = tagged + MAX_SERIES + RERANK + HOME_CARDS + OTHER_CALLS
-    expect(worstCase).toBe(70)
+    // Home's pick rows show no credits (ADR-0035), so they add no details calls of their own.
+    const worstCase = tagged + MAX_SERIES + RERANK + OTHER_CALLS
+    expect(worstCase).toBe(64)
     expect(worstCase + HEADROOM).toBeLessThanOrEqual(apiLimit(rateLimitConfig))
   })
 })

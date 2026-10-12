@@ -7,9 +7,8 @@
 //
 // With real accounts (VITE_ACCOUNTS=cloudflare), the device creates a passkey and the server checks
 // the invite (single use, not expired). With the local mock, a *practice* account is made on this
-// device, only the name is kept, and the page says so (ADR-0025). Like sign-in, the person's picks
-// move into the new account and the page returns to where sign-in started.
-import { useQuery } from '@tanstack/react-query'
+// device, only the name is kept, and the page says so (ADR-0025). Like sign-in, the page then
+// returns to where sign-in started.
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Button, FieldError, Form, Input, Label, Text, TextField } from 'react-aria-components'
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router'
@@ -21,7 +20,6 @@ import { Icon } from '../components/Icon'
 import { useReturnPath } from '../hooks/useReturnPath'
 import { useRouteFocus } from '../hooks/useRouteFocus'
 import { useSession } from '../session/SessionContext'
-import { useTagQueries } from '../session/tagQueries'
 import { AuthLayout } from './AuthLayout'
 
 // Field errors by field name, in the shape React Aria's <Form validationErrors> expects.
@@ -44,9 +42,6 @@ export function RegisterPage() {
   const { session, register, practiceRegistration } = useSession()
   const navigate = useNavigate()
   const from = useReturnPath()
-  // How many films the person has tagged, to reassure them their picks come along.
-  const picks = new Set(useQuery(useTagQueries().all()).data?.map((r) => r.tmdbId)).size
-
   const [errors, setErrors] = useState<FieldErrors>({})
   // Bumped on every rejected submit, so focus moves to the first problem even if the errors match.
   const [attempt, setAttempt] = useState(0)
@@ -87,8 +82,8 @@ export function RegisterPage() {
     setErrors({})
     setPending(true)
     try {
-      const { moved } = await register(result.data)
-      navigate(from, { replace: true, state: { signedIn: { moved } } })
+      await register(result.data)
+      navigate(from, { replace: true, state: { signedIn: true } })
     } catch (e) {
       setPending(false)
       // The server refused the invite: say so on the field, where the person can act on it.
@@ -181,13 +176,6 @@ export function RegisterPage() {
         {pending ? 'Creating your account…' : ''}
       </p>
 
-      {picks > 0 && (
-        <p className="flex items-start gap-2.5 text-sm text-fg-muted">
-          <Icon name="check" className="mt-0.5 size-4.5 shrink-0 text-accent" />
-          Your {picks} {session.kind === 'profile' ? 'saved' : 'unsaved'}{' '}
-          {picks === 1 ? 'pick comes' : 'picks come'} with your new account.
-        </p>
-      )}
       <p className="text-sm text-fg-muted">
         Already have an account?{' '}
         <Link to="/sign-in" state={{ from }} className="text-info underline">

@@ -6,18 +6,14 @@ import { useSession } from '../session/SessionContext'
 import { Icon } from './Icon'
 
 // Set by the sign-in page when it navigates back; history state is untrusted, so validated.
-const stateSchema = z.object({
-  signedIn: z.object({ moved: z.number().int().min(0).max(100_000) }),
-})
+const stateSchema = z.object({ signedIn: z.literal(true) })
 
-/** "Signed in as Mike. Your 3 picks are in your account." Announced once, politely. */
+/** "Signed in as Mike." Announced once, politely. */
 export function SignedInNotice() {
   const { session } = useSession()
   const parsed = stateSchema.safeParse(useLocation().state)
   // Only right after signing in (the navigation carries `signedIn`), and only while signed in.
   if (!parsed.success || session.kind !== 'account') return null
-  const { moved } = parsed.data.signedIn
-  const picks = moved === 1 ? 'pick is' : 'picks are'
   return (
     <p
       // role=status: screen readers announce it without interrupting.
@@ -26,7 +22,6 @@ export function SignedInNotice() {
     >
       <Icon name="check" className="size-4.5 shrink-0" />
       Signed in as {firstName(session.account.name)}.
-      {moved > 0 && ` Your ${moved} ${picks} in your account.`}
     </p>
   )
 }

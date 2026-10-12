@@ -71,7 +71,7 @@ describe('CloudflareSessionProvider', () => {
         code: 'invalid_invite',
       },
     )
-    expect(await provider.getSession()).toEqual({ kind: 'guest' })
+    expect(await provider.getSession()).toEqual({ kind: 'signedOut' })
   })
 
   it('a cancelled passkey prompt rejects and leaves the person signed out', async () => {
@@ -80,7 +80,7 @@ describe('CloudflareSessionProvider', () => {
     )
     const provider = createCloudflareSessionProvider()
     await expect(provider.signIn('passkey')).rejects.toThrow('cancelled')
-    expect(await provider.getSession()).toEqual({ kind: 'guest' })
+    expect(await provider.getSession()).toEqual({ kind: 'signedOut' })
   })
 
   it('keeps the demo account on this device, never on the server', async () => {
@@ -92,12 +92,9 @@ describe('CloudflareSessionProvider', () => {
   })
 
   it('falls back to what this device has when the API is unreachable', async () => {
-    await createMockSessionProvider().createProfile('Offline')
+    const demo = await createMockSessionProvider().signIn('demo')
     server.use(http.get('/api/auth/session', () => HttpResponse.error()))
-    expect(await createCloudflareSessionProvider().getSession()).toEqual({
-      kind: 'profile',
-      displayName: 'Offline',
-    })
+    expect(await createCloudflareSessionProvider().getSession()).toEqual(demo)
   })
 
   it('treats a non-JSON answer (Functions skipped) as an error, not a session', async () => {
@@ -112,9 +109,9 @@ describe('CloudflareSessionProvider', () => {
     const provider = createCloudflareSessionProvider()
     await provider.signIn('passkey')
     expect(await provider.rename?.('New Name')).toMatchObject({ account: { name: 'New Name' } })
-    expect(await provider.deleteAccount?.()).toEqual({ kind: 'guest' })
+    expect(await provider.deleteAccount?.()).toEqual({ kind: 'signedOut' })
     expect(api.state.users.size).toBe(0)
-    expect(await provider.getSession()).toEqual({ kind: 'guest' })
+    expect(await provider.getSession()).toEqual({ kind: 'signedOut' })
   })
 })
 

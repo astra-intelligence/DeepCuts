@@ -7,10 +7,12 @@ import { Navigate, type RouteObject } from 'react-router'
 import { FEATURES, homeOf, type Features } from './config/features'
 import { AppLayout } from './routes/AppLayout'
 import { RouteError } from './routes/PlaceholderPages'
+import { RequireAccount } from './routes/RequireAccount'
 
 // Each loader imports one page module and hands React Router its component.
 const search = async () => ({ Component: (await import('./routes/SearchPage')).SearchPage })
-const welcome = async () => ({ Component: (await import('./routes/DiscoverPage')).HomePage })
+// `/`: the landing page signed out, Home signed in (ADR-0035).
+const index = async () => ({ Component: (await import('./routes/IndexRoute')).IndexRoute })
 const lists = async () => ({ Component: (await import('./routes/ListsPage')).ListsPage })
 const account = async () => ({ Component: (await import('./routes/AccountPage')).AccountPage })
 const signIn = async () => ({ Component: (await import('./routes/SignInPage')).SignInPage })
@@ -34,7 +36,9 @@ const LAB_ROUTES: RouteObject[] = import.meta.env.DEV
   : []
 
 /**
- * Builds the route table. Home is Welcome, including its recommendation area (ADR-0033).
+ * Builds the route table. `/` is the landing page signed out and Home signed in (ADR-0033,
+ * ADR-0035). Every other page except Sign in and Register needs an account (ADR-0034): it sits
+ * under RequireAccount, which sends signed-out visitors to Sign in and back afterwards.
  * Onboarding (/tune) is optional (ADR-0019 amendment) and behind a feature flag; while a page's
  * flag is off, its URL redirects home. Tests pass their own `features` to check both states.
  */
@@ -47,7 +51,7 @@ export function createRoutes(features: Features = FEATURES): RouteObject[] {
       element: <AppLayout />,
       errorElement: <RouteError />,
       children: [
-        { index: true, lazy: welcome },
+        { index: true, lazy: index },
         // Bookmarked Discover links have one safe destination after ADR-0033: Home.
         { path: 'discover', element: <Navigate to={homePath} replace /> },
         // The weights lab's old address (it was live until 2026-10-09): to the lab on the dev
@@ -57,11 +61,16 @@ export function createRoutes(features: Features = FEATURES): RouteObject[] {
           element: <Navigate to={features.labs ? '/lab/weights' : homePath} replace />,
         },
         features.searchPage
-          ? { path: 'search', lazy: search }
+          ? { path: 'search', element: <RequireAccount />, children: [{ index: true, lazy: search }] }
           : { path: 'search', element: <Navigate to={homePath} replace /> },
-        { path: 'lists', lazy: lists },
-        { path: 'account', lazy: account },
-        ...(features.labs ? LAB_ROUTES : []),
+        {
+          element: <RequireAccount />,
+          children: [
+            { path: 'lists', lazy: lists },
+            { path: 'account', lazy: account },
+            ...(features.labs ? LAB_ROUTES : []),
+          ],
+        },
         // Any unknown URL shows the "not found" page inside the shell.
         { path: '*', element: <RouteError /> },
       ],
@@ -70,11 +79,19 @@ export function createRoutes(features: Features = FEATURES): RouteObject[] {
     { path: '/sign-in', lazy: signIn, errorElement: <RouteError /> },
     // Registration shares that layout (AuthLayout, ADR-0031).
     { path: '/register', lazy: register, errorElement: <RouteError /> },
-    // Detail has its own full-bleed layout without the tab bar (design v2).
-    { path: '/movie/:id', lazy: detail, errorElement: <RouteError /> },
-    // Optional onboarding, also outside the tab-bar shell (ADR-0019 amendment).
+    // Detail has its own full-bleed layout without the tab bar (design v2). Signed in only.
+    {
+      element: <RequireAccount />,
+      errorElement: <RouteError />,
+      children: [{ path: '/movie/:id', lazy: detail }],
+    },
+    // Optional onboarding, also outside the tab-bar shell (ADR-0019 amendment). Signed in only.
     features.onboarding
-      ? { path: '/tune', lazy: tune, errorElement: <RouteError /> }
+      ? {
+          element: <RequireAccount />,
+          errorElement: <RouteError />,
+          children: [{ path: '/tune', lazy: tune }],
+        }
       : {
           path: '/tune',
           element: <Navigate to={homePath} replace />,

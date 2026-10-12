@@ -1,5 +1,7 @@
 // The app shell around Home, Search, My Lists and Account: header, search band, the page,
-// and the tab bar. (Detail and Sign in have their own layouts.)
+// and the tab bar. (Detail and Sign in have their own layouts.) Signed out, the shell around the
+// landing page is just the logo and Sign in: search and the tabs lead only to signed-in pages
+// (ADR-0034).
 import { Link, NavLink, Outlet } from 'react-router'
 import { FEATURES } from '../config/features'
 import { AccountChip } from '../components/AccountChip'
@@ -8,6 +10,7 @@ import { Logo } from '../components/Logo'
 import { MovieSearch } from '../components/MovieSearch'
 import { SignedInNotice } from '../components/SignedInNotice'
 import { useRouteFocus } from '../hooks/useRouteFocus'
+import { useSession } from '../session/SessionContext'
 
 // The tabs in the tab bar, in order. Search stays in the header rather than taking a primary tab.
 const NAV: { to: string; label: string; icon: IconName }[] = [
@@ -36,9 +39,17 @@ export function SkipLink() {
  */
 export function AppLayout() {
   useRouteFocus()
+  const signedIn = useSession().session.kind === 'account'
   return (
     // Bottom padding keeps the last content clear of the fixed tab bar (and the iPhone home bar).
-    <div className="mx-auto min-h-dvh w-full max-w-360 overflow-x-clip pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-28">
+    // Signed out there's no tab bar, so only the safe area is kept clear.
+    <div
+      className={`mx-auto min-h-dvh w-full max-w-360 overflow-x-clip ${
+        signedIn
+          ? 'pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-28'
+          : 'pb-[max(1.5rem,env(safe-area-inset-bottom))]'
+      }`}
+    >
       <SkipLink />
       {/* The "Sky rise" backdrop (index.css → page-backdrop): pinned to the whole window, behind
           everything, and purely decorative. */}
@@ -61,12 +72,14 @@ export function AppLayout() {
         </Link>
         {/* Grows to fill the row up to a readable width; the auto margins then centre it.
             `min-w-0` lets it shrink below the input's built-in width (else it overflows at 320px). */}
-        <div className="order-last min-w-0 basis-full lg:order-none lg:mx-auto lg:max-w-lg lg:flex-1 lg:basis-auto">
-          <MovieSearch />
-        </div>
+        {signedIn && (
+          <div className="order-last min-w-0 basis-full lg:order-none lg:mx-auto lg:max-w-lg lg:flex-1 lg:basis-auto">
+            <MovieSearch />
+          </div>
+        )}
         <div className="flex shrink-0 items-center gap-2">
           {/* "Tune my picks" onboarding is hidden behind a feature flag for now. */}
-          {FEATURES.onboarding && (
+          {FEATURES.onboarding && signedIn && (
             <Link
               to="/tune"
               aria-label="Tune my picks"
@@ -90,31 +103,34 @@ export function AppLayout() {
         </p>
       </main>
 
-      {/* The tab bar. NavLink marks the current tab (and gives it aria-current="page"). */}
-      <nav
-        aria-label="Main"
-        className="fixed bottom-0 left-1/2 z-20 w-full max-w-360 -translate-x-1/2 border-t border-nav-border bg-nav-bg/95 px-3.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:bottom-4 md:w-md md:rounded-nav md:border md:p-1 md:shadow-nav md:shadow-surface/80"
-      >
-        <ul className="grid grid-cols-2">
-          {NAV.map((item) => (
-            <li key={item.to}>
-              <NavLink
-                to={item.to}
-                className={({ isActive }) =>
-                  `flex min-h-14 flex-col items-center justify-center gap-1 rounded-nav-item text-sm md:flex-row md:gap-2 ${
-                    isActive
-                      ? 'text-nav-item-fg-current'
-                      : 'text-nav-item-fg hover:text-nav-item-fg-hover'
-                  }`
-                }
-              >
-                <Icon name={item.icon} className="size-5.5" />
-                {item.label}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      {/* The tab bar, signed in only. NavLink marks the current tab (and gives it
+          aria-current="page"). */}
+      {signedIn && (
+        <nav
+          aria-label="Main"
+          className="fixed bottom-0 left-1/2 z-20 w-full max-w-360 -translate-x-1/2 border-t border-nav-border bg-nav-bg/95 px-3.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:bottom-4 md:w-md md:rounded-nav md:border md:p-1 md:shadow-nav md:shadow-surface/80"
+        >
+          <ul className="grid grid-cols-2">
+            {NAV.map((item) => (
+              <li key={item.to}>
+                <NavLink
+                  to={item.to}
+                  className={({ isActive }) =>
+                    `flex min-h-14 flex-col items-center justify-center gap-1 rounded-nav-item text-sm md:flex-row md:gap-2 ${
+                      isActive
+                        ? 'text-nav-item-fg-current'
+                        : 'text-nav-item-fg hover:text-nav-item-fg-hover'
+                    }`
+                  }
+                >
+                  <Icon name={item.icon} className="size-5.5" />
+                  {item.label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
     </div>
   )
 }

@@ -4,30 +4,8 @@ import type { SessionProvider } from './SessionProvider'
 
 export function sessionProviderContract(name: string, make: () => SessionProvider) {
   describe(`SessionProvider contract: ${name}`, () => {
-    it('starts as a guest', async () => {
-      expect(await make().getSession()).toEqual({ kind: 'guest' })
-    })
-
-    it('creates a profile with a trimmed name and signs out again', async () => {
-      const provider = make()
-      expect(await provider.createProfile('  Mike ')).toEqual({
-        kind: 'profile',
-        displayName: 'Mike',
-      })
-      expect(await provider.getSession()).toEqual({ kind: 'profile', displayName: 'Mike' })
-      expect(await provider.signOut()).toEqual({ kind: 'guest' })
-      expect(await provider.getSession()).toEqual({ kind: 'guest' })
-    })
-
-    it('creates a profile without a name (ADR-0022)', async () => {
-      const provider = make()
-      expect(await provider.createProfile()).toEqual({ kind: 'profile', displayName: '' })
-      expect(await provider.createProfile('   ')).toEqual({ kind: 'profile', displayName: '' })
-      expect(await provider.getSession()).toEqual({ kind: 'profile', displayName: '' })
-    })
-
-    it('rejects an over-long name', async () => {
-      await expect(make().createProfile('x'.repeat(41))).rejects.toThrow()
+    it('starts signed out (ADR-0034)', async () => {
+      expect(await make().getSession()).toEqual({ kind: 'signedOut' })
     })
 
     it('offers at least one sign-in method, each with a label and description', () => {
@@ -39,19 +17,18 @@ export function sessionProviderContract(name: string, make: () => SessionProvide
       }
     })
 
-    it('signs in with an offered method, survives a reload, and signs out to guest (ADR-0025)', async () => {
+    it('signs in with an offered method, survives a reload, and signs out (ADR-0025)', async () => {
       const provider = make()
-      await provider.createProfile()
       const method = provider.signInMethods()[0]
       if (!method) throw new Error('no sign-in method offered')
       const session = await provider.signIn(method.id)
       expect(session.kind).toBe('account')
       expect(await make().getSession()).toEqual(session)
-      expect(await provider.signOut()).toEqual({ kind: 'guest' })
-      expect(await make().getSession()).toEqual({ kind: 'guest' })
+      expect(await provider.signOut()).toEqual({ kind: 'signedOut' })
+      expect(await make().getSession()).toEqual({ kind: 'signedOut' })
     })
 
-    it('registers an account that survives a reload, and signs out to guest (ADR-0031)', async () => {
+    it('registers an account that survives a reload, and signs out (ADR-0031)', async () => {
       const provider = make()
       const session = await provider.register({
         name: '  Ada Lovelace ',
@@ -59,7 +36,7 @@ export function sessionProviderContract(name: string, make: () => SessionProvide
       })
       expect(session).toMatchObject({ kind: 'account', account: { name: 'Ada Lovelace' } })
       expect(await make().getSession()).toEqual(session)
-      expect(await provider.signOut()).toEqual({ kind: 'guest' })
+      expect(await provider.signOut()).toEqual({ kind: 'signedOut' })
     })
 
     it('rejects invalid registration details', async () => {
@@ -70,7 +47,7 @@ export function sessionProviderContract(name: string, make: () => SessionProvide
       await expect(
         make().register({ ...valid, invite: '<script>AAAAAAAAAAAAAA' }),
       ).rejects.toThrow()
-      expect(await make().getSession()).toEqual({ kind: 'guest' })
+      expect(await make().getSession()).toEqual({ kind: 'signedOut' })
     })
 
     it('rejects a method it does not offer', async () => {
