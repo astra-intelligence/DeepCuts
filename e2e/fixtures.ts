@@ -1,5 +1,8 @@
-// Shared setup for every E2E test: fake TMDB responses, and two reusable checks
-// (accessibility scan, no sideways scrolling).
+// Shared setup for every E2E test: fake TMDB responses, a signed-in demo account by default
+// (almost every page needs an account, ADR-0034), and two reusable checks (accessibility scan,
+// no sideways scrolling).
+//
+// Tests of the signed-out experience opt out with `test.use({ signedIn: false })`.
 import AxeBuilder from '@axe-core/playwright'
 import { test as base, expect, type Page } from '@playwright/test'
 import { movieFixture, providersFixture, searchFixture } from '../src/test/msw/fixtures'
@@ -7,7 +10,29 @@ import { movieFixture, providersFixture, searchFixture } from '../src/test/msw/f
 // E2E never calls TMDB: the proxy is stubbed with the same fixtures as unit tests,
 // and CDN images are aborted. Playwright tries the most recently added route first, so the
 // catch-all below is registered first and only fires for requests no fixture matches.
-export const test = base.extend<{ page: Page }>({
+export const test = base.extend<{ page: Page; signedIn: boolean }>({
+  // Start signed in to the demo account (the local mock's stand-in account, ADR-0025).
+  signedIn: [true, { option: true }],
+  // Signed in by seeding the browser context's storage with what the mock provider stores when
+  // you sign in. It's applied once, when the context is created, so a test that signs out and
+  // reloads stays signed out.
+  storageState: async ({ signedIn, baseURL, storageState }, use) => {
+    if (!signedIn || !baseURL) return use(storageState)
+    await use({
+      cookies: [],
+      origins: [
+        {
+          origin: new URL(baseURL).origin,
+          localStorage: [
+            {
+              name: 'deepcuts:v1:account',
+              value: JSON.stringify({ id: 'demo', name: 'Mike Curts', method: 'demo' }),
+            },
+          ],
+        },
+      ],
+    })
+  },
   page: async ({ page }, use) => {
     await page.route('**/api/tmdb/**', (route) => {
       // Fail loudly instead of falling through to the real proxy (and live TMDB, when a
