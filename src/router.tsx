@@ -61,7 +61,11 @@ export function createRoutes(features: Features = FEATURES): RouteObject[] {
           element: <Navigate to={features.labs ? '/lab/weights' : homePath} replace />,
         },
         features.searchPage
-          ? { path: 'search', element: <RequireAccount />, children: [{ index: true, lazy: search }] }
+          ? {
+              path: 'search',
+              element: <RequireAccount />,
+              children: [{ index: true, lazy: search }],
+            }
           : { path: 'search', element: <Navigate to={homePath} replace /> },
         {
           element: <RequireAccount />,

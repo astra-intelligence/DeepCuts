@@ -15,7 +15,8 @@ it('a device profile saved by an older version is ignored, not read or deleted (
   localStorage.setItem('deepcuts:v1:profile', JSON.stringify({ displayName: 'Mike' }))
   localStorage.setItem('deepcuts:v1:tags', '[]')
   expect(await createMockSessionProvider().getSession()).toEqual({ kind: 'signedOut' })
-  for (const key of RETIRED_PROFILE_KEYS) expect(localStorage.getItem(`deepcuts:v1:${key}`)).not.toBeNull()
+  for (const key of RETIRED_PROFILE_KEYS)
+    expect(localStorage.getItem(`deepcuts:v1:${key}`)).not.toBeNull()
 })
 
 it('a demo account saved under an old name comes back with the current name', async () => {
