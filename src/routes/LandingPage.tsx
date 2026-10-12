@@ -2,11 +2,10 @@
 //
 // It explains the app's three ideas in the same panels Home uses once you're signed in: Top Ten,
 // Movies I want to watch, and Discovery. Each panel has a small illustration and a line of copy.
-// There is one action, Sign in; the sign-in page also offers the demo account for visitors
-// without an invite (ADR-0025).
-import { Link } from 'react-router'
+// Signing in is the header's Sign in control; the page itself has no call to action (owner,
+// 2026-10-11). The sign-in page also offers the demo account for visitors without an invite
+// (ADR-0025).
 import { FeaturePanel } from '../components/FeaturePanel'
-import { Icon } from '../components/Icon'
 import { PanelArt } from '../components/PanelArt'
 import { PANELS, type PanelId } from '../components/panels'
 import { PageHeading } from '../components/PageHeading'
@@ -19,7 +18,7 @@ const COPY: Record<PanelId, string> = {
   discovery: 'Like a few films and get deep cuts picked for your taste, with the reason why.',
 }
 
-/** The landing page: heading, the three explainer panels, and Sign in. */
+/** The landing page: heading and the three explainer panels. */
 export function LandingPage() {
   return (
     <>
@@ -41,18 +40,6 @@ export function LandingPage() {
           </li>
         ))}
       </ul>
-      <div className="mt-6 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4">
-        {/* `from: '/'` returns here after signing in, where Home then shows. */}
-        <Link
-          to="/sign-in"
-          state={{ from: '/' }}
-          className="flex min-h-12 items-center gap-2 rounded-button bg-button-primary-bg px-6 text-sm font-semibold text-button-primary-fg hover:bg-button-primary-bg/85"
-        >
-          <Icon name="user" className="size-4.5" />
-          Sign in
-        </Link>
-        <p className="text-sm text-fg-muted">No invite? Sign in has a demo account to try.</p>
-      </div>
     </>
   )
 }
