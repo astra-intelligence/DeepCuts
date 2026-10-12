@@ -1,11 +1,14 @@
-// An in-memory fake of the accounts API (`/api/auth/*`, `/api/tags*`) for unit tests of the
+// An in-memory fake of the accounts API (`/api/auth/*`, `/api/tags*`, `/api/top-ten`) for unit tests of the
 // Cloudflare adapters and the screens (ADR-0031, Stage 6 A4). It behaves like the real Functions
 // from the client's side (status codes, bodies, the tag rules) but keeps one "browser" session in
 // a variable instead of a cookie. The real server is tested on its own (server/accounts/).
 import { http, HttpResponse } from 'msw'
 import { createTagRepository } from '../../adapters/createTagRepository'
+import { createTopTenRepository } from '../../adapters/createTopTenRepository'
 import type { TagRecord, TagRepository } from '../../adapters/TagRepository'
+import type { TopTenRepository } from '../../adapters/TopTenRepository'
 import { SYSTEM_TAGS, type SystemTag } from '../../domain/tagRules'
+import { TopTenFullError, type TopTenList } from '../../domain/topTen'
 
 type User = { id: string; name: string }
 
@@ -21,6 +24,8 @@ export function createFakeAccountsApi(now: () => string = () => new Date().toISO
     users: new Map<string, User>(),
     /** Each user's tags, kept with the same shared rules the real server applies. */
     tags: new Map<string, TagRepository>(),
+    /** Each user's Top Ten, kept with the same shared rules the real server applies. */
+    topTen: new Map<string, TopTenRepository>(),
     /** Set to make the next registration fail, as with a used invite. */
     rejectInvite: false,
   }
@@ -33,6 +38,16 @@ export function createFakeAccountsApi(now: () => string = () => new Date().toISO
       )
     }
     return state.tags.get(id) as TagRepository
+  }
+  const topTenOf = (id: string) => {
+    if (!state.topTen.has(id)) {
+      let list: TopTenList = []
+      state.topTen.set(
+        id,
+        createTopTenRepository({ load: () => list, save: (l) => void (list = l) }),
+      )
+    }
+    return state.topTen.get(id) as TopTenRepository
   }
   const signedOut = () => HttpResponse.json({ error: 'signed_out' }, { status: 401 })
   const options = () =>
@@ -77,6 +92,7 @@ export function createFakeAccountsApi(now: () => string = () => new Date().toISO
       if (!state.signedIn) return signedOut()
       state.users.delete(state.signedIn.id)
       state.tags.delete(state.signedIn.id)
+      state.topTen.delete(state.signedIn.id)
       state.signedIn = null
       return HttpResponse.json({ ok: true })
     }),
@@ -108,6 +124,26 @@ export function createFakeAccountsApi(now: () => string = () => new Date().toISO
       const { records } = (await request.json()) as { records: TagRecord[] }
       await tagsOf(state.signedIn.id).importAll(records)
       return HttpResponse.json({ ok: true })
+    }),
+    http.get('/api/top-ten', async () => {
+      if (!state.signedIn) return signedOut()
+      return HttpResponse.json({ films: await topTenOf(state.signedIn.id).list() })
+    }),
+    http.put('/api/top-ten', async ({ request }) => {
+      if (!state.signedIn) return signedOut()
+      const { tmdbId } = (await request.json()) as { tmdbId: number }
+      try {
+        return HttpResponse.json({ films: await topTenOf(state.signedIn.id).add(tmdbId) })
+      } catch (e) {
+        if (e instanceof TopTenFullError)
+          return HttpResponse.json({ error: 'top_ten_full' }, { status: 409 })
+        throw e
+      }
+    }),
+    http.delete('/api/top-ten', async ({ request }) => {
+      if (!state.signedIn) return signedOut()
+      const { tmdbId } = (await request.json()) as { tmdbId: number }
+      return HttpResponse.json({ films: await topTenOf(state.signedIn.id).remove(tmdbId) })
     }),
   ]
 

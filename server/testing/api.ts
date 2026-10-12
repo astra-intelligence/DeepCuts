@@ -2,7 +2,7 @@
 // shared `/api` guard first (rate limit, Origin check), then the handler the matching file under
 // functions/api/ routes to. A cookie jar makes each client behave like one browser.
 //
-// ROUTES mirrors functions/api/{auth,tags}/**. apiRoutes.test.ts checks that each listed file
+// ROUTES mirrors functions/api/{auth,tags,top-ten}/**. apiRoutes.test.ts checks that each listed file
 // exists, so the two can't drift apart silently.
 import { deleteAccount, getSession, rename, signOut } from '../accounts/account.ts'
 import {
@@ -13,6 +13,7 @@ import {
 } from '../accounts/auth.ts'
 import type { AccountsEnv } from '../accounts/d1.ts'
 import { changeTag, importTags, listTags } from '../accounts/tags.ts'
+import { changeTopTen, listTopTen } from '../accounts/topTen.ts'
 import { guardApi } from '../apiGuard.ts'
 import { route } from '../http.ts'
 import type { RateLimiterBinding } from '../rateLimit.ts'
@@ -63,6 +64,14 @@ export const ROUTES = {
   '/api/tags/import': [
     'functions/api/tags/import.ts',
     route<Env>({ POST: ({ request, env }) => importTags(request, env) }),
+  ],
+  '/api/top-ten': [
+    'functions/api/top-ten/index.ts',
+    route<Env>({
+      GET: ({ request, env }) => listTopTen(request, env),
+      PUT: ({ request, env }) => changeTopTen(request, env),
+      DELETE: ({ request, env }) => changeTopTen(request, env),
+    }),
   ],
 } as const
 

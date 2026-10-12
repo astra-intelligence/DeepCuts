@@ -382,6 +382,8 @@ describe('rename and delete (A2b)', () => {
     const otherUser = await register(other, await createSoftAuthenticator(), await invite())
     await mike.call('PUT', '/api/tags', { tmdbId: 603, tag: 'liked' })
     await other.call('PUT', '/api/tags', { tmdbId: 603, tag: 'liked' })
+    await mike.call('PUT', '/api/top-ten', { tmdbId: 603 })
+    await other.call('PUT', '/api/top-ten', { tmdbId: 603 })
     const mikeId = (await mike.call('GET', '/api/auth/session')).body.id
     await invite({ userId: mikeId }) // an unused recovery invite
     const stolen = createClient(env)
@@ -390,10 +392,11 @@ describe('rename and delete (A2b)', () => {
     const res = await mike.call('DELETE', '/api/auth/me')
     expect(res.status).toBe(200)
     expect(res.response.headers.get('Set-Cookie')).toContain('Max-Age=0')
-    for (const table of ['users', 'passkeys', 'sessions', 'tags', 'invites'])
+    for (const table of ['users', 'passkeys', 'sessions', 'tags', 'top_ten', 'invites'])
       expect(JSON.stringify(db.rows(table))).not.toContain(mikeId)
     expect(db.rows('users')).toEqual([expect.objectContaining({ id: otherUser.body.id })])
     expect(db.rows('tags')).toHaveLength(1)
+    expect(db.rows('top_ten')).toHaveLength(1)
     expect((await stolen.call('GET', '/api/auth/session')).status).toBe(401)
   })
 })
@@ -476,5 +479,74 @@ describe('tags (A3)', () => {
     expect(db.rows('tags')).toHaveLength(5000)
     const bad = { records: [{ ...record, tag: 'loved' }] }
     expect((await client.call('POST', '/api/tags/import', bad)).status).toBe(400)
+  })
+})
+
+describe('Top Ten (ADR-0036)', () => {
+  async function signedIn() {
+    const client = createClient(env)
+    await register(client, await createSoftAuthenticator(), await invite())
+    return client
+  }
+  const films = async (client: Client) => (await client.call('GET', '/api/top-ten')).body.films
+
+  it('adds at the end, ignores a repeat, and removes with positions closing up', async () => {
+    const client = await signedIn()
+    expect(await films(client)).toEqual([])
+    await client.call('PUT', '/api/top-ten', { tmdbId: 5 })
+    await client.call('PUT', '/api/top-ten', { tmdbId: 3 })
+    expect((await client.call('PUT', '/api/top-ten', { tmdbId: 5 })).body.films).toEqual([5, 3])
+    await client.call('PUT', '/api/top-ten', { tmdbId: 8 })
+    expect((await client.call('DELETE', '/api/top-ten', { tmdbId: 5 })).body.films).toEqual([3, 8])
+    expect(db.rows('top_ten').map((r) => [r.tmdb_id, r.position])).toEqual([
+      [3, 1],
+      [8, 2],
+    ])
+  })
+
+  it('refuses an eleventh film with 409 top_ten_full', async () => {
+    const client = await signedIn()
+    for (let id = 1; id <= 10; id++) await client.call('PUT', '/api/top-ten', { tmdbId: id })
+    const res = await client.call('PUT', '/api/top-ten', { tmdbId: 11 })
+    expect(res.status).toBe(409)
+    expect(res.body).toEqual({ error: 'top_ten_full' })
+    expect(await films(client)).toHaveLength(10)
+  })
+
+  it('the database itself refuses an eleventh position or a duplicate film', async () => {
+    const client = await signedIn()
+    await client.call('PUT', '/api/top-ten', { tmdbId: 1 })
+    const userId = db.rows('top_ten')[0].user_id as string
+    expect(() => db.exec(`INSERT INTO top_ten VALUES ('${userId}', 2, 11)`)).toThrow()
+    expect(() => db.exec(`INSERT INTO top_ten VALUES ('${userId}', 1, 2)`)).toThrow()
+    expect(() => db.exec(`INSERT INTO top_ten VALUES ('${userId}', 2, 1)`)).toThrow()
+  })
+
+  it("keeps each user's Top Ten apart, and ignores a user id sent by the client", async () => {
+    const a = await signedIn()
+    const b = await signedIn()
+    const aId = (await a.call('GET', '/api/auth/session')).body.id
+    await a.call('PUT', '/api/top-ten', { tmdbId: 1 })
+    expect(await films(b)).toEqual([])
+    await b.call('DELETE', '/api/top-ten', { tmdbId: 1, userId: aId })
+    await b.call('PUT', '/api/top-ten', { tmdbId: 2, userId: aId })
+    expect(await films(a)).toEqual([1])
+    expect(await films(b)).toEqual([2])
+  })
+
+  it('needs a session, a valid film id and a known method', async () => {
+    expect((await createClient(env).call('GET', '/api/top-ten')).status).toBe(401)
+    expect((await createClient(env).call('PUT', '/api/top-ten', { tmdbId: 1 })).status).toBe(401)
+    const client = await signedIn()
+    for (const body of [{}, { tmdbId: -1 }, { tmdbId: 1.5 }, { tmdbId: '1' }])
+      expect((await client.call('PUT', '/api/top-ten', body)).status).toBe(400)
+    expect((await client.call('POST', '/api/top-ten', { tmdbId: 1 })).status).toBe(405)
+    expect(await films(client)).toEqual([])
+  })
+
+  it('never caches answers', async () => {
+    const client = await signedIn()
+    const res = await client.call('GET', '/api/top-ten')
+    expect(res.response.headers.get('Cache-Control')).toBe('no-store')
   })
 })

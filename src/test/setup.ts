@@ -5,6 +5,7 @@ import '@testing-library/jest-dom/vitest'
 import { cleanup, configure } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 import { createLocalTagRepository } from '../adapters/local/LocalTagRepository'
+import { createLocalTopTenRepository } from '../adapters/local/LocalTopTenRepository'
 import { createMockSessionProvider } from '../adapters/local/MockSessionProvider'
 import { server } from './msw/server'
 
@@ -18,10 +19,12 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(async () => {
   cleanup()
   server.resetHandlers()
-  // Accounts and their tags must not leak between tests (reset through the adapters, ADR-0013).
+  // Accounts, their tags and their Top Ten must not leak between tests (reset through the adapters, ADR-0013).
   // Server tests run in plain Node, which has no browser storage.
   if (typeof window === 'undefined') return
   await createMockSessionProvider().signOut()
   await createLocalTagRepository(undefined, undefined, 'account-demo-tags').clear()
+  const topTen = createLocalTopTenRepository('account-demo-top-ten')
+  for (const id of await topTen.list()) await topTen.remove(id)
 })
 afterAll(() => server.close())
