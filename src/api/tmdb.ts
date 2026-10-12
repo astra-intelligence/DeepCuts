@@ -267,6 +267,11 @@ export interface Credits {
 const MAX_CREDIT_NAMES = 2
 
 /** The directors and writers from a film's appended credits, by name, at most two each. */
+/** A Detail response as a summary, for components shared with search and picks (the cassette tile). */
+export function summaryOf(movie: MovieDetail): MovieSummary {
+  return { ...movie, genre_ids: movie.genres.map((g) => g.id) }
+}
+
 export function creditsOf(movie: MovieDetail): Credits {
   const { directors, writers } = crewOf(movie)
   // Names, each once (two people can share a name), at most MAX_CREDIT_NAMES.

@@ -1,13 +1,16 @@
 // My Lists (/lists): the films on each of the four tag lists.
 //
 // Four tiles pick the list (`?tag=`, so it's linkable); the page accent switches to that tag's
-// color (ADR-0020). Each row loads its film's details from TMDB, cached for a day.
+// color (ADR-0020). Each film loads its details from TMDB, cached for a day. Phones list the films
+// as rows; from `md` they're cassettes, sized like Home's picks (owner, 2026-10-09: phones
+// unchanged).
 import { useQueries, useQuery } from '@tanstack/react-query'
 import type { CSSProperties } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { z } from 'zod'
 import { movieQueries } from '../api/queries'
-import { certification, formatRuntime, releaseYear } from '../api/tmdb'
+import { certification, creditsOf, formatRuntime, releaseYear, summaryOf } from '../api/tmdb'
+import { CassetteCard } from '../components/CassetteCard'
 import { EmptyState } from '../components/EmptyState'
 import { Icon } from '../components/Icon'
 import { MovieLink } from '../components/MovieLink'
@@ -15,6 +18,7 @@ import { PageHeading } from '../components/PageHeading'
 import { tagColor, TAGS } from '../components/tags'
 import { genreTone } from '../domain/genres'
 import { SYSTEM_TAGS, type SystemTag } from '../domain/tagRules'
+import { MD_UP, useMediaQuery } from '../hooks/useMediaQuery'
 import { useTagQueries } from '../session/tagQueries'
 
 // ?tag= is untrusted; anything unknown falls back to Want to see (ADR-0014).
@@ -37,6 +41,7 @@ export function ListsPage() {
   const counts = useQueries({ queries: TAGS.map((t) => queries.list(t.tag)) })
   const ids = counts[SYSTEM_TAGS.indexOf(tag)]?.data ?? []
   const label = TAGS.find((t) => t.tag === tag)?.label ?? ''
+  const cassettes = useMediaQuery(MD_UP)
 
   return (
     <div className={PAGE_ACCENT[tag]}>
@@ -84,11 +89,19 @@ export function ListsPage() {
       </div>
 
       {ids.length > 0 ? (
-        <ul className="flex flex-col gap-3">
-          {ids.map((id) => (
-            <ListRow key={id} id={id} />
-          ))}
-        </ul>
+        cassettes ? (
+          <ul className="grid grid-cols-4 gap-x-4 gap-y-5.5 lg:grid-cols-5">
+            {ids.map((id) => (
+              <ListCassette key={id} id={id} />
+            ))}
+          </ul>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {ids.map((id) => (
+              <ListRow key={id} id={id} />
+            ))}
+          </ul>
+        )
       ) : (
         <EmptyState>
           Films you tag “{label}” will appear here. Use the search above, or open any film and tap{' '}
@@ -123,6 +136,24 @@ function ListRow({ id }: { id: number }) {
       className="rounded-card border border-card-border bg-card-bg p-3 shadow-card md:p-4"
     >
       <MovieLink movie={m} meta={meta} />
+    </li>
+  )
+}
+
+// One film on the list as a cassette (from `md`), with its director and writer. Shows a
+// cassette-shaped placeholder until its details arrive, so the grid doesn't jump.
+function ListCassette({ id }: { id: number }) {
+  const { data: m } = useQuery(movieQueries.detail(id))
+  if (!m) {
+    return (
+      <li aria-hidden="true" className="flex">
+        <div className="aspect-[0.547] w-full animate-pulse rounded-subtle border border-card-border bg-card-bg" />
+      </li>
+    )
+  }
+  return (
+    <li className="flex">
+      <CassetteCard item={{ movie: summaryOf(m), credits: creditsOf(m) }} />
     </li>
   )
 }

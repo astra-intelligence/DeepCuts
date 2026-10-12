@@ -9,7 +9,8 @@
 import { useId } from 'react'
 import { primaryGenre } from '../domain/genres'
 
-// Diameter in pixels: 48 on grid tiles, 72 on Discover's featured card.
+// Diameter in pixels: 48 on cassettes; 72 (`lg`) was for the retired featured card and is
+// unused on pages for now.
 const SIZES = { sm: 48, lg: 72 } as const
 
 /**
