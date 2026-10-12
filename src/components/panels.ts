@@ -18,12 +18,17 @@ export interface PanelDef {
 
 /** The three panels, in page order (also the order of the columns from `lg`). */
 export const PANELS: Record<PanelId, PanelDef> = {
-  'top-ten': { id: 'top-ten', title: 'Top Ten', icon: 'star', tone: 'var(--color-tag-liked)' },
+  'top-ten': { id: 'top-ten', title: 'Top Ten', icon: 'star', tone: 'var(--color-panel-top-ten)' },
   watchlist: {
     id: 'watchlist',
     title: 'Movies I want to watch',
     icon: 'bookmark',
-    tone: 'var(--color-tag-watchlist)',
+    tone: 'var(--color-panel-watchlist)',
   },
-  discovery: { id: 'discovery', title: 'Discovery', icon: 'sparkle', tone: 'var(--color-info)' },
+  discovery: {
+    id: 'discovery',
+    title: 'Discovery',
+    icon: 'sparkle',
+    tone: 'var(--color-panel-discovery)',
+  },
 }

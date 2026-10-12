@@ -106,18 +106,11 @@ function PicksRow() {
       <text x="120" y="20.5" textAnchor="middle" className="fill-surface text-[0.75rem] font-bold">
         92%
       </text>
-      {/* Two small sparkles: something new found for you. */}
+      {/* Two small four-point sparkles: something new found for you. */}
+      <path d="m196 8 2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" className="fill-(--panel)" />
       <path
-        d="M196 14v10m-5-5h10"
-        className="stroke-(--panel)"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M40 22v6m-3-3h6"
-        className="stroke-(--panel)"
-        strokeWidth="2"
-        strokeLinecap="round"
+        d="m42 18 1.5 3.5 3.5 1.5-3.5 1.5-1.5 3.5-1.5-3.5-3.5-1.5 3.5-1.5Z"
+        className="fill-(--panel)"
       />
     </g>
   )
