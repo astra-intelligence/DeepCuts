@@ -1,34 +1,34 @@
 // Home (/), signed in: the app's three ideas as three matching panels (ADR-0033, ADR-0035).
 //
-// Top Ten (a preview until that project ships), Movies I want to watch (the first three of the
-// watchlist), and Discovery (six picks). The panels are the same ones the signed-out landing page
-// uses to explain the app, stacked on phones and in three columns from `lg`. With likes, the picks
-// come from the recommendation scorer (ADR-0026) and show a "% match" and why. Without likes, they
-// are popular films (minus disliked ones), with a hint to like a few films.
+// Top Ten (a preview until that project ships), Movies I want to watch (the first four of the
+// watchlist), and Discovery (four picks). The panels are the same ones the signed-out landing page
+// uses to explain the app, stacked on phones and in three columns from `lg`. Films are VHS
+// cassette tiles, two across in every panel (owner, 2026-10-11), like My Lists. With likes, the
+// picks come from the recommendation scorer (ADR-0026) and show a "% match" and why. Without
+// likes, they are popular films (minus disliked ones), with a hint to like a few films. Every tile
+// names the film's director and writer, from its details (the same cached call Detail makes).
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { movieQueries } from '../api/queries'
-import { summaryOf, type MovieSummary } from '../api/tmdb'
+import { creditsOf, summaryOf } from '../api/tmdb'
 import { FEATURES } from '../config/features'
+import { CassetteCard, type CassetteItem } from '../components/CassetteCard'
 import { FeaturePanel } from '../components/FeaturePanel'
-import { FilmRow } from '../components/FilmRow'
 import { PanelArt } from '../components/PanelArt'
 import { PANELS } from '../components/panels'
 import { PageHeading } from '../components/PageHeading'
 import { useTagQueries } from '../session/tagQueries'
 import { useRecommendations } from '../session/useRecommendations'
 
-// How many recommendations Home shows.
-const PICKS = 6
-// How many watchlist films Home previews; My Lists has them all.
-const WATCHLIST_PREVIEW = 3
+// How many recommendations Home shows: two rows of two cassettes. Six made Discovery about twice
+// as tall as the other panels.
+const PICKS = 4
+// How many watchlist films Home previews (two full rows); My Lists has them all.
+const WATCHLIST_PREVIEW = 4
 
-/** A film in the Discovery panel, with its match and reasons when it came from the scorer. */
-interface Pick {
-  movie: MovieSummary
-  match?: number
-  because?: string[]
-}
+// Two cassettes across in every panel, at every width: about 150px wide on a phone, 130px at
+// 1024px and 170px at 1280px. VhsBox sizes itself from its tile's width.
+const CASSETTE_GRID = 'grid grid-cols-2 gap-x-4 gap-y-5.5'
 
 /**
  * Home puts personal value before browsing (ADR-0033) in three panels that line up with the
@@ -90,10 +90,10 @@ function WatchlistPanel() {
       action={{ to: '/lists?tag=watchlist', label: 'See all' }}
     >
       {movies.length > 0 ? (
-        <ul className="divide-y divide-card-border">
+        <ul className={CASSETTE_GRID}>
           {movies.map((movie) => (
-            <li key={movie.id} className="py-2 first:pt-0 last:pb-0">
-              <FilmRow movie={summaryOf(movie)} />
+            <li key={movie.id} className="flex">
+              <CassetteCard item={{ movie: summaryOf(movie), credits: creditsOf(movie) }} />
             </li>
           ))}
         </ul>
@@ -107,8 +107,8 @@ function WatchlistPanel() {
 }
 
 /**
- * Six picks: enough to browse without becoming a second, endless destination on Home. (The big
- * featured card is gone, owner 2026-10-09: the top pick is simply the first row.)
+ * Four picks: enough to browse without becoming a second, endless destination on Home. (The big
+ * featured card is gone, owner 2026-10-09: the top pick is simply the first cassette.)
  */
 function DiscoveryPanel() {
   const tuned = useRecommendations(PICKS)
@@ -120,7 +120,7 @@ function DiscoveryPanel() {
   const usePicks = tuned.hasLikes && (tuned.loading || tuned.recommendations.length > 0)
   // While the scorer is still loading (both passes, ADR-0028), show nothing rather than early
   // picks that would reshuffle when the re-rank arrives.
-  const picks: Pick[] = (
+  const shown: CassetteItem[] = (
     usePicks
       ? (tuned.loading ? [] : tuned.recommendations).map((r) => ({
           movie: r.movie,
@@ -131,6 +131,14 @@ function DiscoveryPanel() {
           .filter((m) => !excluded?.has(m.id))
           .map((movie) => ({ movie }))
   ).slice(0, PICKS)
+  // Director and writer for each tile: one details call per film, cached for a day and shared
+  // with Detail (and with the scorer's re-rank, so most picks are already loaded). A tile shows
+  // its film at once, and its credit lines fill in when the details arrive.
+  const details = useQueries({ queries: shown.map((i) => movieQueries.detail(i.movie.id)) })
+  const picks = shown.map((item, i) => {
+    const data = details[i]?.data
+    return data ? { ...item, credits: creditsOf(data) } : item
+  })
   const loading = usePicks ? tuned.loading : popular.isPending
   const failed = !usePicks && popular.isError
 
@@ -145,7 +153,7 @@ function DiscoveryPanel() {
           <p role="status" className="sr-only">
             Finding films…
           </p>
-          <RowsSkeleton />
+          <CassettesSkeleton />
         </>
       ) : failed ? (
         <p className="text-sm text-fg-muted">
@@ -156,10 +164,10 @@ function DiscoveryPanel() {
           No films left in your picks. Films you dislike stay on the Disliked list in My Lists.
         </p>
       ) : (
-        <ul className="divide-y divide-card-border">
+        <ul className={CASSETTE_GRID}>
           {picks.map((pick) => (
-            <li key={pick.movie.id} className="py-2 first:pt-0 last:pb-0">
-              <FilmRow movie={pick.movie} match={pick.match} because={pick.because} />
+            <li key={pick.movie.id} className="flex">
+              <CassetteCard item={pick} />
             </li>
           ))}
         </ul>
@@ -177,17 +185,20 @@ function DiscoveryPanel() {
   )
 }
 
-/** Stable placeholders the size of the six pick rows, so the panel doesn't jump when they load. */
-function RowsSkeleton() {
+/** Stable cassette-sized placeholders for the picks, so the panel doesn't jump when they load. */
+function CassettesSkeleton() {
   return (
-    <ul aria-hidden="true" data-loading-section="rows" className="divide-y divide-card-border">
+    <ul aria-hidden="true" data-loading-section="grid" className={CASSETTE_GRID}>
       {Array.from({ length: PICKS }, (_, i) => (
-        <li key={i} className="py-2 first:pt-0 last:pb-0">
-          <div className="grid min-h-18 animate-pulse grid-cols-[3rem_minmax(0,1fr)] items-center gap-3">
-            <div className="h-18 w-12 rounded-poster bg-surface-selected" />
-            <div className="space-y-2">
+        <li key={i} className="flex">
+          <div className="flex min-w-0 flex-1 animate-pulse flex-col">
+            {/* The VHS box's own aspect ratio (VhsBox.css, --vhs-aspect). */}
+            <div className="aspect-[0.547] w-full rounded-subtle border border-card-border bg-card-bg" />
+            <div className="mt-3 min-h-36 space-y-2 rounded-control">
               <div className="h-4 w-4/5 rounded-subtle bg-surface-selected" />
+              <div className="h-4 w-3/5 rounded-subtle bg-surface-selected" />
               <div className="h-3 w-1/2 rounded-subtle bg-surface-selected" />
+              <div className="h-3 w-2/3 rounded-subtle bg-surface-selected" />
             </div>
           </div>
         </li>
