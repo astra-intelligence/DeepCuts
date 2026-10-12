@@ -1,6 +1,6 @@
 // One film as a cassette tile: the VHS box (design approved 2026-10-09), then its title,
-// year · genre, match, the first reason, director and writer. Used by Home's picks and, from
-// `md` up, by My Lists and Home's watchlist.
+// year · genre, match, the first reason, director and writer. Used by Home's watchlist and
+// Discovery panels at every width (two across, ADR-0035) and, from `md` up, by My Lists.
 import { Link } from 'react-router'
 import { releaseYear, type Credits, type MovieSummary } from '../api/tmdb'
 import { genreTone, primaryGenreName } from '../domain/genres'

@@ -1,7 +1,7 @@
 // Tests for Home (signed in): its three panels in order and in one grid (ADR-0035), and the
 // Discovery panel: popular films without likes, scored picks with a match and the reason with
 // likes.
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { delay, http, HttpResponse } from 'msw'
@@ -13,7 +13,7 @@ import { server } from '../test/msw/server'
 /** The first (top-ranked) pick in the Discovery panel, once the picks have loaded. */
 async function firstPick() {
   const panel = await screen.findByRole('region', { name: 'Discovery' })
-  // The first row's link (the skeleton rows are aria-hidden, so they never match).
+  // The first tile's link (the skeleton tiles are aria-hidden, so they never match).
   const [first] = await within(panel).findAllByRole('listitem')
   if (!first) throw new Error('no picks')
   return within(first).getByRole('link')
@@ -51,26 +51,47 @@ describe('home', () => {
 
     renderRoute('/')
     expect(await screen.findByRole('status')).toHaveTextContent('Finding films…')
-    expect(document.querySelector('[data-loading-section="rows"]')).toBeInTheDocument()
+    expect(document.querySelector('[data-loading-section="grid"]')).toBeInTheDocument()
     expect(await firstPick()).toHaveAccessibleName(/^The Thing/)
   })
 
-  it('shows the picks as compact rows, with no featured card or credits', async () => {
+  it('shows the picks as VHS cassettes, two across, with credits and no featured card', async () => {
     renderRoute('/')
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Your movies, close at hand' }),
     ).toBeInTheDocument()
     expect(await firstPick()).toHaveAccessibleName(/^The Thing/)
-    // The big featured card is gone (owner, 2026-10-09): the top pick is the first row.
+    // The big featured card is gone (owner, 2026-10-09): the top pick is the first cassette.
     expect(screen.queryByText(/featured deep cut/i)).not.toBeInTheDocument()
     const panel = screen.getByRole('region', { name: 'Discovery' })
+    expect(within(panel).getByRole('list')).toHaveClass('grid-cols-2')
     const alien = within(panel).getByRole('link', { name: /Alien.*1979 · Horror/ })
-    // Rows are compact (ADR-0035): no director/writer lines, so no extra details calls.
-    expect(alien).not.toHaveTextContent('Director:')
-    // The title is cut to one line visually; the full title stays in the page and on hover.
-    const title = within(alien).getByText('Alien')
-    expect(title).toHaveClass('truncate')
+    // Each box wears its VHS genre sticker, which stays out of the link's accessible name.
+    expect(alien.querySelector('[data-genre-sticker="horror"]')).toHaveTextContent('Horror')
+    // Director and writer fill in from the film's details, without any likes.
+    await waitFor(() => expect(alien).toHaveTextContent('Director: Ridley Scott'))
+    expect(alien).toHaveTextContent('Writer: Dan O’Bannon')
+    // The title is clamped to two lines visually; the full title stays in the page and on hover.
+    const title = within(alien).getByRole('heading', { level: 3, name: 'Alien' })
+    expect(title).toHaveClass('line-clamp-2')
     expect(title).toHaveAttribute('title', 'Alien')
+  })
+
+  it('shows up to four watchlist films as cassettes, with See all', async () => {
+    const user = userEvent.setup()
+    const { router } = renderRoute('/movie/1091')
+    const group = await screen.findByRole('group', { name: 'Your tags' })
+    await user.click(within(group).getByRole('button', { name: 'Want to see' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await screen.findByText(/^Saved\./)
+    await act(() => router.navigate('/'))
+    const panel = await screen.findByRole('region', { name: 'Movies I want to watch' })
+    const thing = await within(panel).findByRole('link', { name: /The Thing.*1982 · Horror/ })
+    expect(thing.querySelector('[data-genre-sticker="horror"]')).toBeInTheDocument()
+    expect(within(panel).getByRole('link', { name: 'See all' })).toHaveAttribute(
+      'href',
+      '/lists?tag=watchlist',
+    )
   })
 
   it('leaves disliked films out of the feed (ADR-0017)', async () => {
@@ -120,8 +141,13 @@ describe('home with likes (ADR-0026)', () => {
     expect(feature).toHaveTextContent('The Fog')
     // Picks only appear once both passes are in, so the top pick never changes under you.
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    // Tiles name the director and writer; the old "Directed by X, like Y" reason is gone.
+    await waitFor(() => expect(feature).toHaveTextContent('Director: John Carpenter'))
+    expect(feature).not.toHaveTextContent('Directed by')
     const panel = screen.getByRole('region', { name: 'Discovery' })
-    expect(within(panel).getByRole('link', { name: /Halloween/ })).toHaveTextContent(/\d+% match/)
+    const halloween = within(panel).getByRole('link', { name: /Halloween/ })
+    expect(halloween).toHaveTextContent(/\d+% match/)
+    await waitFor(() => expect(halloween).toHaveTextContent('Writers: John Carpenter, Debra Hill'))
     // The liked film itself is never recommended back.
     expect(screen.queryByRole('link', { name: /^The Thing/ })).not.toBeInTheDocument()
   })
