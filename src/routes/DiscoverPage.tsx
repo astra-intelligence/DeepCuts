@@ -1,7 +1,7 @@
 // Home (/), signed in: the app's three ideas as three matching panels (ADR-0033, ADR-0035).
 //
-// Top Ten (a preview until that project ships), Movies I want to watch (the first four of the
-// watchlist), and Discovery (four picks). The panels are the same ones the signed-out landing page
+// Top Ten (the person's ranked favourites, ADR-0036), Movies I want to watch (the first four of
+// the watchlist), and Discovery (four picks). The panels are the same ones the signed-out landing page
 // uses to explain the app, stacked on phones and in three columns from `lg`. Films are VHS
 // cassette tiles, two across in every panel (owner, 2026-10-11), like My Lists. With likes, the
 // picks come from the recommendation scorer (ADR-0026) and show a "% match" and why. Without
@@ -18,6 +18,7 @@ import { PanelArt } from '../components/PanelArt'
 import { PANELS } from '../components/panels'
 import { PageHeading } from '../components/PageHeading'
 import { useTagQueries } from '../session/tagQueries'
+import { useTopTen } from '../session/topTenQueries'
 import { useRecommendations } from '../session/useRecommendations'
 
 // How many recommendations Home shows: two rows of two cassettes. Six made Discovery about twice
@@ -60,17 +61,44 @@ export function HomePage() {
   )
 }
 
-/** The visible home for the future curated list, without pretending liked films are a Top Ten. */
+/**
+ * The person's Top Ten (ADR-0036), all of it, in their order: #1 first. Films are added and
+ * removed from their Detail page; reordering comes with the Top Ten management screen.
+ */
 function TopTenPanel() {
+  const ids = useTopTen().data ?? []
+  // One details call per film (cached for a day and shared with Detail). Each tile appears once
+  // its film has loaded; the rank comes from the list, so it stays right even if one film is
+  // slow or missing.
+  const details = useQueries({ queries: ids.map((id) => movieQueries.detail(id)) })
+  const films = ids.flatMap((_, i) => {
+    const movie = details[i]?.data
+    return movie ? [{ movie: summaryOf(movie), credits: creditsOf(movie), rank: i + 1 }] : []
+  })
+
   return (
     <FeaturePanel panel={PANELS['top-ten']}>
-      {/* The landing page's illustration, quieter: this is what's coming, not content yet. */}
-      <div className="grid place-items-center rounded-container bg-surface-raised px-4 py-5 opacity-60">
-        <PanelArt id="top-ten" />
-      </div>
-      <p className="mt-3 text-sm leading-relaxed text-fg-muted">
-        Your all-time favourites, in your order. Building and sharing this list is coming next.
-      </p>
+      {ids.length > 0 ? (
+        // An ordered list: the order is the meaning, and screen readers announce it.
+        <ol className={CASSETTE_GRID}>
+          {films.map((item) => (
+            <li key={item.movie.id} className="flex">
+              <CassetteCard item={item} />
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <>
+          {/* The landing page's illustration, quieter: a hint of what this becomes. */}
+          <div className="grid place-items-center rounded-container bg-surface-raised px-4 py-5 opacity-60">
+            <PanelArt id="top-ten" />
+          </div>
+          <p className="mt-3 text-sm leading-relaxed text-fg-muted">
+            Your all-time favourites, in your order. Add a film from its details page to start your
+            Top Ten.
+          </p>
+        </>
+      )}
     </FeaturePanel>
   )
 }

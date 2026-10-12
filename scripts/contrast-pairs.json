@@ -29,6 +29,7 @@
   ["color-tag-seen", "color-surface-raised", 4.5],
   ["color-tag-seen", "color-surface-overlay", 4.5],
   ["color-panel-top-ten", "color-card-bg", 3],
+  ["color-favourite", "color-card-bg", 4.5],
   ["color-panel-watchlist", "color-card-bg", 3],
   ["color-panel-discovery", "color-card-bg", 3],
   ["color-surface-default", "color-panel-discovery", 4.5],
