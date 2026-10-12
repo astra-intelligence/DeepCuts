@@ -25,7 +25,7 @@ test.describe('signed out (ADR-0034)', () => {
     })
   }
 
-  test('the landing page explains the three panels, with Sign in as the one action (ADR-0035)', async ({
+  test('the landing page explains the three panels; Sign in is in the header (ADR-0035)', async ({
     page,
   }) => {
     await page.goto('/')
@@ -37,7 +37,9 @@ test.describe('signed out (ADR-0034)', () => {
     // No search, no tab bar: they only lead to signed-in pages.
     await expect(page.getByRole('combobox')).toHaveCount(0)
     await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(0)
-    const signIn = page.getByRole('main').getByRole('link', { name: 'Sign in' })
+    // No call to action on the page itself (owner, 2026-10-11); the header's Sign in remains.
+    await expect(page.getByRole('main').getByRole('link', { name: 'Sign in' })).toHaveCount(0)
+    const signIn = page.getByRole('banner').getByRole('link', { name: 'Sign in' })
     expect((await signIn.boundingBox())?.height).toBeGreaterThanOrEqual(44)
     // Three panels side by side from `lg` (1024px), stacked below it.
     const tops = await page

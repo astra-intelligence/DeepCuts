@@ -1,5 +1,5 @@
 // Tests for the signed-out landing page (ADR-0034, ADR-0035): the three explainer panels match
-// Home's panels, the shell has only the logo and Sign in, and Sign in leads back to Home.
+// Home's panels, the shell has only the logo and Sign in, and the header's Sign in leads to Home.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
@@ -33,11 +33,13 @@ describe('landing page (signed out)', () => {
     expect(screen.queryByRole('link', { name: /View details/ })).not.toBeInTheDocument()
   })
 
-  it('Sign in leads to the sign-in page, then to Home', async () => {
+  it('has no Sign in of its own; the header’s leads to the sign-in page, then to Home', async () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/', { initialSession: SIGNED_OUT })
     const main = await screen.findByRole('main')
-    await user.click(within(main).getByRole('link', { name: 'Sign in' }))
+    // The page itself has no call to action (owner, 2026-10-11).
+    expect(within(main).queryByRole('link', { name: 'Sign in' })).not.toBeInTheDocument()
+    await user.click(within(screen.getByRole('banner')).getByRole('link', { name: 'Sign in' }))
     await user.click(await screen.findByRole('button', { name: /Continue with a demo account/ }))
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
     // Home's real panels, with the tab bar back.
