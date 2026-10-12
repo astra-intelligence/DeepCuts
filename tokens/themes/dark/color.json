@@ -66,6 +66,10 @@
     "focus": {
       "$value": "{color.blue.300}"
     },
+    "favourite": {
+      "$value": "{color.gold.500}",
+      "$description": "Favourite films: the Top Ten (ADR-0035). Decorative; always next to its label"
+    },
     "tag": {
       "seen": {
         "$value": "{color.teal.400}",

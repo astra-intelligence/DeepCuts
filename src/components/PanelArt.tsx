@@ -33,7 +33,7 @@ function RankedList() {
               x="14"
               y={y + 26}
               textAnchor="middle"
-              className={`font-display text-[1.6rem] ${i === 0 ? 'fill-(--panel)' : 'fill-fg-muted'}`}
+              className={`font-display text-2xl ${i === 0 ? 'fill-(--panel)' : 'fill-fg-muted'}`}
             >
               {i + 1}
             </text>
@@ -103,7 +103,7 @@ function PicksRow() {
         strokeWidth="2"
       />
       <rect x="94" y="6" width="52" height="20" rx="10" className="fill-(--panel)" />
-      <text x="120" y="20.5" textAnchor="middle" className="fill-surface text-[0.75rem] font-bold">
+      <text x="120" y="20.5" textAnchor="middle" className="fill-surface text-xs font-bold">
         92%
       </text>
       {/* Two small four-point sparkles: something new found for you. */}

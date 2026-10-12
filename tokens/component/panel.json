@@ -4,7 +4,7 @@
     "$type": "color",
     "panel": {
       "top-ten": {
-        "$value": "{color.gold.500}",
+        "$value": "{color.favourite}",
         "$description": "Top Ten: a favourites star"
       },
       "watchlist": {
