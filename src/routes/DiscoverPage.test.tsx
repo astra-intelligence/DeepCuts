@@ -1,4 +1,5 @@
-// Tests for Home (signed in): its three panels in order and in one grid (ADR-0035), and the
+// Tests for Home (signed in): its three panels in order and in one grid (ADR-0035), the Top Ten
+// in its ranked order (ADR-0036), and the
 // Discovery panel: popular films without likes, scored picks with a match and the reason with
 // likes.
 import { screen, waitFor, within } from '@testing-library/react'
@@ -6,6 +7,7 @@ import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { delay, http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
+import { createLocalTopTenRepository } from '../adapters/local/LocalTopTenRepository'
 import { renderRoute } from '../test/renderRoute'
 import { searchFixture } from '../test/msw/fixtures'
 import { server } from '../test/msw/server'
@@ -75,6 +77,36 @@ describe('home', () => {
     const title = within(alien).getByRole('heading', { level: 3, name: 'Alien' })
     expect(title).toHaveClass('line-clamp-2')
     expect(title).toHaveAttribute('title', 'Alien')
+  })
+
+  it('the Top Ten starts with a hint, and shows a film added from Detail', async () => {
+    const user = userEvent.setup()
+    const { router } = renderRoute('/')
+    const panel = await screen.findByRole('region', { name: 'Top Ten' })
+    expect(within(panel).getByText(/Add a film from its details page/)).toBeInTheDocument()
+
+    await act(() => router.navigate('/movie/1091'))
+    await user.click(await screen.findByRole('button', { name: 'Add to your Top 10' }))
+    await screen.findByText('This is one of your top 10!')
+    await act(() => router.navigate('/'))
+    const updated = await screen.findByRole('region', { name: 'Top Ten' })
+    expect(
+      await within(updated).findByRole('link', { name: /^#1 The Thing.*1982 · Horror/ }),
+    ).toBeInTheDocument()
+    expect(within(updated).queryByText(/Add a film from its details page/)).not.toBeInTheDocument()
+  })
+
+  it('shows the Top Ten in its ranked order, numbered, as an ordered list', async () => {
+    const topTen = createLocalTopTenRepository('account-demo-top-ten')
+    await topTen.add(348) // Alien
+    await topTen.add(1091) // The Thing
+    renderRoute('/')
+    const panel = await screen.findByRole('region', { name: 'Top Ten' })
+    await within(panel).findByRole('link', { name: /^#2 The Thing/ })
+    const links = within(panel).getAllByRole('link')
+    expect(links.map((l) => l.getAttribute('href'))).toEqual(['/movie/348', '/movie/1091'])
+    expect(links[0]).toHaveAccessibleName(/^#1 Alien/)
+    expect(links[0]?.closest('ol')).toHaveClass('grid-cols-2')
   })
 
   it('shows up to four watchlist films as cassettes, with See all', async () => {
