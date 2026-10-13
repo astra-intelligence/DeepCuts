@@ -20,8 +20,10 @@ export function EmptySlot({
 }) {
   const body = (
     <>
+      {/* The design draws the mark in the outline's color, but at 2.2:1 that fails even the 3:1
+          for large text, so it's in the muted text color (dust, 7:1). */}
       {mark && (
-        <span aria-hidden="true" className="font-display text-7xl leading-none text-border-strong">
+        <span aria-hidden="true" className="font-display text-7xl leading-none text-fg-muted">
           {mark}
         </span>
       )}
