@@ -74,12 +74,21 @@ describe('handleTmdb', () => {
 })
 
 describe('trimCredits (ADR-0028)', () => {
-  it('keeps only directors and writers from appended credits, and drops the cast', () => {
+  it('keeps directors, writers and the five top-billed actors from appended credits (ADR-0038)', () => {
     const body = {
       id: 1091,
       title: 'The Thing',
       credits: {
-        cast: [{ id: 1, name: 'Kurt Russell' }],
+        // Out of billing order on purpose; one without `order` and a malformed entry.
+        cast: [
+          { id: 16, name: 'Sixth', order: 5, character: 'x' },
+          { id: 10, name: 'Kurt Russell', order: 0, character: 'MacReady' },
+          { id: 12, name: 'Keith David', order: 2 },
+          { id: 11, name: 'Wilford Brimley', order: 1 },
+          { id: 14, name: 'Fourth', order: 4 },
+          null,
+          { id: 13, name: 'No order' },
+        ],
         crew: [
           { id: 11770, name: 'John Carpenter', job: 'Director', department: 'Directing' },
           { id: 2, name: 'Dean Cundey', job: 'Director of Photography' },
@@ -97,6 +106,14 @@ describe('trimCredits (ADR-0028)', () => {
           { id: 11770, name: 'John Carpenter', job: 'Director' },
           { id: 3, name: 'Bill Lancaster', job: 'Screenplay' },
         ],
+        cast: [
+          { id: 10, name: 'Kurt Russell' },
+          { id: 11, name: 'Wilford Brimley' },
+          { id: 12, name: 'Keith David' },
+          { id: 14, name: 'Fourth' },
+          // 'No order' takes its place in the list (index 6) as its order, so it's sixth and cut.
+          { id: 16, name: 'Sixth' },
+        ],
       },
     })
   })
@@ -105,6 +122,6 @@ describe('trimCredits (ADR-0028)', () => {
     const search = { page: 1, results: [] }
     expect(trimCredits(search)).toBe(search)
     expect(trimCredits(null)).toBeNull()
-    expect(trimCredits({ credits: 'odd' })).toEqual({ credits: { crew: [] } })
+    expect(trimCredits({ credits: 'odd' })).toEqual({ credits: { crew: [], cast: [] } })
   })
 })

@@ -185,8 +185,8 @@ describe('home with likes (ADR-0026)', () => {
   })
 })
 
-describe('home with a liked film in a series (ADR-0032)', () => {
-  it('suggests the released sequels, but not an undated announced one', async () => {
+describe('home with a liked film in a series (ADR-0032, ADR-0037)', () => {
+  it('suggests the next released film in the series, not later ones or an announced one', async () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/4488')
     const group = await screen.findByRole('group', { name: 'Your tags' })
@@ -195,14 +195,14 @@ describe('home with a liked film in a series (ADR-0032)', () => {
     await screen.findByText(/^Saved\./)
     await act(() => router.navigate('/'))
 
-    // TMDB recommends nothing for it here, so both picks come from the series.
+    // TMDB recommends nothing for it here, so the pick comes from the series: only the next film.
     const feature = await firstPick()
     expect(feature).toHaveTextContent('Because you liked Friday the 13th')
     const titles = screen
       .getAllByRole('link', { name: /Friday the 13th Part/ })
       .map((l) => l.textContent)
     expect(titles.join(' ')).toMatch(/Part 2/)
-    expect(titles.join(' ')).toMatch(/Part III/)
+    expect(titles.join(' ')).not.toMatch(/Part III/)
     expect(screen.queryByText(/Announced/)).not.toBeInTheDocument()
   })
 })

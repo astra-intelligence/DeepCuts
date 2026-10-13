@@ -90,12 +90,12 @@ export function tmdbProxyContract(name: string, call: ProxyCaller) {
       expect(res.status).toBe(504)
     })
 
-    it('trims appended credits to directors and writers (ADR-0028)', async () => {
+    it('trims appended credits to directors, writers and top-billed cast (ADR-0028, ADR-0038)', async () => {
       const { res } = await run('/api/tmdb/movie/1', {
         upstream: Response.json({
           id: 1,
           credits: {
-            cast: [{ id: 2 }],
+            cast: [{ id: 2, name: 'W', character: 'Lead', profile_path: '/w.jpg', order: 0 }],
             crew: [
               { id: 3, name: 'X', job: 'Director' },
               { id: 4, name: 'Y', job: 'Writer' },
@@ -111,6 +111,7 @@ export function tmdbProxyContract(name: string, call: ProxyCaller) {
             { id: 3, name: 'X', job: 'Director' },
             { id: 4, name: 'Y', job: 'Writer' },
           ],
+          cast: [{ id: 2, name: 'W' }],
         },
       })
     })

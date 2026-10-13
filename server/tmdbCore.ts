@@ -22,25 +22,43 @@ const HOUR = 60 * 60
  */
 export const KEPT_CREW_JOBS = ['Director', 'Screenplay', 'Writer', 'Story'] as const
 
+/** How many top-billed actors the scorer's cast part compares (ADR-0038). */
+export const KEPT_CAST = 5
+
 /**
- * Shrinks a film's appended credits to its directors and writers before they reach the browser
- * (ADR-0028). Full credits list the whole cast and crew (often 50–150 kB); the app only uses
- * these few. Anything that isn't a film-details body with credits passes through unchanged.
+ * Shrinks a film's appended credits to its directors, writers and top-billed actors before they
+ * reach the browser (ADR-0028, ADR-0038). Full credits list the whole cast and crew (often
+ * 50–150 kB); the app only uses these few. Anything that isn't a film-details body with credits
+ * passes through unchanged.
  */
 export function trimCredits(body: unknown): unknown {
   if (typeof body !== 'object' || body === null || !('credits' in body)) return body
   const credits = (body as { credits: unknown }).credits
-  const crew =
+  // One of the credits' lists, or an empty one when it's missing or malformed.
+  const list = (key: 'crew' | 'cast'): unknown[] =>
     typeof credits === 'object' &&
     credits !== null &&
-    'crew' in credits &&
-    Array.isArray(credits.crew)
-      ? credits.crew
+    key in credits &&
+    Array.isArray((credits as Record<string, unknown>)[key])
+      ? ((credits as Record<string, unknown>)[key] as unknown[])
       : []
-  const kept = crew
-    .filter((p: { job?: unknown }) => (KEPT_CREW_JOBS as readonly unknown[]).includes(p?.job))
-    .map(({ id, name, job }: { id: unknown; name: unknown; job: unknown }) => ({ id, name, job }))
-  return { ...body, credits: { crew: kept } }
+  const crew = list('crew')
+    .filter((p) => (KEPT_CREW_JOBS as readonly unknown[]).includes((p as { job?: unknown })?.job))
+    .map((p) => {
+      const { id, name, job } = p as { id: unknown; name: unknown; job: unknown }
+      return { id, name, job }
+    })
+  // TMDB lists the cast in billing order; `order` says so explicitly, so sort by it to be sure.
+  const cast = list('cast')
+    .filter(
+      (p): p is { id: unknown; name: unknown; order?: unknown } =>
+        typeof p === 'object' && p !== null,
+    )
+    .map((p, i) => ({ p, order: typeof p.order === 'number' ? p.order : i }))
+    .sort((a, b) => a.order - b.order)
+    .slice(0, KEPT_CAST)
+    .map(({ p }) => ({ id: p.id, name: p.name }))
+  return { ...body, credits: { crew, cast } }
 }
 
 /**

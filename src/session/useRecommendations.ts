@@ -1,9 +1,11 @@
-// Feeds the scorer (ADR-0026, ADR-0028, ADR-0032) from the person's tags and cached TMDB data.
+// Feeds the scorer (ADR-0026, ADR-0028, ADR-0032, ADR-0037) from the person's tags and cached
+// TMDB data.
 //
 // Two passes:
-// 1. One details call per tagged film (with recommendations, keywords and credits appended), plus
-//    one series call per liked series (MAX_SERIES at most), gives the candidates; the scorer
-//    ranks them.
+// 1. One details call per tagged film (with recommended and similar films, keywords and credits
+//    appended), one series call per liked series (MAX_SERIES at most), and one keyword search
+//    per keyword your likes share most (KEYWORD_SEARCHES at most, ADR-0038) give the
+//    candidates; the scorer ranks them.
 // 2. The top RERANK candidates get one details call each for their keywords, credits and series, and
 //    the scorer ranks again with them. Every call is the same cached details query the Detail
 //    page uses, so opening a recommended film afterwards costs nothing.
@@ -11,6 +13,7 @@ import { useQueries, useQuery } from '@tanstack/react-query'
 import { movieQueries } from '../api/queries'
 import { crewOf, releaseYear, type MovieDetail, type MovieSummary } from '../api/tmdb'
 import {
+  keywordsToSearch,
   recommend,
   type FilmDetails,
   type Pick,
@@ -39,11 +42,13 @@ export interface Recommendation extends Omit<Pick, 'film'> {
   movie: MovieSummary
 }
 
-// A film's keywords, directors, writers and series, from its details (empty when TMDB has none).
+// A film's keywords, credits, studios and series, from its details (empty when TMDB has none).
 function detailsOf(m: MovieDetail): FilmDetails {
   return {
     keywordIds: m.keywords?.keywords.map((k) => k.id) ?? [],
     ...crewOf(m),
+    cast: m.credits?.cast ?? [],
+    companies: m.production_companies,
     seriesId: m.belongs_to_collection?.id ?? null,
   }
 }
@@ -113,16 +118,11 @@ export function useTaste(): Taste {
     const id = m.belongs_to_collection?.id
     return id === undefined ? [] : (seriesFilms.get(id) ?? [])
   }
-  // TMDB's own summaries of every candidate film, to show posters and titles for the picks.
-  const summaries = new Map(
-    likedMovies.flatMap((m) =>
-      [...(m.recommendations?.results ?? []), ...seriesOf(m)].map((r) => [r.id, r] as const),
-    ),
-  )
-  const input: TasteInput = {
+  const tags = {
     liked: likedMovies.map((m) => ({
       film: toScorerFilm(m),
       recommendations: (m.recommendations?.results ?? []).map(toScorerFilm),
+      similar: (m.similar?.results ?? []).map(toScorerFilm),
       // Series films carry their series id, so the series part and spread rules know them.
       series: seriesOf(m).map((f) => ({
         ...toScorerFilm(f),
@@ -131,6 +131,32 @@ export function useTaste(): Taste {
     })),
     wanted: moviesFor(wanted).map(toScorerFilm),
     disliked: moviesFor(disliked).map(toScorerFilm),
+  }
+  // The keywords your likes share most, each searched for well-rated films (ADR-0038). Waits for
+  // every tagged film's details, so the keywords don't change (and search again) as they arrive.
+  const taggedLoaded = details.every((q) => !q.isPending)
+  const keywordIds = taggedLoaded ? keywordsToSearch(tags) : []
+  const keywordQueries = useQueries({
+    queries: keywordIds.map((id) => movieQueries.byKeyword(id)),
+  })
+  const keywordFilms = keywordQueries.map((q) => (q.data?.results ?? []).filter(isReleased))
+  // TMDB's own summaries of every candidate film, to show posters and titles for the picks.
+  const summaries = new Map(
+    [
+      ...likedMovies.flatMap((m) => [
+        ...(m.recommendations?.results ?? []),
+        ...(m.similar?.results ?? []),
+        ...seriesOf(m),
+      ]),
+      ...keywordFilms.flat(),
+    ].map((r) => [r.id, r] as const),
+  )
+  const input: TasteInput = {
+    ...tags,
+    keywordSearches: keywordIds.map((keywordId, i) => ({
+      keywordId,
+      films: (keywordFilms[i] ?? []).map(toScorerFilm),
+    })),
     excluded: new Set(tagged?.map((r) => r.tmdbId)),
   }
 
@@ -151,6 +177,7 @@ export function useTaste(): Taste {
     loading:
       details.some((q) => q.isPending) ||
       seriesQueries.some((q) => q.isPending) ||
+      keywordQueries.some((q) => q.isPending) ||
       topDetails.some((q) => q.isPending),
     // Scoring a few hundred candidates is well under a millisecond, so it simply runs each render.
     score: (options) =>

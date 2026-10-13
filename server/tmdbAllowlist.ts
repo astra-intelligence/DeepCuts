@@ -11,7 +11,7 @@ export type AllowlistResult = { ok: true; request: TmdbRequest } | { ok: false; 
 const page = z.coerce.number().int().min(1).max(500)
 const id = z.coerce.number().int().positive().max(99_999_999)
 // Extras that may ride along on a film's details call; each at most once.
-const APPENDABLE = new Set(['release_dates', 'recommendations', 'keywords', 'credits'])
+const APPENDABLE = new Set(['release_dates', 'recommendations', 'similar', 'keywords', 'credits'])
 const appendList = z.string().refine((v) => {
   const parts = v.split(',')
   return parts.every((p) => APPENDABLE.has(p)) && new Set(parts).size === parts.length
@@ -37,8 +37,10 @@ const ROUTES: Route[] = [
   {
     pattern: /^discover\/movie$/,
     // No genre filters: taste comes only from tagged films, never declared genres (ADR-0032).
+    // One keyword id at a time, taken from the keywords of films you liked (ADR-0038).
     params: z.strictObject({
       page: page.optional(),
+      with_keywords: id.optional(),
       sort_by: z
         .enum(['popularity.desc', 'vote_average.desc', 'primary_release_date.desc'])
         .optional(),
@@ -50,7 +52,8 @@ const ROUTES: Route[] = [
   {
     pattern: /^movie\/(\d+)$/,
     // Only these extras may be appended, so Detail and the scorer each need one call (ADR-0024,
-    // ADR-0026, ADR-0028): the content rating, recommendations, keywords and credits.
+    // ADR-0026, ADR-0028, ADR-0037): the content rating, recommended and similar films, keywords
+    // and credits.
     params: z.strictObject({ append_to_response: appendList.optional() }),
     path: (m) => `movie/${id.parse(m[1])}`,
   },

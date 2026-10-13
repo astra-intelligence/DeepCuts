@@ -73,20 +73,33 @@ export const movieDetailSchema = z.object({
     .object({ results: z.array(movieSummary) })
     .optional()
     .catch(undefined),
+  // Appended to the same call: films TMDB finds similar by genre and keywords. More candidates
+  // that aren't from the same series, at no extra request (ADR-0037).
+  similar: z
+    .object({ results: z.array(movieSummary) })
+    .optional()
+    .catch(undefined),
   // Appended to the same call for the scorer's keyword and director parts (ADR-0028). Lenient:
   // a malformed block just means no keywords or directors for this film.
   keywords: z
     .object({ keywords: z.array(z.object({ id: z.number().int(), name: z.string() })) })
     .optional()
     .catch(undefined),
-  // The proxy trims credits to directors and writers only (server/tmdbCore.ts), so this stays
-  // small.
+  // The proxy trims credits to directors, writers and the five top-billed actors
+  // (server/tmdbCore.ts), so this stays small.
   credits: z
     .object({
       crew: z.array(z.object({ id: z.number().int(), name: z.string(), job: z.string() })),
+      cast: z.array(z.object({ id: z.number().int(), name: z.string() })).default([]),
     })
     .optional()
     .catch(undefined),
+  // The companies that made it, for the scorer's studio part (ADR-0038). Lenient: odd data means
+  // no companies.
+  production_companies: z
+    .array(z.object({ id: z.number().int(), name: z.string() }))
+    .default([])
+    .catch([]),
   // Appended to the same call for the content rating (ADR-0024).
   release_dates: z
     .object({
@@ -165,14 +178,15 @@ export const tmdb = {
   search: (query: string, page = 1, signal?: AbortSignal) =>
     get('search/movie', searchResultsSchema, { query, page: String(page) }, signal),
   /**
-   * One film's details, plus in the same call: content ratings, recommended films, keywords and
-   * directors (one request serves Detail and the recommendation scorer, ADR-0024/0026/0028).
+   * One film's details, plus in the same call: content ratings, recommended and similar films,
+   * keywords and directors (one request serves Detail and the recommendation scorer,
+   * ADR-0024/0026/0028/0037).
    */
   movie: (id: number, signal?: AbortSignal) =>
     get(
       `movie/${id}`,
       movieDetailSchema,
-      { append_to_response: 'release_dates,recommendations,keywords,credits' },
+      { append_to_response: 'release_dates,recommendations,similar,keywords,credits' },
       signal,
     ),
   /** Popular, well-voted films (no genre filter: ADR-0032 dropped favourite genres). */
@@ -184,6 +198,21 @@ export const tmdb = {
         sort_by: 'popularity.desc',
         // Skip barely-rated films so the feed isn't full of obscure noise.
         'vote_count.gte': '200',
+      },
+      signal,
+    ),
+  /**
+   * Well-rated films tagged with one keyword ("slasher"), for the scorer's keyword candidates
+   * (ADR-0038). Needs 100 votes, so the barely-rated don't rank by a lucky 10/10.
+   */
+  byKeyword: (keywordId: number, signal?: AbortSignal) =>
+    get(
+      'discover/movie',
+      searchResultsSchema,
+      {
+        with_keywords: String(keywordId),
+        sort_by: 'vote_average.desc',
+        'vote_count.gte': '100',
       },
       signal,
     ),
