@@ -1,7 +1,6 @@
 // One film as a row in a list: poster, title, year/genre, a short overview and "View details".
 import { Link } from 'react-router'
 import { imageUrl, type MovieSummary } from '../api/tmdb'
-import { Icon } from './Icon'
 import { LoadingImage } from './LoadingImage'
 
 /**
@@ -41,18 +40,18 @@ export function MovieLink({
         />
       )}
       <span className="flex min-w-0 flex-col gap-1.5">
-        <strong className="font-semibold wrap-anywhere">{movie.title}</strong>
+        <strong className="font-bold wrap-anywhere">{movie.title}</strong>
         <small className="text-sm text-fg-muted">
           {meta.join(' · ')}
           {disliked && <span className="ml-2 text-tag-disliked">Disliked</span>}
         </small>
         {movie.overview && (
-          <span className="line-clamp-2 text-sm leading-relaxed text-fg-muted">
+          <span className="line-clamp-2 text-sm leading-relaxed text-fg-soft">
             {movie.overview}
           </span>
         )}
-        <span className="flex items-center gap-1.5 text-sm font-semibold text-accent">
-          <Icon name="eye" className="size-4" /> View details
+        <span className="font-display text-base tracking-widest text-accent uppercase underline underline-offset-4">
+          View details <span aria-hidden="true">→</span>
         </span>
       </span>
     </Link>

@@ -1,7 +1,6 @@
 // Stroke icons from the v2 design. Each is one SVG path, so they stay tiny and need no icon library.
 // To add an icon, add its 24×24 path data here; the name then becomes a valid `IconName`.
 const PATHS = {
-  home: 'm3 10 9-7 9 7M5 9v11h14V9M9 20v-6h6v6',
   search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM20 20l-4-4',
   list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
   back: 'm15 18-6-6 6-6',
@@ -13,10 +12,7 @@ const PATHS = {
   ban: 'M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM6.5 6.5l11 11',
   check: 'm5 12 4 4L19 6',
   user: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM4.5 21a7.5 7.5 0 0 1 15 0',
-  x: 'm6 6 12 12M18 6 6 18',
   star: 'm12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9Z',
-  sparkle:
-    'M12 3v5m0 8v5M3 12h5m8 0h5M6.3 6.3l2.5 2.5m6.4 6.4 2.5 2.5m0-11.4-2.5 2.5m-6.4 6.4-2.5 2.5',
 } as const
 
 /** The name of any icon above, e.g. `'search'`. */

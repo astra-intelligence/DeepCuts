@@ -17,6 +17,7 @@ import { CassetteCard, type CassetteItem } from '../components/CassetteCard'
 import { EmptySlot } from '../components/EmptySlot'
 import { focusHeaderSearch } from '../components/headerSearch'
 import { PageHeading } from '../components/PageHeading'
+import { PANELS } from '../components/panels'
 import { SHELF_GRID, ShelfSection } from '../components/ShelfSection'
 import { Ticker } from '../components/Ticker'
 import { useTagQueries } from '../session/tagQueries'
@@ -70,7 +71,7 @@ function TopTenShelf({ ids }: { ids: readonly number[] }) {
     <ShelfSection
       id="top-ten"
       feature={1}
-      title="Top Ten"
+      title={PANELS['top-ten'].title}
       meta={
         <p className="font-label text-sm text-fg-muted">
           {ids.length} of {TOP_TEN_SIZE} ranked
@@ -112,7 +113,7 @@ function WatchlistShelf({ ids }: { ids: readonly number[] }) {
     <ShelfSection
       id="watchlist"
       feature={2}
-      title="Movies I want to watch"
+      title={PANELS.watchlist.title}
       meta={
         <Link
           to="/lists?tag=watchlist"
@@ -211,7 +212,7 @@ function DiscoveryShelf({ discovery }: { discovery: DiscoveryPicks }) {
     <ShelfSection
       id="discovery"
       feature={3}
-      title="Discovery"
+      title={PANELS.discovery.title}
       meta={<p className="font-label text-sm text-fg-muted">Deep cuts, picked for your taste</p>}
     >
       {/* Only the untuned feed explains itself: it's the one line that tells you what to do. */}

@@ -155,7 +155,7 @@ function LabCard({ movie }: { movie: MovieSummary }) {
       <div className="mt-3 group-focus-visible:outline-3 group-focus-visible:outline-offset-3 group-focus-visible:outline-focus">
         <h3
           title={movie.title}
-          className="mb-1 line-clamp-2 min-h-10 text-sm leading-snug font-semibold"
+          className="mb-1 line-clamp-2 min-h-10 text-sm leading-snug font-bold"
         >
           {movie.title}
         </h3>
@@ -246,7 +246,7 @@ function Controls({
       className="flex flex-col gap-3 border-t border-border pt-4 text-sm first:border-t-0 first:pt-0"
     >
       <legend className="contents">
-        <span className="font-semibold">{legend}</span>
+        <span className="font-bold">{legend}</span>
       </legend>
       <p className="-mt-2 text-fg-muted">{hint}</p>
       {extra}
@@ -294,7 +294,7 @@ function Controls({
   return (
     <form
       ref={form}
-      className="flex flex-col gap-5 border border-card-border bg-card-bg p-4 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-12rem)] lg:overflow-y-auto"
+      className="flex flex-col gap-5 border-2 border-card-border bg-card-bg p-4 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-12rem)] lg:overflow-y-auto"
       onSubmit={(e) => e.preventDefault()}
     >
       {section(

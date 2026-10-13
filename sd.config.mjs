@@ -2,7 +2,7 @@
 // ADR-0027):
 // - CSS variables: tokens.css (tiers 1–3) and theme-dark.css (the theme layer, tier 2 colors)
 // - theme.css: the Tailwind theme, GENERATED from the tokens so class names always match token
-//   names (`color.fg.muted` → `text-fg-muted`, `radius.card` → `rounded-card`)
+//   names (`color.fg.muted` → `text-fg-muted`, `elevation.box` → `shadow-box`)
 // - a flat JSON (checks), a typed ES module (SVG/canvas, React Native) and DTCG JSON for Figma
 import StyleDictionary from 'style-dictionary'
 
@@ -76,7 +76,6 @@ const NAMESPACES = [
   ['font-weight', ['font', 'weight'], ['primitive']],
   ['tracking', ['font', 'tracking'], ['primitive']],
   ['leading', ['font', 'leading'], ['primitive']],
-  ['radius', ['radius'], ['primitive', 'semantic', 'component']],
   ['shadow', ['shadow'], ['primitive', 'component']],
   ['shadow', ['elevation'], ['semantic']],
   ['blur', ['blur'], ['primitive']],
@@ -96,11 +95,7 @@ StyleDictionary.registerFormat({
     for (const [tw, prefix, tiers] of NAMESPACES) {
       const out = tw === 'color' ? colorLines : lines
       const tokens = dictionary.allTokens.filter(
-        (t) =>
-          startsWith(t.path, prefix) &&
-          tiers.includes(tierOf(t)) &&
-          // `rounded-full` is built into Tailwind; leave it alone.
-          !(tw === 'radius' && t.path.join('.') === 'radius.full'),
+        (t) => startsWith(t.path, prefix) && tiers.includes(tierOf(t)),
       )
       if (!tokens.length) continue
       out.push('', `  /* ${prefix.join('.')} (${tiers.join(', ')}) */`)
@@ -132,6 +127,8 @@ StyleDictionary.registerFormat({
       '  --font-weight-*: initial;',
       '  --tracking-*: initial;',
       '  --leading-*: initial;',
+      // No radius scale: corners are square (ADR-0040). Tailwind's built-in `rounded-full` and
+      // `rounded-none` still work.
       '  --radius-*: initial;',
       '  --shadow-*: initial;',
       '  --blur-*: initial;',

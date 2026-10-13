@@ -31,7 +31,7 @@ export function TopTenNotice({
 }) {
   return (
     <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 ${className}`}>
-      <p ref={ref} tabIndex={-1} className="flex items-center gap-2 font-semibold">
+      <p ref={ref} tabIndex={-1} className="flex items-center gap-2 font-bold">
         {/* The star is the Top Ten's color (ADR-0035): decorative, always next to the words. */}
         <Icon name="star" className="size-5 shrink-0 text-favourite" />
         {children}

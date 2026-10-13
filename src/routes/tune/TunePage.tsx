@@ -87,9 +87,7 @@ export function TunePage() {
           state.step === 2 ? 'md:w-full' : 'md:w-full md:max-w-2xl'
         }`}
       >
-        <p className="mb-3 text-sm font-semibold tracking-wide text-fg-muted">
-          Step {state.step} of 2
-        </p>
+        <p className="mb-3 text-sm font-bold tracking-wide text-fg-muted">Step {state.step} of 2</p>
         {/* Only the current step renders. */}
         {state.step === 1 && <FavoriteStep state={state} update={update} />}
         {state.step === 2 && <RateStep state={state} update={update} />}

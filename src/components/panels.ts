@@ -1,34 +1,19 @@
-// The app's three ideas, as the landing page and Home both present them (ADR-0035): Top Ten,
-// Movies I want to watch, and Discovery. One definition, so the two pages can't drift apart in
-// name, icon or color.
-import type { IconName } from './Icon'
+// The app's three ideas, in the order the landing page's program and Home's shelves present them
+// (ADR-0035, ADR-0040): Top Ten, Movies I want to watch, and Discovery. One definition, so the two
+// pages can't drift apart in name or order.
 
-/** Which of the three panels. */
+/** Which of the three ideas. */
 export type PanelId = 'top-ten' | 'watchlist' | 'discovery'
 
-/** What a panel looks like, whichever page it's on. */
+/** One idea: its id and its heading. */
 export interface PanelDef {
   id: PanelId
-  /** The panel's heading (an `h2`). */
   title: string
-  icon: IconName
-  /** The panel's color: a design token, set as `--panel` and used by its icon and illustration. */
-  tone: string
 }
 
-/** The three panels, in page order (also the order of the columns from `lg`). */
+/** The three ideas, in page order ("Feature Nº 1" to "Nº 3"). */
 export const PANELS: Record<PanelId, PanelDef> = {
-  'top-ten': { id: 'top-ten', title: 'Top Ten', icon: 'star', tone: 'var(--color-panel-top-ten)' },
-  watchlist: {
-    id: 'watchlist',
-    title: 'Movies I want to watch',
-    icon: 'bookmark',
-    tone: 'var(--color-panel-watchlist)',
-  },
-  discovery: {
-    id: 'discovery',
-    title: 'Discovery',
-    icon: 'sparkle',
-    tone: 'var(--color-panel-discovery)',
-  },
+  'top-ten': { id: 'top-ten', title: 'Top Ten' },
+  watchlist: { id: 'watchlist', title: 'Movies I want to watch' },
+  discovery: { id: 'discovery', title: 'Discovery' },
 }

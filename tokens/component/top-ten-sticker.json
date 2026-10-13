@@ -16,11 +16,5 @@
         "$description": "The printed text and frame"
       }
     }
-  },
-  "shadow": {
-    "$type": "shadow",
-    "top-ten-sticker": {
-      "$value": "{elevation.stamp}"
-    }
   }
 }

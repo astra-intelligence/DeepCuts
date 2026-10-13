@@ -28,11 +28,12 @@ test.describe('signed out (ADR-0034)', () => {
     })
   }
 
-  test('the landing page explains the three panels; Sign in is in the header (ADR-0035)', async ({
+  test('the landing page bills the three features as tonight’s program (ADR-0040)', async ({
     page,
   }) => {
     await page.goto('/')
-    await expect(page.getByRole('heading', { level: 2 })).toHaveText([
+    const program = page.getByRole('region', { name: 'Tonight’s program' })
+    await expect(program.getByRole('heading', { level: 3 })).toHaveText([
       'Top Ten',
       'Movies I want to watch',
       'Discovery',
@@ -40,12 +41,18 @@ test.describe('signed out (ADR-0034)', () => {
     // No search: it only leads to signed-in pages.
     await expect(page.getByRole('combobox')).toHaveCount(0)
     await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(0)
-    // No call to action on the page itself (owner, 2026-10-11); the header's Sign in remains.
-    await expect(page.getByRole('main').getByRole('link', { name: 'Sign in' })).toHaveCount(0)
+    // Two calls to action, both easy to hit, plus the header's Sign in.
+    for (const name of ['Get your ticket', 'See the program']) {
+      const cta = page.getByRole('main').getByRole('link', { name })
+      expect((await cta.boundingBox())?.height).toBeGreaterThanOrEqual(44)
+    }
     const signIn = page.getByRole('banner').getByRole('link', { name: 'Sign in' })
     expect((await signIn.boundingBox())?.height).toBeGreaterThanOrEqual(44)
-    // Three panels side by side from `lg` (1024px), stacked below it.
-    const tops = await page
+    // "See the program" scrolls the program's heading into view below the sticky header.
+    await page.getByRole('link', { name: 'See the program' }).click()
+    await expect(program.getByRole('heading', { level: 2 })).toBeInViewport()
+    // Three panels side by side at desktop width, stacked on phones.
+    const tops = await program
       .getByRole('region')
       .evaluateAll((panels) => panels.map((p) => Math.round(p.getBoundingClientRect().top)))
     const wide = (page.viewportSize()?.width ?? 0) >= 1024

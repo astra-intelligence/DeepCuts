@@ -32,7 +32,7 @@ const INVITE_REFUSED = 'This invite can’t be used. It may have expired or been
 // Shared field styles. The whole field box shows the focus ring (focus-ring-within), and turns
 // the danger color while it has an error.
 const fieldBox =
-  'focus-ring-within flex min-h-12 items-center border border-field-border bg-field-bg focus-within:border-field-border-focus group-data-invalid:border-fg-danger'
+  'focus-ring-within flex min-h-12 items-center border-2 border-field-border bg-field-bg focus-within:border-field-border-focus group-data-invalid:border-fg-danger'
 const inputClass =
   'min-w-0 flex-1 self-stretch bg-transparent px-3 text-base text-fg outline-none placeholder:text-fg-placeholder'
 
@@ -96,7 +96,9 @@ export function RegisterPage() {
     <AuthLayout title="Create an account">
       <div>
         <Eyebrow>Your account</Eyebrow>
-        <h1 className="font-display text-4xl leading-none tracking-tight">Create an account</h1>
+        <h1 className="font-display text-4xl leading-none tracking-wide uppercase">
+          Create an account
+        </h1>
         <p className="mt-2 text-sm text-fg-muted">
           Keep your lists in your account instead of a single browser.
         </p>
@@ -104,7 +106,7 @@ export function RegisterPage() {
 
       {/* ADR-0025's rule: a mock must never pass for a real account. */}
       {practiceRegistration && (
-        <p className="border border-dashed border-border-control p-3 text-sm text-fg-muted">
+        <p className="border-2 border-dashed border-border-control p-3 text-sm text-fg-muted">
           <strong className="text-fg">Practice registration.</strong> No passkey or real account is
           created yet. Your name is kept on this device; the invite code is checked, then discarded.
         </p>
@@ -120,7 +122,7 @@ export function RegisterPage() {
         className="grid gap-4"
       >
         <TextField name="name" isRequired autoComplete="name" className="group grid gap-1.5">
-          <Label className="text-sm font-semibold">Name</Label>
+          <Label className="text-sm font-bold">Name</Label>
           <div className={fieldBox}>
             <Input className={inputClass} />
           </div>
@@ -137,7 +139,7 @@ export function RegisterPage() {
           autoComplete="off"
           className="group grid gap-1.5"
         >
-          <Label className="text-sm font-semibold">Invite code</Label>
+          <Label className="text-sm font-bold">Invite code</Label>
           <div className={fieldBox}>
             {/* No auto-capitalising or spell-check on phones: they'd change the code. */}
             <Input className={inputClass} autoCapitalize="none" spellCheck={false} />
@@ -151,7 +153,7 @@ export function RegisterPage() {
         <Button
           type="submit"
           isPending={pending}
-          className="flex min-h-12 w-full items-center justify-center bg-button-primary-bg text-sm font-semibold text-button-primary-fg hover:bg-button-primary-bg/85 data-pending:opacity-70"
+          className="flex min-h-12 w-full items-center justify-center bg-button-primary-bg font-display text-base tracking-widest text-button-primary-fg uppercase hover:bg-button-primary-bg-hover data-pending:opacity-70"
         >
           Create passkey
         </Button>
