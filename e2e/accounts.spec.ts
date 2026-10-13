@@ -69,9 +69,10 @@ test('invite → register → reload → sign out → sign in with the passkey',
   // The cookie is invisible to the page's JavaScript (HttpOnly).
   expect(await page.evaluate(() => document.cookie)).not.toContain('dc_session')
 
-  // Sign out (two presses), then the session is gone.
-  await page.getByRole('button', { name: 'Sign out' }).click()
-  await page.getByRole('button', { name: 'Yes, sign out' }).click()
+  // Sign out from the header's account menu (desktop width, one press), then the session is gone.
+  await page.getByRole('banner').getByRole('button', { name: 'Ada, account menu' }).click()
+  await expect(page.getByRole('menuitem', { name: 'Account settings' })).toBeVisible()
+  await page.getByRole('menuitem', { name: 'Sign out' }).click()
   await expect(page).toHaveURL(/\/$/)
   expect((await page.request.get('/api/auth/session')).status()).toBe(401)
 
