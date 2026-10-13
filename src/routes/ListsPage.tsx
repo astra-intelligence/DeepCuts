@@ -107,7 +107,7 @@ function ListCassette({ id }: { id: number }) {
   if (!m) {
     return (
       <li aria-hidden="true" className="flex">
-        <div className="aspect-[0.547] w-full bg-surface-raised halftone" />
+        <div className="aspect-2/3 w-full bg-surface-raised halftone" />
       </li>
     )
   }

@@ -277,8 +277,8 @@ function ShelfSkeleton() {
       {Array.from({ length: HOME_PICKS }, (_, i) => (
         <li key={i} className="flex">
           <div className="flex min-w-0 flex-1 flex-col">
-            {/* The VHS box's own aspect ratio (VhsBox.css, --vhs-aspect). */}
-            <div className="aspect-[0.547] w-full bg-surface-raised halftone" />
+            {/* The VHS box's own aspect ratio (2:3, the poster's). */}
+            <div className="aspect-2/3 w-full bg-surface-raised halftone" />
             <div className="mt-4 min-h-36 space-y-2">
               <div className="h-5 w-4/5 bg-surface-raised" />
               <div className="h-4 w-3/5 bg-surface-raised" />

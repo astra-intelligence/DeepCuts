@@ -18,14 +18,8 @@ import './vhs-lab.css'
 
 /** Every knob on the control panel. Angles in degrees, lift in px. */
 interface Settings {
-  /** Width / height of the box. */
-  aspect: number
   /** Depth as a share of the width. */
   depth: number
-  /** Poster on the front: fill it and crop the sides, or show the whole poster with bars. */
-  artFit: 'cover' | 'contain'
-  /** Which part of the poster the crop keeps, from 0 (left edge) to 100 (right edge). */
-  artX: number
   restY: number
   restX: number
   /** Mouse: the turn (cursor at a side edge) and tilt (top/bottom edge), from face-on. */
@@ -48,10 +42,7 @@ interface Settings {
 
 // Starting values: the approved design (src/components/VhsBox.css).
 const DEFAULTS: Settings = {
-  aspect: 0.547,
   depth: 0.24,
-  artFit: 'cover',
-  artX: 50,
   restY: 0,
   restX: 0,
   leanY: 24,
@@ -65,20 +56,6 @@ const DEFAULTS: Settings = {
   scrollPreview: false,
   freeze: false,
 }
-
-// Box shapes to start from, W × H × D, checked 2026-10-09. Picking one sets both the shape
-// (width / height) and the depth (share of the width); the Shape slider fine-tunes from there.
-// Posters are 2:3 (0.667), so any narrower box crops the art at the sides.
-// Sources: the sleeve and clamshell from Pacdora's VHS box template
-// (https://www.pacdora.com/tools/vhs-box-template); the wide rental clamshell from a case
-// maker's listing, 8 3/16" × 5 11/16" × 1 3/32"
-// (https://www.duplication.com/vhs-clamshell-case-brand-new.html).
-const SHAPES = [
-  { label: 'Cardboard sleeve (104 × 190 × 25 mm)', aspect: 0.547, depth: 0.24 },
-  { label: 'Clamshell (120 × 201 × 27 mm)', aspect: 0.597, depth: 0.225 },
-  { label: 'Poster (2:3, no crop)', aspect: 0.667, depth: 0.24 },
-  { label: 'Wide rental clamshell (144 × 208 × 28 mm)', aspect: 0.692, depth: 0.193 },
-]
 
 /**
  * The lab page. On wide screens (lg) the control panel is a sticky sidebar beside the boxes, so
@@ -96,10 +73,7 @@ export function VhsLabPage() {
 
   // The knobs as the CSS variables the VHS box styles read.
   const vars = {
-    '--vhs-aspect': s.aspect,
     '--vhs-depth': s.depth,
-    '--vhs-art-fit': s.artFit,
-    '--vhs-art-position': `${s.artX}% 50%`,
     '--vhs-rest-y': `${s.restY}deg`,
     '--vhs-rest-x': `${s.restX}deg`,
     '--vhs-lean-y': `${s.leanY}deg`,
@@ -173,9 +147,7 @@ type Slider = [keyof Settings, string, number, number, number, string]
 
 const SLIDERS: Record<Section, Slider[]> = {
   box: [
-    ['aspect', 'Shape (width / height)', 0.45, 0.75, 0.001, ''],
     ['depth', 'Depth (share of width)', 0.12, 0.35, 0.005, ''],
-    ['artX', 'Crop keeps (0 = left edge, 100 = right)', 0, 100, 1, '%'],
     ['restY', 'Turn at rest', 0, 20, 1, '°'],
     ['restX', 'Tilt at rest', -10, 10, 1, '°'],
     ['perspective', 'Perspective', 500, 2500, 50, 'px'],
@@ -236,7 +208,7 @@ function Controls({
     }
   }, [onTuning])
 
-  const summary = `shape=${s.aspect} depth=${s.depth} art=${s.artFit}${s.artFit === 'cover' ? ` ${s.artX}%` : ''} rest=${s.restY}°/${s.restX}° mouse=${s.leanY}°/${s.leanX}° focus=${s.focusY}°/${s.focusX}° scroll=${s.scroll ? `${s.scrollX}°` : 'off'} lift=${s.lift}px perspective=${s.perspective}px`
+  const summary = `depth=${s.depth} rest=${s.restY}°/${s.restX}° mouse=${s.leanY}°/${s.leanX}° focus=${s.focusY}°/${s.focusX}° scroll=${s.scroll ? `${s.scrollX}°` : 'off'} lift=${s.lift}px perspective=${s.perspective}px`
 
   // One section of the panel. Its `data-section` tells the listeners above which motion you're
   // tuning.
@@ -300,45 +272,7 @@ function Controls({
       {section(
         'box',
         'Box',
-        'Its shape, how the poster fits it, its depth and how it sits at rest.',
-        <>
-          <div className="flex flex-col gap-1.5" role="radiogroup" aria-label="Box shape">
-            {SHAPES.map((shape) => (
-              <label key={shape.label} className="focus-ring-within flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="shape"
-                  checked={s.aspect === shape.aspect}
-                  onChange={() => {
-                    set('aspect', shape.aspect)
-                    set('depth', shape.depth)
-                  }}
-                  className="accent-slider-fill"
-                />
-                {shape.label}
-              </label>
-            ))}
-          </div>
-          <div className="flex flex-col gap-1.5" role="radiogroup" aria-label="Poster fit">
-            {(
-              [
-                ['cover', 'Fill the front (crops the sides)'],
-                ['contain', 'Whole poster (bars above and below)'],
-              ] as const
-            ).map(([value, label]) => (
-              <label key={value} className="focus-ring-within flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="fit"
-                  checked={s.artFit === value}
-                  onChange={() => set('artFit', value)}
-                  className="accent-slider-fill"
-                />
-                {label}
-              </label>
-            ))}
-          </div>
-        </>,
+        'Its depth and how it sits at rest. Its shape is the poster’s 2:3, so the art is never cropped.',
       )}
       {section('mouse', 'Mouse', 'Hover a box and move around it to try these.')}
       {section(
