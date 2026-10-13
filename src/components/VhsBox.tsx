@@ -8,9 +8,9 @@
 // next to the box, so it's hidden from screen readers. Colors come from the vhs-box component
 // tokens and the film's genre tone (`--tone`, set by genreTone() on a parent).
 //
-// A box can carry one badge (ADR-0040), printed flat in front of the box so it doesn't turn
-// with it: a mustard rank tab (Top Ten), an ADMIT ONE ticket (the watchlist) or a blood-red
-// match stamp (Discovery). Badges are decoration too: the caption under the box says the same.
+// A box can carry one badge (ADR-0040), stuck on its cover so it turns with the box (owner,
+// 2026-10-13): a mustard rank tab (Top Ten), an ADMIT ONE ticket (the watchlist) or a blood-red
+// match sticker (Discovery). Badges are decoration too: the caption under the box says the same.
 import { useEffect, useRef } from 'react'
 import { imageUrl, releaseYear, type MovieSummary } from '../api/tmdb'
 import { GenreSticker } from './GenreSticker'
@@ -139,40 +139,37 @@ export function VhsBox({
   const year = releaseYear(movie.release_date)
 
   return (
-    // The badge sits outside the 3D stage, so it stays flat and keeps its own (smaller) shadow.
-    <span aria-hidden="true" className="relative block">
-      <span ref={scene} className="vhs-scene">
-        <span className="vhs-box">
-          <span className="vhs-face vhs-top" />
-          <span className="vhs-face vhs-bottom" />
-          {/* The open end: the cassette, with the title on its genre-colored label. */}
-          <span className="vhs-face vhs-edge">
-            <span className="vhs-edge-label">{movie.title}</span>
-          </span>
-          {/* The spine: genre band with the year ("’79"), the title, the store's barcode. */}
-          <span className="vhs-face vhs-spine">
-            <span className="vhs-spine-band">{year && `’${year.slice(2)}`}</span>
-            <span className="vhs-spine-title">{movie.title}</span>
-            <span className="vhs-spine-label">
-              <span className="vhs-barcode" />
-            </span>
-          </span>
-          {/* The front cover: the poster (or an empty placeholder) and the genre sticker. */}
-          <span className="vhs-face vhs-front">
-            {poster ? (
-              <LoadingImage src={poster} alt="" loading="lazy" />
-            ) : (
-              <span className="block size-full bg-poster-placeholder" />
-            )}
-            <GenreSticker
-              genreIds={movie.genre_ids}
-              seed={movie.id}
-              className="absolute top-2.5 right-2.5 z-2"
-            />
+    <span ref={scene} aria-hidden="true" className="vhs-scene">
+      <span className="vhs-box">
+        <span className="vhs-face vhs-top" />
+        <span className="vhs-face vhs-bottom" />
+        {/* The open end: the cassette, with the title on its genre-colored label. */}
+        <span className="vhs-face vhs-edge">
+          <span className="vhs-edge-label">{movie.title}</span>
+        </span>
+        {/* The spine: genre band with the year ("’79"), the title, the store's barcode. */}
+        <span className="vhs-face vhs-spine">
+          <span className="vhs-spine-band">{year && `’${year.slice(2)}`}</span>
+          <span className="vhs-spine-title">{movie.title}</span>
+          <span className="vhs-spine-label">
+            <span className="vhs-barcode" />
           </span>
         </span>
+        {/* The front cover: the poster (or an empty placeholder) and the genre sticker. */}
+        <span className="vhs-face vhs-front">
+          {poster ? (
+            <LoadingImage src={poster} alt="" loading="lazy" />
+          ) : (
+            <span className="block size-full bg-poster-placeholder" />
+          )}
+          <GenreSticker
+            genreIds={movie.genre_ids}
+            seed={movie.id}
+            className="absolute top-2.5 right-2.5 z-2"
+          />
+          {badge && <Badge badge={badge} />}
+        </span>
       </span>
-      {badge && <Badge badge={badge} />}
     </span>
   )
 }
@@ -190,9 +187,9 @@ const STARBURST = Array.from({ length: POINTS * 2 }, (_, i) => {
 function Badge({ badge }: { badge: VhsBadge }) {
   switch (badge.kind) {
     case 'rank':
-      // A mustard tab hanging off the left edge, near the top.
+      // A mustard tab against the cover's left edge, near the top.
       return (
-        <span className="absolute top-3.5 -left-1 z-2 bg-accent px-2 py-1 font-display text-3xl leading-none text-fg-on-accent shadow-stamp">
+        <span className="absolute top-3.5 left-0 z-2 bg-accent px-2 py-1 font-display text-3xl leading-none text-fg-on-accent shadow-stamp">
           #{badge.rank}
         </span>
       )
