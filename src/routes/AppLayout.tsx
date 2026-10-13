@@ -1,23 +1,18 @@
-// The app shell around Home, Search, My Lists and Account: header, search band, the page,
-// and (on phones) the tab bar; from `md` the account menu in the header replaces it. (Detail and Sign in have their own layouts.) Signed out, the shell around the
-// landing page is just the logo and Sign in: search and the tabs lead only to signed-in pages
-// (ADR-0034).
+// The app shell around Home, Search, My Lists and Account (ADR-0040): the header (logo, search and
+// the account menu) and the page, with the TMDB credit at the foot. There is no tab bar: the logo
+// goes Home and the account menu holds My Lists, at every width. (Detail and Sign in have their
+// own layouts.) Signed out, the header is just the logo and Sign in: search leads only to
+// signed-in pages (ADR-0034).
 import { useRef } from 'react'
-import { Link, NavLink, Outlet } from 'react-router'
+import { Link, Outlet } from 'react-router'
 import { FEATURES } from '../config/features'
 import { AccountChip } from '../components/AccountChip'
-import { Icon, type IconName } from '../components/Icon'
+import { Icon } from '../components/Icon'
 import { Logo } from '../components/Logo'
 import { MovieSearch } from '../components/MovieSearch'
 import { useHeaderHeight } from '../hooks/useHeaderHeight'
 import { useRouteFocus } from '../hooks/useRouteFocus'
 import { useSession } from '../session/SessionContext'
-
-// The tabs in the tab bar, in order. Search stays in the header rather than taking a primary tab.
-const NAV: { to: string; label: string; icon: IconName }[] = [
-  { to: '/', label: 'Home', icon: 'home' },
-  { to: '/lists', label: 'My Lists', icon: 'list' },
-]
 
 /**
  * "Skip to content": hidden until a keyboard user tabs to it, then jumps past the header to
@@ -27,7 +22,7 @@ export function SkipLink() {
   return (
     <a
       href="#main"
-      className="sr-only z-50 rounded-control bg-surface-overlay px-3 py-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+      className="sr-only z-50 bg-accent px-3 py-2 font-bold text-fg-on-accent focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
     >
       Skip to content
     </a>
@@ -35,9 +30,8 @@ export function SkipLink() {
 }
 
 /**
- * Shell (ADR-0021, ADR-0033): sticky header + persistent search band; a bottom tab bar on
- * phones. From `md` there's no tab bar: the logo goes Home and the account menu (AccountChip)
- * holds My Lists (owner decision 2026-10-12).
+ * Shell (ADR-0021, ADR-0033, ADR-0040): a sticky header, the page in a 1200px column, and the
+ * TMDB credit as the footer.
  */
 export function AppLayout() {
   useRouteFocus()
@@ -46,43 +40,24 @@ export function AppLayout() {
   useHeaderHeight(header)
   const signedIn = useSession().session.kind === 'account'
   return (
-    // Bottom padding keeps the last content clear of the fixed tab bar (and the iPhone home bar).
-    // Signed out, and from `md`, there's no tab bar, so only the safe area is kept clear.
-    // Full window width, so the header's bar can span it; the header's contents and <main> are
-    // centred within their own maximum widths.
-    <div
-      className={`min-h-dvh w-full overflow-x-clip ${
-        signedIn
-          ? 'pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-[max(1.5rem,env(safe-area-inset-bottom))]'
-          : 'pb-[max(1.5rem,env(safe-area-inset-bottom))]'
-      }`}
-    >
+    // Full window width, so the header's bar and the ticker can span it; their contents and
+    // <main> are centred within the 1200px column (`max-w-300`). The bottom padding keeps the
+    // footer clear of the iPhone home bar.
+    <div className="min-h-dvh w-full overflow-x-clip pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <SkipLink />
-      {/* The "Sky rise" backdrop (index.css → page-backdrop): pinned to the whole window, behind
-          everything, and purely decorative. */}
-      <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 page-backdrop" />
-      {/* Header and search stay pinned to the top while the page scrolls.
+      {/* The header stays pinned to the top while the page scrolls.
           Below `lg`: two rows (logo + account, then a full-width search). From `lg`: one row with
-          the search centred between logo and account, which halves the header's height on desktop.
-          The DOM order (logo, search, account) is the desktop reading order; below `lg`,
-          `order-last` moves the search to its own row, so keyboard focus goes logo → search →
-          account there. `md` keeps the phone rhythm with wider gutters and a roomier bottom.
-          The bar (background, blur, bottom border) spans the whole window; the row inside keeps
-          the 1440px (`max-w-360`) centred width, so the logo and account stay where they were on
-          wide screens (owner, 2026-10-13). */}
-      <header
-        ref={header}
-        className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur-lg"
-      >
-        <div className="mx-auto flex max-w-360 flex-wrap items-center justify-between gap-x-2.5 gap-y-5 px-5 pt-[max(0.625rem,env(safe-area-inset-top))] pb-3 md:px-8 md:pb-5 lg:flex-nowrap lg:gap-x-6 lg:pt-[max(0.75rem,env(safe-area-inset-top))] lg:pb-3">
-          {/* 46px tall below `lg`, matching the old 64px first row minus its padding, so the phone
-            layout is pixel-identical to before; the usual 44px in the one-row `lg` header. */}
+          the search centred between logo and account. The DOM order (logo, search, account) is
+          the desktop reading order; below `lg`, `order-last` moves the search to its own row, so
+          keyboard focus goes logo → search → account there. */}
+      <header ref={header} className="sticky top-0 z-20 border-b-2 border-border bg-surface">
+        <div className="mx-auto flex max-w-300 flex-wrap items-center justify-between gap-x-3 gap-y-4 px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-4 md:px-8 lg:flex-nowrap lg:gap-x-8 lg:py-5">
           <Link
             to="/"
             aria-label="Deep Cuts, go to Home"
-            className="inline-flex min-h-11.5 shrink-0 items-center lg:min-h-11"
+            className="inline-flex min-h-11 shrink-0 items-center"
           >
-            <Logo decorative className="h-7 w-auto md:h-8" />
+            <Logo decorative className="h-9 w-auto md:h-10" />
           </Link>
           {/* Grows to fill the row up to a readable width; the auto margins then centre it.
             `min-w-0` lets it shrink below the input's built-in width (else it overflows at 320px). */}
@@ -98,7 +73,7 @@ export function AppLayout() {
                 to="/tune"
                 aria-label="Tune my picks"
                 title="Tune my picks"
-                className="grid size-11 place-items-center rounded-container border border-border-control bg-surface-raised text-accent hover:border-accent hover:bg-surface-selected"
+                className="grid size-11 place-items-center border-2 border-border-control text-accent hover:border-accent"
               >
                 <Icon name="heart" />
               </Link>
@@ -108,43 +83,17 @@ export function AppLayout() {
         </div>
       </header>
 
-      <main id="main" className="mx-auto w-full max-w-7xl px-5 pt-5 pb-3 md:pt-6">
+      <main id="main" className="mx-auto w-full max-w-300 px-5 pt-5 pb-3 md:px-8 md:pt-6">
         {/* The current page renders here. */}
         <Outlet />
-        {/* Attribution required by TMDB's terms of use. */}
-        <p className="mt-10 text-xs text-fg-muted">
-          This product uses the TMDB API but is not endorsed or certified by TMDB.
-        </p>
       </main>
 
-      {/* The tab bar, signed in and on phones only. NavLink marks the current tab (and gives it
-          aria-current="page"). */}
-      {signedIn && (
-        <nav
-          aria-label="Main"
-          className="fixed bottom-0 left-1/2 z-20 w-full max-w-360 -translate-x-1/2 border-t border-nav-border bg-nav-bg/95 px-3.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden"
-        >
-          <ul className="grid grid-cols-2">
-            {NAV.map((item) => (
-              <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  className={({ isActive }) =>
-                    `flex min-h-14 flex-col items-center justify-center gap-1 rounded-nav-item text-sm ${
-                      isActive
-                        ? 'text-nav-item-fg-current'
-                        : 'text-nav-item-fg hover:text-nav-item-fg-hover'
-                    }`
-                  }
-                >
-                  <Icon name={item.icon} className="size-5.5" />
-                  {item.label}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )}
+      <footer className="mx-auto mt-10 w-full max-w-300 px-5 md:px-8">
+        {/* Attribution required by TMDB's terms of use. */}
+        <p className="border-t-2 border-dashed border-border pt-5 font-label text-sm text-fg-muted">
+          This product uses the TMDB API but is not endorsed or certified by TMDB.
+        </p>
+      </footer>
     </div>
   )
 }

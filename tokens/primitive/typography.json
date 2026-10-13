@@ -2,20 +2,20 @@
   "font": {
     "family": {
       "$type": "fontFamily",
-      "$description": "Self-hosted faces (ADR-0008) with system fallbacks.",
-      "manrope": {
-        "$value": ["Manrope", "ui-sans-serif", "system-ui", "sans-serif"]
+      "$description": "Self-hosted faces (ADR-0008, ADR-0040) with system fallbacks.",
+      "anton": {
+        "$value": ["Anton", "Impact", "Arial Narrow", "sans-serif"]
       },
-      "dm-serif-display": {
-        "$value": ["DM Serif Display", "ui-serif", "Georgia", "serif"]
+      "special-elite": {
+        "$value": ["Special Elite", "Courier New", "monospace"]
       },
-      "saira": {
-        "$value": ["Saira", "ui-sans-serif", "system-ui", "sans-serif"]
+      "courier-prime": {
+        "$value": ["Courier Prime", "Courier New", "monospace"]
       }
     },
     "size": {
       "$type": "dimension",
-      "$description": "Tailwind’s default type scale.",
+      "$description": "Tailwind\u2019s default type scale.",
       "xs": {
         "$value": {
           "value": 0.75,

@@ -22,7 +22,7 @@ const meta = {
         data-vhs-target=""
         aria-label={args.movie.title}
         style={genreTone(args.movie.genre_ids)}
-        className="block w-48 rounded-control"
+        className="block w-48"
       >
         <Story />
       </a>

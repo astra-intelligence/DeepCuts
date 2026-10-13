@@ -1,73 +1,67 @@
 {
-  "$description": "Approved v1 palette (docs/design/approvals.md). Anchor steps only; new families are generated in hues.json (ADR-0023).",
+  "$description": "Tier 1: the 'Triple Feature' palette (ADR-0040, docs/design/triple-feature/). Warm ink, bone and dust, with mustard and blood as the two accents. The genre ramps are generated separately in hues.json (ADR-0023).",
   "color": {
     "$type": "color",
     "ink": {
-      "$value": "#070b0c"
-    },
-    "neutral": {
-      "900": {
-        "$value": "#0d1315"
+      "default": {
+        "$value": "#120d0a",
+        "$description": "Warm near-black: the page"
       },
-      "850": {
-        "$value": "#141c1e"
+      "raised": {
+        "$value": "#1c1511",
+        "$description": "Raised surfaces: inputs, panels, menus"
       },
-      "700": {
-        "$value": "#2b3739"
-      },
-      "600": {
-        "$value": "#5a686b"
-      },
-      "400": {
-        "$value": "#899795"
-      },
-      "300": {
-        "$value": "#aebdbc"
-      },
-      "50": {
-        "$value": "#f5f8f7"
+      "overlay": {
+        "$value": "#2a201a",
+        "$description": "Hovered and focused rows on raised surfaces. Not in the design's swatches: the step between ink-raised and line that keeps the genre strips at 3:1"
       }
     },
-    "teal": {
-      "950": {
-        "$value": "#04100f"
+    "line": {
+      "default": {
+        "$value": "#3e2f24",
+        "$description": "Borders, dividers, the dashed footer rule (decorative)"
       },
-      "900": {
-        "$value": "#123c39"
-      },
-      "700": {
-        "$value": "#0f766e"
-      },
-      "400": {
-        "$value": "#2dd4bf"
-      },
-      "50": {
-        "$value": "#d8fffa"
+      "strong": {
+        "$value": "#5a4636",
+        "$description": "Empty-slot dashed outlines (decorative)"
       }
     },
-    "blue": {
-      "300": {
-        "$value": "#8ed7f4"
+    "bone": {
+      "default": {
+        "$value": "#efe4cf",
+        "$description": "Primary text, outlines, light fills, sticker paper"
+      },
+      "soft": {
+        "$value": "#d9cdb6",
+        "$description": "Body and lede text"
       }
+    },
+    "dust": {
+      "$value": "#b3a68e",
+      "$description": "Secondary text, metadata, the footer"
+    },
+    "mustard": {
+      "default": {
+        "$value": "#e8b23a",
+        "$description": "Accent 1: labels, the ticker band, rank tabs, links, utility buttons"
+      },
+      "hover": {
+        "$value": "#f5cf72",
+        "$description": "Link and button hover"
+      }
+    },
+    "blood": {
+      "$value": "#c2241a",
+      "$description": "Accent 2: large headline text, CTA fills, the match stamp. Darkened from the design's #C8261B so bone text on it passes 4.5:1 (owner, 2026-10-13). About 3.3:1 on ink, so never small text"
+    },
+    "black": {
+      "$value": "#000000",
+      "$description": "Hard offset shadows"
     },
     "red": {
-      "600": {
-        "$value": "#c8353c"
-      },
       "300": {
-        "$value": "#f27c81"
-      }
-    },
-    "cream": {
-      "100": {
-        "$value": "#f2e8d2",
-        "$description": "Aged paper (VHS genre sticker, approved 2026-10-07)"
-      }
-    },
-    "umber": {
-      "950": {
-        "$value": "#1d1813",
-        "$description": "Warm near-black printing ink (VHS genre sticker)"
+        "$value": "#f27c81",
+        "$description": "Dislike only: the one red that is readable as small text on ink (ADR-0020). The hue ramps skip red for this reason"
       }
     }
   }

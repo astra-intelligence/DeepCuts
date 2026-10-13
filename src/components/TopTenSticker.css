@@ -131,7 +131,7 @@
     align-items: center;
     color: var(--color-top-ten-sticker-ink);
     mix-blend-mode: multiply;
-    @apply gap-1 font-brand leading-none font-extrabold uppercase;
+    @apply gap-1 font-display leading-none uppercase;
   }
 
   .top-ten-sticker__kicker {

@@ -1,29 +1,18 @@
-// Tests for the app shell: the tab bar marks the current page, the account menu (the header chip
-// from `md`) leads to My Lists and signs out, and unknown URLs show the error page.
+// Tests for the app shell: the logo goes Home, there is no tab bar, the account menu leads to
+// My Lists and signs out, and unknown URLs show the error page.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { renderRoute } from '../test/renderRoute'
 
 describe('navigation', () => {
-  it('marks the current destination with aria-current', async () => {
-    renderRoute('/lists')
-    const nav = await screen.findByRole('navigation', { name: 'Main' })
-    expect(within(nav).getByRole('link', { name: 'My Lists' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    )
-    expect(within(nav).getByRole('link', { name: 'Home' })).not.toHaveAttribute('aria-current')
-  })
-
-  it('has no Search tab while the Search page is hidden', async () => {
-    renderRoute('/lists')
-    const nav = await screen.findByRole('navigation', { name: 'Main' })
-    expect(
-      within(nav)
-        .getAllByRole('link')
-        .map((l) => l.textContent),
-    ).toEqual(['Home', 'My Lists'])
+  it('goes Home from the logo, with no tab bar (ADR-0040)', async () => {
+    const user = userEvent.setup()
+    const { router } = renderRoute('/lists')
+    await screen.findByRole('heading', { level: 1, name: 'My Lists' })
+    expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('link', { name: 'Deep Cuts, go to Home' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
   })
 
   it('shows the error page for unknown routes', async () => {
@@ -39,14 +28,12 @@ describe('navigation', () => {
   })
 })
 
-// jsdom ignores CSS, so both the phone link and the `md` menu button are in the page here; the
-// e2e tests check which one each width actually shows.
 describe('account menu', () => {
   it('shows who is signed in and their tagged-film count, and opens My Lists', async () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/')
-    await user.click(await screen.findByRole('button', { name: 'Mike, account menu' }))
-    const menu = await screen.findByRole('menu', { name: 'Mike, account menu' })
+    await user.click(await screen.findByRole('button', { name: 'Account menu for Mike' }))
+    const menu = await screen.findByRole('menu', { name: 'Account menu for Mike' })
     expect(within(menu).getByText('Signed in with the demo account')).toBeInTheDocument()
     expect(await within(menu).findByText(/films? tagged/)).toBeInTheDocument()
     // The demo account has no settings, so no settings item (ADR-0031 A2b).
@@ -67,7 +54,7 @@ describe('account menu', () => {
         account: { id: 'passkey-user', name: 'Pat Key', method: 'passkey' },
       },
     })
-    await user.click(await screen.findByRole('button', { name: 'Pat, account menu' }))
+    await user.click(await screen.findByRole('button', { name: 'Account menu for Pat' }))
     await user.click(await screen.findByRole('menuitem', { name: 'Account settings' }))
     await waitFor(() => expect(router.state.location.pathname).toBe('/account'))
   })
@@ -75,7 +62,7 @@ describe('account menu', () => {
   it('signs out in one press and shows the landing page', async () => {
     const user = userEvent.setup()
     renderRoute('/lists')
-    await user.click(await screen.findByRole('button', { name: 'Mike, account menu' }))
+    await user.click(await screen.findByRole('button', { name: 'Account menu for Mike' }))
     await user.click(await screen.findByRole('menuitem', { name: 'Sign out' }))
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Your movies, close at hand' }),

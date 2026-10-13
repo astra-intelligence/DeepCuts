@@ -64,7 +64,7 @@ function SignedIn({ account }: { account: Account }) {
         {/* Phones only: from `md` the account menu shows the count and links My Lists. */}
         <section
           aria-labelledby="lists-heading"
-          className="grid content-start gap-2.5 rounded-card border border-card-border bg-card-bg p-4 shadow-card md:hidden"
+          className="grid content-start gap-2.5 border border-card-border bg-card-bg p-4 md:hidden"
         >
           <h2 id="lists-heading" className="font-display text-2xl">
             Your lists
@@ -82,7 +82,7 @@ function SignedIn({ account }: { account: Account }) {
           )}
           <Link
             to="/lists"
-            className="flex min-h-11 w-fit items-center gap-1.5 text-sm font-semibold text-info"
+            className="flex min-h-11 w-fit items-center gap-1.5 text-sm font-semibold text-accent"
           >
             Open My Lists <Icon name="arrow" className="size-4" />
           </Link>
@@ -91,7 +91,7 @@ function SignedIn({ account }: { account: Account }) {
         {/* Phones only: from `md` Sign out is in the account menu. */}
         <section
           aria-labelledby="signout-heading"
-          className="grid content-start gap-2.5 rounded-card border border-card-border bg-card-bg p-4 shadow-card md:hidden"
+          className="grid content-start gap-2.5 border border-card-border bg-card-bg p-4 md:hidden"
         >
           <h2 id="signout-heading" className="font-display text-2xl">
             Sign out
@@ -104,7 +104,7 @@ function SignedIn({ account }: { account: Account }) {
               <Button
                 ref={confirmRef}
                 onPress={confirmSignOut}
-                className="flex h-11 items-center rounded-button border border-button-secondary-border bg-button-secondary-bg px-3.5 text-sm font-semibold text-button-secondary-fg"
+                className="flex h-11 items-center border border-button-secondary-border bg-button-secondary-bg px-3.5 text-sm font-semibold text-button-secondary-fg"
               >
                 Yes, sign out
               </Button>
@@ -114,7 +114,7 @@ function SignedIn({ account }: { account: Account }) {
                   // Return focus to "Sign out" once it's back on screen (next frame).
                   requestAnimationFrame(() => askRef.current?.focus())
                 }}
-                className="flex h-11 items-center rounded-button px-2 text-sm font-semibold text-info"
+                className="flex h-11 items-center px-2 text-sm font-semibold text-accent"
               >
                 Cancel
               </Button>
@@ -123,7 +123,7 @@ function SignedIn({ account }: { account: Account }) {
             <Button
               ref={askRef}
               onPress={() => setConfirming(true)}
-              className="flex h-11 w-36 items-center justify-center rounded-button border border-button-secondary-border bg-button-secondary-bg text-sm font-semibold text-button-secondary-fg"
+              className="flex h-11 w-36 items-center justify-center border border-button-secondary-border bg-button-secondary-bg text-sm font-semibold text-button-secondary-fg"
             >
               Sign out
             </Button>

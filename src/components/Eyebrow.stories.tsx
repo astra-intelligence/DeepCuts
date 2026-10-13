@@ -11,7 +11,6 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Accent: Story = {}
-export const Info: Story = { args: { tone: 'info' } }
 /** Follows the page accent (ADR-0020), e.g. a tag's color on a filtered list. */
 export const Contextual: Story = { args: { tone: 'contextual' } }
 export const Muted: Story = { args: { tone: 'muted' } }

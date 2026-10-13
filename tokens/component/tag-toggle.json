@@ -3,13 +3,16 @@
   "color": {
     "$type": "color",
     "tag-toggle": {
-      "bg": { "$value": "{color.surface.overlay}" },
+      "bg": {
+        "$value": "{color.surface.overlay}"
+      },
       "fg": {
         "$value": "{color.fg.default}",
         "$description": "Full-strength text: the tag color stays on the icon, border and fill, so the label never depends on it for contrast"
       },
-      "border": { "$value": "{color.border.control}" }
+      "border": {
+        "$value": "{color.border.control}"
+      }
     }
-  },
-  "radius": { "$type": "dimension", "tag-toggle": { "$value": "{radius.control}" } }
+  }
 }

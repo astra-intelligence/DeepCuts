@@ -9,7 +9,7 @@ import { PANELS, type PanelId } from './panels'
 function Explainer({ id, copy }: { id: PanelId; copy: string }) {
   return (
     <FeaturePanel panel={PANELS[id]}>
-      <div className="grid place-items-center rounded-container bg-surface-raised px-4 py-5">
+      <div className="grid place-items-center bg-surface-raised px-4 py-5">
         <PanelArt id={id} />
       </div>
       <p className="mt-3 text-sm leading-relaxed text-fg-muted">{copy}</p>

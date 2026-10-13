@@ -143,7 +143,7 @@ export function WeightsPage() {
         <EmptyState>
           Like a few films first. The weights rank films your likes recommend, so there’s nothing to
           tune yet.{' '}
-          <Link to={HOME.path} className="text-info underline">
+          <Link to={HOME.path} className="text-accent underline">
             Find films to like
           </Link>
           .
@@ -182,10 +182,7 @@ export function WeightsPage() {
               Change is the move from the default weights. Part scores run 0–100.
             </p>
             {allZero && (
-              <p
-                role="alert"
-                className="mb-3 rounded-container border border-border-control p-3 text-sm"
-              >
+              <p role="alert" className="mb-3 border border-border-control p-3 text-sm">
                 Every weight is at zero, so every film scores 0%. Turn at least one up.
               </p>
             )}
@@ -259,7 +256,7 @@ function WeightSlider({
             />
             <SliderThumb
               aria-describedby={hintId}
-              className="focus-ring-within top-1/2 size-6 rounded-full border-2 border-slider-thumb-border bg-slider-thumb shadow-raised data-dragging:scale-110"
+              className="focus-ring-within top-1/2 size-6 rounded-full border-2 border-slider-thumb-border bg-slider-thumb data-dragging:scale-110"
             />
           </>
         )}
@@ -286,7 +283,7 @@ function Summary({ weights, diversityPenalty }: { weights: Weights; diversityPen
   }
 
   return (
-    <div className="grid gap-2.5 rounded-card border border-card-border bg-card-bg p-4">
+    <div className="grid gap-2.5 border border-card-border bg-card-bg p-4">
       <h3 className="text-sm font-semibold">These settings</h3>
       <pre className="overflow-x-auto text-sm text-fg-muted tabular-nums">
         <code>{text}</code>
@@ -294,7 +291,7 @@ function Summary({ weights, diversityPenalty }: { weights: Weights; diversityPen
       <div className="flex flex-wrap gap-2.5">
         <Button
           onPress={copy}
-          className="min-h-11 rounded-button border border-button-secondary-border px-3.5 text-sm font-semibold hover:border-accent"
+          className="min-h-11 border border-button-secondary-border px-3.5 text-sm font-semibold hover:border-accent"
         >
           Copy settings
         </Button>
@@ -302,7 +299,7 @@ function Summary({ weights, diversityPenalty }: { weights: Weights; diversityPen
           to="/lab/weights"
           replace
           preventScrollReset
-          className="inline-flex min-h-11 items-center rounded-button px-3.5 text-sm font-semibold text-info"
+          className="inline-flex min-h-11 items-center px-3.5 text-sm font-semibold text-accent"
         >
           Reset to defaults
         </Link>
@@ -323,7 +320,7 @@ function PicksTable({
   baselineRank: Map<number, number>
 }) {
   return (
-    <div className="overflow-x-auto rounded-card border border-card-border">
+    <div className="overflow-x-auto border border-card-border">
       <table className="w-full text-left text-sm tabular-nums">
         <thead className="bg-surface-raised text-fg-muted">
           <tr>
@@ -353,7 +350,7 @@ function PicksTable({
             <tr key={r.movie.id} className="border-t border-border">
               <td className="px-3 py-2 text-fg-muted">{i + 1}</td>
               <th scope="row" className="min-w-40 px-3 py-2 font-semibold">
-                <Link to={`/movie/${r.movie.id}`} className="text-info underline">
+                <Link to={`/movie/${r.movie.id}`} className="text-accent underline">
                   {r.movie.title}
                 </Link>{' '}
                 <span className="font-normal text-fg-muted">
@@ -379,7 +376,7 @@ function PicksTable({
 
 /** Rank change against the default weights, as words for screen readers and arrows on screen. */
 function Change({ from, to }: { from: number | undefined; to: number }) {
-  if (from === undefined) return <span className="font-semibold text-info">New</span>
+  if (from === undefined) return <span className="font-semibold text-accent">New</span>
   const moved = from - to
   if (moved === 0) return <span className="text-fg-muted">–</span>
   return (

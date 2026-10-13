@@ -78,8 +78,8 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
       >
         {/* The Group is the popover's trigger, so the suggestion list matches the whole field's
             width (--trigger-width), not just the text input's. */}
-        <Group className="focus-ring-within flex min-h-12 items-center rounded-field border border-field-border bg-field-bg pl-3 focus-within:border-field-border-focus">
-          <Icon name="search" className="size-5 shrink-0 text-accent" />
+        <Group className="focus-ring-within flex min-h-12 items-stretch border-2 border-field-border bg-field-bg pl-3 focus-within:border-field-border-focus">
+          <Icon name="search" className="size-5 shrink-0 self-center text-accent" />
           <Input
             // Enter with a highlighted suggestion selects it (React Aria); otherwise it acts as Find.
             onKeyDown={(e) => {
@@ -87,20 +87,20 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
                 submit()
             }}
             placeholder="Find a movie to tag..."
-            className="min-w-0 flex-1 self-stretch bg-transparent px-3 text-sm text-fg outline-none placeholder:text-fg-placeholder"
+            className="min-w-0 flex-1 bg-transparent px-3 text-base text-fg outline-none placeholder:text-fg-placeholder"
           />
           {/* Disabled until there's something to open. */}
           <button
             type="submit"
             disabled={suggestions.length === 0}
-            className="m-1 min-h-9 w-16 self-stretch rounded-button bg-button-primary-bg text-sm font-semibold text-button-primary-fg hover:bg-button-primary-bg/85 disabled:cursor-not-allowed disabled:bg-surface-overlay disabled:text-fg-muted"
+            className="w-18 bg-field-action-bg font-display text-base tracking-widest text-field-action-fg uppercase hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-surface-overlay disabled:text-fg-muted"
           >
             Find
           </button>
         </Group>
         <Popover
           offset={6}
-          className="max-h-96 w-(--trigger-width) overflow-y-auto rounded-popover border border-popover-border bg-popover-bg p-1 shadow-popover shadow-surface/90"
+          className="max-h-96 w-(--trigger-width) overflow-y-auto border-2 border-popover-border bg-popover-bg p-1 shadow-popover"
         >
           <ListBox
             aria-label="Movie suggestions"
@@ -122,19 +122,12 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
                   className="flex min-h-16 cursor-pointer items-center gap-2.5 border-b border-l-3 border-b-border border-l-(--tone) p-1.5 outline-none last:border-b-0 data-focused:bg-surface-overlay"
                 >
                   {poster ? (
-                    <LoadingImage
-                      src={poster}
-                      alt=""
-                      className="h-12 w-9 shrink-0 rounded-subtle object-cover"
-                    />
+                    <LoadingImage src={poster} alt="" className="h-12 w-9 shrink-0 object-cover" />
                   ) : (
-                    <span
-                      aria-hidden="true"
-                      className="h-12 w-9 shrink-0 rounded-subtle bg-poster-placeholder"
-                    />
+                    <span aria-hidden="true" className="h-12 w-9 shrink-0 bg-poster-placeholder" />
                   )}
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <strong className="text-sm font-semibold wrap-anywhere">{movie.title}</strong>
+                    <strong className="text-sm font-bold wrap-anywhere">{movie.title}</strong>
                     <small className="text-sm text-fg-muted">
                       {meta.filter(Boolean).join(' · ')}
                       {disliked.has(movie.id) && (
@@ -142,7 +135,7 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
                       )}
                     </small>
                   </span>
-                  <span className="flex shrink-0 items-center gap-1.5 text-sm font-semibold whitespace-nowrap text-info">
+                  <span className="flex shrink-0 items-center gap-1.5 font-display text-sm tracking-wider whitespace-nowrap text-accent uppercase">
                     <Icon name="eye" className="size-4" /> View details
                   </span>
                 </ListBoxItem>

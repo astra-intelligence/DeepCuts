@@ -32,17 +32,17 @@ export function CassetteCard({ item }: { item: CassetteItem }) {
       // Keyboard focus shows on the text block below the box, not around the whole tile, where
       // the ring would box in the turning 3D box (owner's call, 2026-10-09). While the mouse
       // turns the box, the VHS box styles raise the tile above its neighbours.
-      className="group relative flex min-w-0 flex-1 flex-col rounded-control focus-visible:shadow-none focus-visible:outline-none"
+      className="group relative flex min-w-0 flex-1 flex-col focus-visible:shadow-none focus-visible:outline-none"
     >
       <VhsBox movie={movie} />
       {/* The focus ring: the app's usual ring (3px focus color, 3px gap), drawn around the text
           while the link has keyboard focus. It's the whole visible indicator, so it must never
           be clipped or covered (WCAG 2.4.7, 2.4.11; ADR-0009). */}
-      <div className="mt-3 flex flex-1 flex-col rounded-control group-focus-visible:outline-3 group-focus-visible:outline-offset-3 group-focus-visible:outline-focus">
+      <div className="mt-3 flex flex-1 flex-col group-focus-visible:outline-3 group-focus-visible:outline-offset-3 group-focus-visible:outline-focus">
         {/* The rank comes first, so the link's accessible name starts "#1 The Thing". Gold, the
             Top Ten's color (ADR-0035), and always written out, never color alone. */}
         {item.rank !== undefined && (
-          <p className="mb-0.5 font-brand text-sm font-extrabold text-favourite">#{item.rank}</p>
+          <p className="mb-0.5 font-display text-sm text-favourite">#{item.rank}</p>
         )}
         {/* Two lines at most, then an ellipsis. The clamp is visual only: the full title stays
             in the page, so it's still the link's accessible name, and `title` shows it on hover. */}
@@ -58,7 +58,7 @@ export function CassetteCard({ item }: { item: CassetteItem }) {
         )}
         <Because titles={item.because?.slice(0, 1)} />
         <CreditLines credits={item.credits} />
-        <span className="mt-auto inline-flex items-center gap-1.5 pt-2.5 text-sm font-semibold text-info">
+        <span className="mt-auto inline-flex items-center gap-1.5 pt-2.5 text-sm font-semibold text-accent">
           <Icon name="eye" className="size-4" /> View details
         </span>
       </div>

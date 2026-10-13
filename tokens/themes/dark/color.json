@@ -1,55 +1,59 @@
 {
-  "$description": "Tier 2, dark theme (the only theme today). Semantic color roles; a light theme would be tokens/themes/light/ with the same names (ADR-0027).",
+  "$description": "Tier 2, dark theme (the only theme). Semantic color roles on the Triple Feature palette (ADR-0040); a light theme would be tokens/themes/light/ with the same names (ADR-0027).",
   "color": {
     "$type": "color",
     "surface": {
       "default": {
-        "$value": "{color.ink}"
+        "$value": "{color.ink.default}"
       },
       "raised": {
-        "$value": "{color.neutral.900}"
+        "$value": "{color.ink.raised}"
       },
       "overlay": {
-        "$value": "{color.neutral.850}"
-      },
-      "selected": {
-        "$value": "{color.teal.900}"
-      },
-      "glow": {
-        "$value": "{color.sky.950}",
-        "$description": "The backdrop glow rising from the bottom of the window on the app shell pages (design approved 2026-10-07, 'Sky rise'). Used mixed toward transparent, so text over it is never on more than this color."
+        "$value": "{color.ink.overlay}",
+        "$description": "Hovered and focused rows inside raised surfaces (menus, suggestions), skeleton bars"
       }
     },
     "fg": {
       "default": {
-        "$value": "{color.neutral.50}"
+        "$value": "{color.bone.default}"
+      },
+      "soft": {
+        "$value": "{color.bone.soft}",
+        "$description": "Body and lede text"
       },
       "muted": {
-        "$value": "{color.neutral.300}"
+        "$value": "{color.dust}",
+        "$description": "Secondary text and metadata"
       },
       "placeholder": {
-        "$value": "{color.neutral.400}"
+        "$value": "{color.dust}"
       },
       "on-accent": {
-        "$value": "{color.teal.950}"
+        "$value": "{color.ink.default}",
+        "$description": "Text on mustard fills"
       },
-      "on-selected": {
-        "$value": "{color.teal.50}"
+      "on-danger": {
+        "$value": "{color.bone.default}",
+        "$description": "Text on blood fills (CTAs, the match stamp, the logo)"
       },
       "danger": {
-        "$value": "{color.red.300}"
+        "$value": "{color.red.300}",
+        "$description": "Error text (field errors). Blood is too dark for small text"
       }
     },
     "accent": {
       "default": {
-        "$value": "{color.teal.400}"
+        "$value": "{color.mustard.default}",
+        "$description": "Labels, links, focus, utility buttons"
+      },
+      "hover": {
+        "$value": "{color.mustard.hover}"
       }
     },
-    "info": {
-      "$value": "{color.blue.300}"
-    },
     "danger": {
-      "$value": "{color.red.600}"
+      "$value": "{color.blood}",
+      "$description": "Blood red: CTA fills, the match stamp, large headline text and error borders. About 3:1 on ink, so never small text (ADR-0040)"
     },
     "contextual": {
       "$value": "{color.accent.default}",
@@ -57,30 +61,44 @@
     },
     "border": {
       "default": {
-        "$value": "{color.neutral.700}"
+        "$value": "{color.line.default}",
+        "$description": "Structure lines and dividers (decorative)"
+      },
+      "strong": {
+        "$value": "{color.line.strong}",
+        "$description": "Dashed outlines of empty slots (decorative)"
       },
       "control": {
-        "$value": "{color.neutral.600}"
+        "$value": "{color.dust}",
+        "$description": "Outlines that identify a control (3:1)"
+      },
+      "emphasis": {
+        "$value": "{color.bone.default}",
+        "$description": "2-3px bone outlines on fields, buttons and the stamp ring"
       }
     },
     "focus": {
-      "$value": "{color.blue.300}"
+      "$value": "{color.mustard.default}"
     },
     "favourite": {
-      "$value": "{color.gold.500}",
+      "$value": "{color.mustard.default}",
       "$description": "Favourite films: the Top Ten (ADR-0035). Decorative; always next to its label"
+    },
+    "shadow": {
+      "$value": "{color.black}",
+      "$description": "Hard offset shadows (ADR-0040)"
     },
     "tag": {
       "seen": {
-        "$value": "{color.teal.400}",
+        "$value": "{color.green.300}",
         "$description": "Seen it"
       },
       "watchlist": {
-        "$value": "{color.blue.300}",
+        "$value": "{color.sky.300}",
         "$description": "Want to see"
       },
       "liked": {
-        "$value": "{color.neutral.50}",
+        "$value": "{color.bone.default}",
         "$description": "Like"
       },
       "disliked": {
@@ -91,7 +109,7 @@
     "genre": {
       "$description": "Card tones per TMDB genre (design v2). Decorative; always paired with the genre name as text.",
       "default": {
-        "$value": "{color.teal.400}"
+        "$value": "{color.dust}"
       },
       "action": {
         "$value": "{color.orange.500}"
@@ -153,11 +171,11 @@
     },
     "print": {
       "paper": {
-        "$value": "{color.cream.100}",
+        "$value": "{color.bone.default}",
         "$description": "Printed-matter paper: stickers and labels drawn as physical objects"
       },
       "ink": {
-        "$value": "{color.umber.950}",
+        "$value": "{color.ink.default}",
         "$description": "Ink printed on that paper"
       }
     }

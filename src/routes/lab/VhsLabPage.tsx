@@ -149,10 +149,10 @@ function LabCard({ movie }: { movie: MovieSummary }) {
       to={`/movie/${movie.id}`}
       style={genreTone(movie.genre_ids)}
       data-vhs-target=""
-      className="group relative flex min-w-0 flex-1 flex-col rounded-control focus-visible:shadow-none focus-visible:outline-none"
+      className="group relative flex min-w-0 flex-1 flex-col focus-visible:shadow-none focus-visible:outline-none"
     >
       <VhsBox movie={movie} />
-      <div className="mt-3 rounded-control group-focus-visible:outline-3 group-focus-visible:outline-offset-3 group-focus-visible:outline-focus">
+      <div className="mt-3 group-focus-visible:outline-3 group-focus-visible:outline-offset-3 group-focus-visible:outline-focus">
         <h3
           title={movie.title}
           className="mb-1 line-clamp-2 min-h-10 text-sm leading-snug font-semibold"
@@ -251,7 +251,7 @@ function Controls({
       <p className="-mt-2 text-fg-muted">{hint}</p>
       {extra}
       {SLIDERS[id].map(([key, label, min, max, step, unit]) => (
-        <label key={key} className="focus-ring-within flex flex-col gap-1 rounded-control">
+        <label key={key} className="focus-ring-within flex flex-col gap-1">
           <span className="flex justify-between gap-2">
             {label}
             <output className="text-fg-muted tabular-nums">
@@ -279,7 +279,7 @@ function Controls({
     label: string,
     disabled = false,
   ) => (
-    <label className="focus-ring-within flex items-center gap-2 rounded-control">
+    <label className="focus-ring-within flex items-center gap-2">
       <input
         type="checkbox"
         checked={s[key]}
@@ -294,7 +294,7 @@ function Controls({
   return (
     <form
       ref={form}
-      className="flex flex-col gap-5 rounded-card border border-card-border bg-card-bg p-4 shadow-card lg:sticky lg:top-24 lg:max-h-[calc(100dvh-12rem)] lg:overflow-y-auto"
+      className="flex flex-col gap-5 border border-card-border bg-card-bg p-4 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-12rem)] lg:overflow-y-auto"
       onSubmit={(e) => e.preventDefault()}
     >
       {section(
@@ -304,10 +304,7 @@ function Controls({
         <>
           <div className="flex flex-col gap-1.5" role="radiogroup" aria-label="Box shape">
             {SHAPES.map((shape) => (
-              <label
-                key={shape.label}
-                className="focus-ring-within flex items-center gap-2 rounded-control"
-              >
+              <label key={shape.label} className="focus-ring-within flex items-center gap-2">
                 <input
                   type="radio"
                   name="shape"
@@ -329,10 +326,7 @@ function Controls({
                 ['contain', 'Whole poster (bars above and below)'],
               ] as const
             ).map(([value, label]) => (
-              <label
-                key={value}
-                className="focus-ring-within flex items-center gap-2 rounded-control"
-              >
+              <label key={value} className="focus-ring-within flex items-center gap-2">
                 <input
                   type="radio"
                   name="fit"
@@ -363,10 +357,8 @@ function Controls({
         </>,
       )}
       <div className="flex flex-col gap-2 border-t border-border pt-4 text-sm">
-        <code className="rounded-control bg-surface-overlay p-2 break-all text-fg-muted">
-          {summary}
-        </code>
-        <button type="button" onClick={reset} className="self-start text-info underline">
+        <code className="bg-surface-overlay p-2 break-all text-fg-muted">{summary}</code>
+        <button type="button" onClick={reset} className="self-start text-accent underline">
           Reset to defaults
         </button>
       </div>

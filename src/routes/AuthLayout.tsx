@@ -1,6 +1,6 @@
 // The minimal layout for the account pages outside the main shell: Sign in (ADR-0025) and
-// Create an account (ADR-0031). A Back button, the logo and one narrow column; no search band
-// or tab bar, so nothing competes with the form.
+// Create an account (ADR-0031). A Back button, the logo and one narrow column; no search,
+// so nothing competes with the form.
 import { useRef, type ReactNode } from 'react'
 import { Button } from 'react-aria-components'
 import { Link, useLocation, useNavigate } from 'react-router'
@@ -18,17 +18,17 @@ export function AuthLayout({ title, children }: { title: string; children: React
   const header = useRef<HTMLElement>(null)
   useHeaderHeight(header)
   return (
-    <div className="mx-auto min-h-svh w-full max-w-360">
+    <div className="mx-auto min-h-svh w-full max-w-300">
       <title>{`${title} · Deep Cuts`}</title>
       <SkipLink />
       <header
         ref={header}
-        className="flex min-h-16 items-center justify-between gap-2.5 border-b border-border px-5 pt-[max(0.625rem,env(safe-area-inset-top))] pb-2 md:px-8"
+        className="flex min-h-16 items-center justify-between gap-2.5 border-b-2 border-border px-5 pt-[max(0.625rem,env(safe-area-inset-top))] pb-2 md:px-8"
       >
         {/* Back to the previous page; a page opened directly (no history) goes home. */}
         <Button
           onPress={() => (location.key === 'default' ? navigate(HOME.path) : navigate(-1))}
-          className="-ml-2 flex min-h-11 items-center gap-1 px-2 text-sm text-info"
+          className="-ml-2 flex min-h-11 items-center gap-1 px-2 text-sm text-accent"
         >
           <Icon name="back" /> Back
         </Button>
@@ -37,7 +37,7 @@ export function AuthLayout({ title, children }: { title: string; children: React
           aria-label={`Deep Cuts, go to ${HOME.label}`}
           className="inline-flex min-h-11 items-center"
         >
-          <Logo decorative className="h-7 w-auto" />
+          <Logo decorative className="h-9 w-auto" />
         </Link>
       </header>
 

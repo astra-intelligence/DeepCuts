@@ -40,7 +40,12 @@ createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AppSessionProvider provider={sessionProvider} initialSession={initialSession}>
+        {/* Triple Feature texture (ADR-0040, index.css): faint scratches behind every page and
+            film grain over it. Both are decoration only, pinned to the window, and let every
+            click through. Rendered once here so every layout gets them. */}
+        <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 film-scratch" />
         <RouterProvider router={router} />
+        <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-60 film-grain" />
         {/* Outside the router, so toasts stay up across route changes (src/notify.ts). */}
         <AppToaster />
       </AppSessionProvider>

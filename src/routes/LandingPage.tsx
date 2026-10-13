@@ -9,6 +9,14 @@ import { FeaturePanel } from '../components/FeaturePanel'
 import { PanelArt } from '../components/PanelArt'
 import { PANELS, type PanelId } from '../components/panels'
 import { PageHeading } from '../components/PageHeading'
+import { Ticker } from '../components/Ticker'
+
+// The ticker's lines (ADR-0040): one real sentence per feature, nothing invented.
+const TICKER = [
+  'Top Ten: rank the ten films you’d defend',
+  'Watchlist: save a film the moment you hear about it',
+  'Discovery: picks for your taste, with the reason why',
+]
 
 // What each panel promises. Plain and specific: only what the signed-in app really does (Top Ten
 // is shown as "coming", as Home shows it, until that project ships; ADR-0033).
@@ -23,6 +31,7 @@ export function LandingPage() {
   return (
     <>
       <title>Deep Cuts</title>
+      <Ticker items={TICKER} />
       <PageHeading
         title="Your movies, close at hand"
         lede="Keep your all-time favourites, the films you want to see, and picks made for your taste, in one place."
@@ -32,7 +41,7 @@ export function LandingPage() {
         {(Object.keys(COPY) as PanelId[]).map((id) => (
           <li key={id}>
             <FeaturePanel panel={PANELS[id]}>
-              <div className="grid place-items-center rounded-container bg-surface-raised px-4 py-5">
+              <div className="grid place-items-center bg-surface-raised px-4 py-5">
                 <PanelArt id={id} />
               </div>
               <p className="mt-3 text-sm leading-relaxed text-fg-muted">{COPY[id]}</p>

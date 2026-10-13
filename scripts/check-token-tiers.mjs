@@ -4,8 +4,8 @@
 //    component → semantic, themes
 // 2. In the code, components use Tailwind utilities generated from tiers 2–3. Raw `--dc-*`
 //    variables may appear only in src/index.css (the page accent) and brand variables only in
-//    the logo. Corners and shadows use role or component tokens (`rounded-card`,
-//    `shadow-popover`), not the raw scale (`rounded-lg`, `shadow-sm`).
+//    the logo. Corners are square (ADR-0040) and shadows use role or component tokens
+//    (`shadow-popover`, `shadow-box`), not the raw scale (`rounded-lg`, `shadow-sm`).
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
@@ -69,7 +69,7 @@ for (const file of walk('src', /\.(tsx?|css)$/)) {
       if (/\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file)) {
         for (const [, cls] of line.matchAll(RAW_SCALE)) {
           fail(
-            `${file}:${i + 1} ${cls}: use a role or component token (rounded-card, shadow-raised…)`,
+            `${file}:${i + 1} ${cls}: corners are square; use a role or component shadow token (shadow-box, shadow-popover…)`,
           )
         }
       }

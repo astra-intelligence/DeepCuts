@@ -4,8 +4,8 @@
   "description": "A fast, one-thumb movie tracker that surfaces deep cuts.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#070b0c",
-  "theme_color": "#070b0c",
+  "background_color": "#120d0a",
+  "theme_color": "#120d0a",
   "icons": [
     {
       "src": "/icon-192.png",

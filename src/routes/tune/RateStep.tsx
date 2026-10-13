@@ -77,7 +77,7 @@ export function RateStep({ state, update }: StepProps) {
       </div>
       <article
         aria-label={pick.title}
-        className="relative flex min-h-130 flex-col justify-end overflow-hidden rounded-card border border-card-border bg-card-bg shadow-card md:min-h-140"
+        className="relative flex min-h-130 flex-col justify-end overflow-hidden border border-card-border bg-card-bg md:min-h-140"
       >
         {image && (
           <LoadingImage src={image} alt="" className="absolute inset-0 size-full object-cover" />
@@ -85,7 +85,7 @@ export function RateStep({ state, update }: StepProps) {
         {/* Fades the film image into the page so the title and buttons stay readable. */}
         <div className="absolute inset-0 bg-linear-to-b from-transparent from-20% via-surface/30 via-45% to-surface to-70%" />
         <div className="relative px-4.5 pb-3">
-          <p className="mb-1 text-sm text-info">{meta.join(' · ')}</p>
+          <p className="mb-1 text-sm text-accent">{meta.join(' · ')}</p>
           <h2
             className={`font-display ${pick.title.length > 55 ? 'text-3xl' : 'text-4xl'} leading-tight`}
           >
@@ -117,7 +117,7 @@ export function RateStep({ state, update }: StepProps) {
           ))}
           <Button
             onPress={next}
-            className="col-span-2 flex h-11 w-36 items-center justify-center gap-2 self-center justify-self-center rounded-button bg-button-primary-bg px-3.5 font-semibold text-button-primary-fg hover:bg-button-primary-bg/85 md:col-span-1"
+            className="col-span-2 flex h-11 w-36 items-center justify-center gap-2 self-center justify-self-center bg-button-primary-bg px-3.5 font-semibold text-button-primary-fg hover:bg-button-primary-bg/85 md:col-span-1"
           >
             <Icon name="arrow" /> Next film
           </Button>

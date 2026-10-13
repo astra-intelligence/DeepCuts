@@ -183,6 +183,28 @@ describe('home with likes (ADR-0026)', () => {
     // The liked film itself is never recommended back.
     expect(screen.queryByRole('link', { name: /^The Thing/ })).not.toBeInTheDocument()
   })
+
+  it('sums the lists up in the ticker: real counts and the top pick, no zeros (ADR-0040)', async () => {
+    const user = userEvent.setup()
+    const { router } = renderRoute('/movie/1091')
+    const group = await screen.findByRole('group', { name: 'Your tags' })
+    await user.click(within(group).getByRole('button', { name: 'Like' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await screen.findByText(/^Saved\./)
+    await act(() => router.navigate('/'))
+    await firstPick()
+    // The screen-reader copy of the ticker is the first list on the page.
+    const [ticker] = screen.getAllByRole('list')
+    if (!ticker) throw new Error('no ticker')
+    const facts = within(ticker)
+      .getAllByRole('listitem')
+      .map((li) => li.textContent)
+    // Nothing on the Top Ten or the watchlist yet, so those items are left out.
+    expect(facts).toEqual([
+      expect.stringMatching(/^Discovery: \d+ new picks?$/),
+      expect.stringMatching(/^Top pick: The Fog, \d+% match$/),
+    ])
+  })
 })
 
 describe('home with a liked film in a series (ADR-0032, ADR-0037)', () => {

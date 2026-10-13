@@ -70,7 +70,7 @@ test('invite → register → reload → sign out → sign in with the passkey',
   expect(await page.evaluate(() => document.cookie)).not.toContain('dc_session')
 
   // Sign out from the header's account menu (desktop width, one press), then the session is gone.
-  await page.getByRole('banner').getByRole('button', { name: 'Ada, account menu' }).click()
+  await page.getByRole('banner').getByRole('button', { name: 'Account menu for Ada' }).click()
   await expect(page.getByRole('menuitem', { name: 'Account settings' })).toBeVisible()
   await page.getByRole('menuitem', { name: 'Sign out' }).click()
   await expect(page).toHaveURL(/\/$/)

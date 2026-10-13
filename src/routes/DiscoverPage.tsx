@@ -17,6 +17,7 @@ import { FeaturePanel } from '../components/FeaturePanel'
 import { PanelArt } from '../components/PanelArt'
 import { PANELS } from '../components/panels'
 import { PageHeading } from '../components/PageHeading'
+import { Ticker } from '../components/Ticker'
 import { useTagQueries } from '../session/tagQueries'
 import { useTopTen } from '../session/topTenQueries'
 import { useRecommendations } from '../session/useRecommendations'
@@ -36,9 +37,15 @@ const CASSETTE_GRID = 'grid grid-cols-2 gap-x-4 gap-y-5.5'
  * landing page's (ADR-0035): one column on phones, three equal columns from `lg`.
  */
 export function HomePage() {
+  // Discovery's picks are worked out once here and shared by the ticker and the panel, so the
+  // scorer runs once. The two lists are cached queries, so reading them twice costs nothing.
+  const discovery = useDiscoveryPicks()
+  const topTen = useTopTen().data ?? []
+  const watchlist = useQuery(useTagQueries().list('watchlist')).data ?? []
   return (
     <>
       <title>Home · Deep Cuts</title>
+      <Ticker items={tickerItems(topTen.length, watchlist.length, discovery)} />
       {/* No eyebrow: it would repeat the panels' own headings. */}
       <PageHeading
         title="Your movies, close at hand"
@@ -54,7 +61,7 @@ export function HomePage() {
           <WatchlistPanel />
         </li>
         <li>
-          <DiscoveryPanel />
+          <DiscoveryPanel discovery={discovery} />
         </li>
       </ul>
     </>
@@ -90,7 +97,7 @@ function TopTenPanel() {
       ) : (
         <>
           {/* The landing page's illustration, quieter: a hint of what this becomes. */}
-          <div className="grid place-items-center rounded-container bg-surface-raised px-4 py-5 opacity-60">
+          <div className="grid place-items-center bg-surface-raised px-4 py-5 opacity-60">
             <PanelArt id="top-ten" />
           </div>
           <p className="mt-3 text-sm leading-relaxed text-fg-muted">
@@ -135,10 +142,28 @@ function WatchlistPanel() {
 }
 
 /**
+ * The ticker's live facts (ADR-0040), most important first. An empty list drops its item rather
+ * than showing a zero, and only scorer picks count as picks (the popular fallback isn't tuned).
+ */
+function tickerItems(topTen: number, watchlist: number, discovery: DiscoveryPicks): string[] {
+  const tuned = discovery.usePicks && !discovery.loading ? discovery.picks : []
+  const top = tuned[0]
+  return [
+    topTen > 0 && `Top Ten: ${topTen} of 10 ranked`,
+    watchlist > 0 && `Watchlist: ${watchlist} ${watchlist === 1 ? 'film' : 'films'}`,
+    tuned.length > 0 && `Discovery: ${tuned.length} new ${tuned.length === 1 ? 'pick' : 'picks'}`,
+    top?.match !== undefined && `Top pick: ${top.movie.title}, ${top.match}% match`,
+  ].filter((item): item is string => item !== false)
+}
+
+/** Discovery's picks and their state, from `useDiscoveryPicks`. */
+type DiscoveryPicks = ReturnType<typeof useDiscoveryPicks>
+
+/**
  * Four picks: enough to browse without becoming a second, endless destination on Home. (The big
  * featured card is gone, owner 2026-10-09: the top pick is simply the first cassette.)
  */
-function DiscoveryPanel() {
+function useDiscoveryPicks() {
   const tuned = useRecommendations(PICKS)
   const popular = useQuery(movieQueries.discover())
   const excluded = useQuery(useTagQueries().feedExclusions()).data
@@ -167,9 +192,17 @@ function DiscoveryPanel() {
     const data = details[i]?.data
     return data ? { ...item, credits: creditsOf(data) } : item
   })
-  const loading = usePicks ? tuned.loading : popular.isPending
-  const failed = !usePicks && popular.isError
+  return {
+    picks,
+    usePicks,
+    loading: usePicks ? tuned.loading : popular.isPending,
+    failed: !usePicks && popular.isError,
+  }
+}
 
+/** The Discovery panel: the picks, a loading placeholder, or what went wrong. */
+function DiscoveryPanel({ discovery }: { discovery: DiscoveryPicks }) {
+  const { picks, usePicks, loading, failed } = discovery
   return (
     <FeaturePanel panel={PANELS.discovery}>
       {/* Only the untuned feed explains itself: it's the one line that tells you what to do. */}
@@ -204,7 +237,7 @@ function DiscoveryPanel() {
       {usePicks && FEATURES.labs && (
         <p className="mt-auto pt-4 text-sm text-fg-muted">
           Curious how these are ranked?{' '}
-          <Link to="/lab/weights" className="text-info underline">
+          <Link to="/lab/weights" className="text-accent underline">
             Tune the weights
           </Link>
         </p>
@@ -221,12 +254,12 @@ function CassettesSkeleton() {
         <li key={i} className="flex">
           <div className="flex min-w-0 flex-1 animate-pulse flex-col">
             {/* The VHS box's own aspect ratio (VhsBox.css, --vhs-aspect). */}
-            <div className="aspect-[0.547] w-full rounded-subtle border border-card-border bg-card-bg" />
-            <div className="mt-3 min-h-36 space-y-2 rounded-control">
-              <div className="h-4 w-4/5 rounded-subtle bg-surface-selected" />
-              <div className="h-4 w-3/5 rounded-subtle bg-surface-selected" />
-              <div className="h-3 w-1/2 rounded-subtle bg-surface-selected" />
-              <div className="h-3 w-2/3 rounded-subtle bg-surface-selected" />
+            <div className="aspect-[0.547] w-full border border-card-border bg-card-bg" />
+            <div className="mt-3 min-h-36 space-y-2">
+              <div className="h-4 w-4/5 bg-surface-overlay" />
+              <div className="h-4 w-3/5 bg-surface-overlay" />
+              <div className="h-3 w-1/2 bg-surface-overlay" />
+              <div className="h-3 w-2/3 bg-surface-overlay" />
             </div>
           </div>
         </li>

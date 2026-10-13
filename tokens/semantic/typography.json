@@ -1,17 +1,20 @@
 {
-  "$description": "Tier 2: type roles. Components use these families; sizes, weights and spacing come from the Tailwind scale (tier 1, ADR-0027).",
+  "$description": "Tier 2: type roles (ADR-0040). Components use these families; sizes, weights and spacing come from the Tailwind scale (tier 1, ADR-0027).",
   "font": {
     "family": {
       "$type": "fontFamily",
       "body": {
-        "$value": "{font.family.manrope}",
-        "$description": "Everything that isn't a heading or the logo"
+        "$value": "{font.family.courier-prime}",
+        "$description": "All body copy, film titles in captions, metadata and inputs"
       },
       "display": {
-        "$value": "{font.family.dm-serif-display}",
-        "$description": "Page and film titles"
+        "$value": "{font.family.anton}",
+        "$description": "Headlines, section titles, buttons, rank numbers and stamps. Weight 400 only, usually uppercase"
       },
-      "brand": { "$value": "{font.family.saira}", "$description": "Wordmark-style lettering" }
+      "label": {
+        "$value": "{font.family.special-elite}",
+        "$description": "Typewriter labels: 'Feature N\u00ba 1', reasons, the footer. Sentence case, never long text"
+      }
     }
   }
 }

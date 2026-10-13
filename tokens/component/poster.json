@@ -3,9 +3,12 @@
   "color": {
     "$type": "color",
     "poster": {
-      "border": { "$value": "{color.border.control}" },
-      "placeholder": { "$value": "{color.surface.overlay}" }
+      "border": {
+        "$value": "{color.border.control}"
+      },
+      "placeholder": {
+        "$value": "{color.surface.overlay}"
+      }
     }
-  },
-  "radius": { "$type": "dimension", "poster": { "$value": "{radius.control}" } }
+  }
 }

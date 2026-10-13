@@ -20,7 +20,7 @@
   "shadow": {
     "$type": "shadow",
     "top-ten-sticker": {
-      "$value": "{elevation.raised}"
+      "$value": "{elevation.stamp}"
     }
   }
 }

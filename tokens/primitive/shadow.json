@@ -1,7 +1,7 @@
 {
   "shadow": {
     "$type": "shadow",
-    "$description": "Tailwind’s default elevation scale.",
+    "$description": "Tailwind's default elevation scale, plus the hard offset shadows of the Triple Feature design (ADR-0040).",
     "2xs": {
       "$value": [
         {
@@ -282,6 +282,141 @@
           }
         }
       ]
+    },
+    "hard-3": {
+      "$value": [
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [0, 0, 0]
+          },
+          "offsetX": {
+            "value": 3,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 3,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 0,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          }
+        }
+      ],
+      "$description": "Hard offset, no blur (3px), ADR-0040"
+    },
+    "hard-5": {
+      "$value": [
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [0, 0, 0]
+          },
+          "offsetX": {
+            "value": 5,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 5,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 0,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          }
+        }
+      ],
+      "$description": "Hard offset, no blur (5px), ADR-0040"
+    },
+    "hard-7": {
+      "$value": [
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [0, 0, 0]
+          },
+          "offsetX": {
+            "value": 7,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 7,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 0,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          }
+        }
+      ],
+      "$description": "Hard offset, no blur (7px), ADR-0040"
+    },
+    "hard-9": {
+      "$value": [
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [0, 0, 0]
+          },
+          "offsetX": {
+            "value": 9,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 9,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 0,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          }
+        }
+      ],
+      "$description": "Hard offset, no blur (9px), ADR-0040"
+    },
+    "hard-12": {
+      "$value": [
+        {
+          "color": {
+            "colorSpace": "srgb",
+            "components": [0, 0, 0]
+          },
+          "offsetX": {
+            "value": 12,
+            "unit": "px"
+          },
+          "offsetY": {
+            "value": 12,
+            "unit": "px"
+          },
+          "blur": {
+            "value": 0,
+            "unit": "px"
+          },
+          "spread": {
+            "value": 0,
+            "unit": "px"
+          }
+        }
+      ],
+      "$description": "Hard offset, no blur (12px), ADR-0040"
     }
   }
 }

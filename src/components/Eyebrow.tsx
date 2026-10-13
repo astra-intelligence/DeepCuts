@@ -4,7 +4,6 @@ import type { ReactNode } from 'react'
 // Colors an eyebrow may use. `contextual` follows the page accent (ADR-0020).
 const TONES = {
   accent: 'text-accent',
-  info: 'text-info',
   contextual: 'text-contextual',
   muted: 'text-fg-muted',
 } as const

@@ -28,7 +28,7 @@ export function TagToggle({
       // Sets `--tag` to this tag's color; the classes below use it for the icon, hover and
       // selected state, so one component serves all four tags.
       style={tagColor(tag.tag) as CSSProperties}
-      className={`flex min-w-0 items-center justify-center gap-2 rounded-tag-toggle border border-tag-toggle-border bg-tag-toggle-bg px-2 py-1.5 text-sm text-tag-toggle-fg hover:border-(--tag) data-selected:border-(--tag) data-selected:bg-(--tag)/12 ${className}`}
+      className={`flex min-w-0 items-center justify-center gap-2 border border-tag-toggle-border bg-tag-toggle-bg px-2 py-1.5 text-sm text-tag-toggle-fg hover:border-(--tag) data-selected:border-(--tag) data-selected:bg-(--tag)/12 ${className}`}
     >
       <Icon name={tag.icon} className="size-5 shrink-0 text-(--tag)" />
       <span className="flex flex-col gap-0.5">

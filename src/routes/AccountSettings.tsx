@@ -14,13 +14,12 @@ import { useSession } from '../session/SessionContext'
 
 // Same field styles as the registration form.
 const fieldBox =
-  'focus-ring-within flex min-h-12 items-center rounded-field border border-field-border bg-field-bg focus-within:border-field-border-focus group-data-invalid:border-fg-danger'
+  'focus-ring-within flex min-h-12 items-center border border-field-border bg-field-bg focus-within:border-field-border-focus group-data-invalid:border-fg-danger'
 const inputClass =
   'min-w-0 flex-1 self-stretch bg-transparent px-3 text-base text-fg outline-none placeholder:text-fg-placeholder'
-const cardClass =
-  'grid content-start gap-2.5 rounded-card border border-card-border bg-card-bg p-4 shadow-card'
+const cardClass = 'grid content-start gap-2.5 border border-card-border bg-card-bg p-4'
 const secondaryButton =
-  'flex h-11 items-center justify-center rounded-button border border-button-secondary-border bg-button-secondary-bg px-3.5 text-sm font-semibold text-button-secondary-fg data-pending:opacity-70'
+  'flex h-11 items-center justify-center border border-button-secondary-border bg-button-secondary-bg px-3.5 text-sm font-semibold text-button-secondary-fg data-pending:opacity-70'
 
 /** "Change name" and "Delete account" cards for a passkey account. */
 export function AccountSettings({ name }: { name: string }) {
@@ -135,7 +134,7 @@ function DeleteAccount({ deleteAccount }: { deleteAccount: () => Promise<void> }
               // Return focus to "Delete account" once it's back on screen (next frame).
               requestAnimationFrame(() => askRef.current?.focus())
             }}
-            className="flex h-11 items-center rounded-button px-2 text-sm font-semibold text-info"
+            className="flex h-11 items-center px-2 text-sm font-semibold text-accent"
           >
             Cancel
           </Button>
