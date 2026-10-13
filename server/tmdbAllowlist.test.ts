@@ -34,6 +34,11 @@ describe('resolveTmdbRequest', () => {
     // Genre filters were removed with favourite genres (ADR-0032).
     ['discover/movie', 'with_genres=27'],
     ['discover/movie', 'without_genres=27'],
+    // One keyword id only: no lists, no names, no negatives (ADR-0038).
+    ['discover/movie', 'with_keywords=12339|9715'],
+    ['discover/movie', 'with_keywords=12339,9715'],
+    ['discover/movie', 'with_keywords=slasher'],
+    ['discover/movie', 'with_keywords=-1'],
     ['collection/9735', 'page=1'],
     ['discover/movie', 'sort_by=revenue.desc'],
     ['movie/603', 'append_to_response=videos'],
@@ -72,6 +77,14 @@ describe('resolveTmdbRequest', () => {
   it('allows discover with sort', () => {
     const r = resolveTmdbRequest('discover/movie', q('sort_by=vote_average.desc&vote_count.gte=50'))
     expect(r.ok && r.request.params.get('include_adult')).toBe('false')
+  })
+
+  it('allows discover by one keyword (ADR-0038)', () => {
+    const r = resolveTmdbRequest(
+      'discover/movie',
+      q('with_keywords=12339&sort_by=vote_average.desc&vote_count.gte=100'),
+    )
+    expect(r.ok && r.request.params.get('with_keywords')).toBe('12339')
   })
 
   it('rejects ids beyond the allowed range', () => {

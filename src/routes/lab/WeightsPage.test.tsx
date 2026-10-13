@@ -31,26 +31,26 @@ describe('weights lab (ADR-0026)', () => {
   it('shows a labelled, described slider per part and the ranked picks', async () => {
     await likeThenOpen('/lab/weights')
     const support = await screen.findByRole('slider', { name: 'Recommended by your likes' })
-    expect(support).toHaveValue('17')
+    expect(support).toHaveValue('15')
     expect(support).toHaveAccessibleDescription(
       'How many of your liked films recommend it, or share its series.',
     )
-    // Ten score parts (ADR-0032) plus genre variety.
-    expect(screen.getAllByRole('slider')).toHaveLength(11)
+    // Twelve score parts (ADR-0032, ADR-0038) plus genre variety.
+    expect(screen.getAllByRole('slider')).toHaveLength(13)
     expect(screen.getByRole('slider', { name: 'Same writer' })).toHaveValue('5')
-    expect(screen.getByRole('slider', { name: 'Same series' })).toHaveValue('7')
+    expect(screen.getByRole('slider', { name: 'Same series' })).toHaveValue('6')
 
     const table = await screen.findByRole('table')
     const rows = within(table).getAllByRole('row').slice(1)
     expect(rows.length).toBeGreaterThan(0)
     // At the defaults nothing has moved.
     for (const row of rows) expect(row).toHaveTextContent(/^1?\d.*–\d+%/)
-    expect(screen.getByText(/support: 0\.17/)).toBeInTheDocument()
+    expect(screen.getByText(/support: 0\.15/)).toBeInTheDocument()
   })
 
   it('keeps settings in the URL, scales them to 100%, and ignores bad values', async () => {
     await likeThenOpen(
-      '/lab/weights?support=50&genre=50&quality=0&deepCut=0&decade=0&language=0&keywords=0&director=0&writer=0&series=0&diversity=999',
+      '/lab/weights?support=50&genre=50&quality=0&deepCut=0&decade=0&language=0&keywords=0&director=0&writer=0&series=0&cast=0&studio=0&diversity=999',
     )
     expect(await screen.findByRole('slider', { name: 'Genre fit' })).toHaveValue('50')
     // Out-of-range diversity falls back to the default 3.
@@ -65,17 +65,17 @@ describe('weights lab (ADR-0026)', () => {
     const deepCut = await screen.findByRole('slider', { name: 'Deep cut' })
     await act(() => deepCut.focus())
     await user.keyboard('{ArrowRight}')
-    expect(router.state.location.search).toContain('deepCut=12')
-    expect(deepCut).toHaveValue('12')
+    expect(router.state.location.search).toContain('deepCut=11')
+    expect(deepCut).toHaveValue('11')
 
     await user.click(screen.getByRole('link', { name: 'Reset to defaults' }))
     expect(router.state.location.search).toBe('')
-    expect(screen.getByRole('slider', { name: 'Deep cut' })).toHaveValue('11')
+    expect(screen.getByRole('slider', { name: 'Deep cut' })).toHaveValue('10')
   })
 
   it('warns when every weight is zero', async () => {
     await likeThenOpen(
-      '/lab/weights?support=0&genre=0&quality=0&deepCut=0&decade=0&language=0&keywords=0&director=0&writer=0&series=0',
+      '/lab/weights?support=0&genre=0&quality=0&deepCut=0&decade=0&language=0&keywords=0&director=0&writer=0&series=0&cast=0&studio=0',
     )
     expect(await screen.findByRole('alert')).toHaveTextContent('Every weight is at zero')
   })

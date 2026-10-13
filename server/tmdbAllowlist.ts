@@ -37,8 +37,10 @@ const ROUTES: Route[] = [
   {
     pattern: /^discover\/movie$/,
     // No genre filters: taste comes only from tagged films, never declared genres (ADR-0032).
+    // One keyword id at a time, taken from the keywords of films you liked (ADR-0038).
     params: z.strictObject({
       page: page.optional(),
+      with_keywords: id.optional(),
       sort_by: z
         .enum(['popularity.desc', 'vote_average.desc', 'primary_release_date.desc'])
         .optional(),

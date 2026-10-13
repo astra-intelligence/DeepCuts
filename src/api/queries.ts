@@ -24,6 +24,13 @@ export const movieQueries = {
       queryFn: ({ signal }) => tmdb.discover(signal),
       staleTime: HOUR,
     }),
+  /** Well-rated films with one keyword, for the scorer's keyword candidates (ADR-0038). */
+  byKeyword: (keywordId: number) =>
+    queryOptions({
+      queryKey: ['tmdb', 'keyword', keywordId],
+      queryFn: ({ signal }) => tmdb.byKeyword(keywordId, signal),
+      staleTime: 24 * HOUR,
+    }),
   /** A film series' films, for the scorer's series candidates (ADR-0032). */
   collection: (id: number) =>
     queryOptions({

@@ -85,14 +85,21 @@ export const movieDetailSchema = z.object({
     .object({ keywords: z.array(z.object({ id: z.number().int(), name: z.string() })) })
     .optional()
     .catch(undefined),
-  // The proxy trims credits to directors and writers only (server/tmdbCore.ts), so this stays
-  // small.
+  // The proxy trims credits to directors, writers and the five top-billed actors
+  // (server/tmdbCore.ts), so this stays small.
   credits: z
     .object({
       crew: z.array(z.object({ id: z.number().int(), name: z.string(), job: z.string() })),
+      cast: z.array(z.object({ id: z.number().int(), name: z.string() })).default([]),
     })
     .optional()
     .catch(undefined),
+  // The companies that made it, for the scorer's studio part (ADR-0038). Lenient: odd data means
+  // no companies.
+  production_companies: z
+    .array(z.object({ id: z.number().int(), name: z.string() }))
+    .default([])
+    .catch([]),
   // Appended to the same call for the content rating (ADR-0024).
   release_dates: z
     .object({
@@ -191,6 +198,21 @@ export const tmdb = {
         sort_by: 'popularity.desc',
         // Skip barely-rated films so the feed isn't full of obscure noise.
         'vote_count.gte': '200',
+      },
+      signal,
+    ),
+  /**
+   * Well-rated films tagged with one keyword ("slasher"), for the scorer's keyword candidates
+   * (ADR-0038). Needs 100 votes, so the barely-rated don't rank by a lucky 10/10.
+   */
+  byKeyword: (keywordId: number, signal?: AbortSignal) =>
+    get(
+      'discover/movie',
+      searchResultsSchema,
+      {
+        with_keywords: String(keywordId),
+        sort_by: 'vote_average.desc',
+        'vote_count.gte': '100',
       },
       signal,
     ),

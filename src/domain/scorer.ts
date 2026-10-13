@@ -1,20 +1,23 @@
-// Recommendation scorer v3 (ADR-0026, ADR-0028, ADR-0032, ADR-0037): turns a person's tags into
-// ranked film picks.
+// Recommendation scorer v3 (ADR-0026, ADR-0028, ADR-0032, ADR-0037, ADR-0038): turns a person's
+// tags into ranked film picks.
 //
 // How it works, in four steps:
 // 1. Candidates: every film TMDB recommends for any film you liked, the well-voted films in a
-//    shared genre that TMDB lists as similar to it, and the next film you haven't tagged in its series ("Friday the 13th" brings
-//    in Part 2). A film suggested by several of your likes is a stronger candidate.
+//    shared genre that TMDB lists as similar to it, and the next film you haven't tagged in its
+//    series ("Friday the 13th" brings in Part 2). Plus well-rated films tagged with the keywords
+//    your likes share most ("slasher"), found by a keyword search (ADR-0038). A film suggested by
+//    several of your likes, or searches, is a stronger candidate.
 // 2. Taste profile: a weight per genre and per keyword, built from your tags (liked +1, Want to
-//    see +0.5, disliked −1), plus the decades, languages, directors, writers and series of the
-//    films you liked.
-// 3. Score: each candidate gets ten part scores between 0 and 1 (see DEFAULT_WEIGHTS), which are
-//    combined with the weights into one score. "% match" is that score × 100.
-//    Keywords, directors and writers need one extra details call per candidate, so the caller
+//    see +0.5, disliked −1), plus the decades, languages, directors, writers, actors, studios and
+//    series of the films you liked.
+// 3. Score: each candidate gets twelve part scores between 0 and 1 (see DEFAULT_WEIGHTS), which
+//    are combined with the weights into one score. "% match" is that score × 100.
+//    Keywords, credits and studios need one extra details call per candidate, so the caller
 //    fetches them only for the top candidates (`TasteInput.details`) and scores again: a re-rank
 //    (ADR-0028). Candidates without details score 0 on those parts. A film in the series of one
-//    you liked is credited for that once, by the series part: its director, writer and keyword
-//    parts only count what it shares with liked films outside that series (ADR-0037).
+//    you liked is credited for that once, by the series part: its keyword, director, writer,
+//    cast and studio parts only count what it shares with liked films outside that series
+//    (ADR-0037).
 // 4. Rank: highest score first, spread out so one genre, series or director never clumps, with a
 //    few "explore" slots for genres your likes haven't covered, so no genre is shut out. At most
 //    one film per series, and a few in all from the series you liked (ADR-0037).
@@ -38,11 +41,15 @@ export interface ScorerFilm {
   directors?: readonly Person[]
   /** The film's writers, when its details are loaded. */
   writers?: readonly Person[]
+  /** Its top-billed actors, when its details are loaded (ADR-0038). */
+  cast?: readonly Person[]
+  /** The companies that made it, when its details are loaded (ADR-0038). */
+  companies?: readonly Person[]
   /** The TMDB series (collection) it belongs to, when known. */
   seriesId?: number | null
 }
 
-/** A person credited on a film (a director or a writer). */
+/** A person credited on a film (a director, writer or actor), or a production company. */
 export interface Person {
   id: number
   name: string
@@ -53,7 +60,22 @@ export interface FilmDetails {
   keywordIds: readonly number[]
   directors: readonly Person[]
   writers?: readonly Person[]
+  cast?: readonly Person[]
+  companies?: readonly Person[]
   seriesId?: number | null
+}
+
+/** Just the tags of a taste: enough to choose the keywords to search (ADR-0038). */
+export interface TasteTags {
+  liked: TasteInput['liked']
+  wanted: TasteInput['wanted']
+  disliked: TasteInput['disliked']
+}
+
+/** Films found by searching one keyword your likes share (ADR-0038). */
+export interface KeywordSearch {
+  keywordId: number
+  films: readonly ScorerFilm[]
 }
 
 /** Everything the scorer knows about one person's taste. */
@@ -75,7 +97,9 @@ export interface TasteInput {
   disliked: readonly ScorerFilm[]
   /** Every film the person has tagged. None of them is ever recommended. */
   excluded: ReadonlySet<number>
-  /** Keywords, directors, writers and series for some candidates, by film id (the re-rank). */
+  /** The results of searching `keywordsToSearch(input)`, one entry per keyword (ADR-0038). */
+  keywordSearches?: readonly KeywordSearch[]
+  /** Keywords, credits, studios and series for some candidates, by film id (the re-rank). */
   details?: ReadonlyMap<number, FilmDetails>
 }
 
@@ -91,8 +115,10 @@ export const SCORE_PARTS = [
   'director',
   'writer',
   'series',
+  'cast',
+  'studio',
 ] as const
-/** One of the ten score parts. */
+/** One of the twelve score parts. */
 export type ScorePart = (typeof SCORE_PARTS)[number]
 /** How much each part counts toward the final score. */
 export type Weights = Record<ScorePart, number>
@@ -100,7 +126,8 @@ export type Weights = Record<ScorePart, number>
 /**
  * Weights v3 (ADR-0037), tuned by the owner in the weights lab on 2026-10-12. Support and keywords
  * drop and quality, genre, decade and language rise, so one strong signal can't carry a film.
- * They add up to 1.02, so they're normalized to sum to exactly 1.
+ * Cast and studio (ADR-0038) start at writer's level and below; retune them in the lab. They add
+ * up to 1.11, so they're normalized to sum to exactly 1.
  */
 export const DEFAULT_WEIGHTS: Weights = normalizeWeights({
   support: 0.17,
@@ -113,6 +140,8 @@ export const DEFAULT_WEIGHTS: Weights = normalizeWeights({
   director: 0.08,
   writer: 0.05,
   series: 0.07,
+  cast: 0.05,
+  studio: 0.04,
 })
 
 /**
@@ -127,6 +156,29 @@ export const DIVERSITY_PENALTY = 0.03
  * candidate (ADR-0037).
  */
 export const SIMILAR_MIN_VOTES = 50
+
+/** How many of your likes' shared keywords are searched for candidates (ADR-0038). */
+export const KEYWORD_SEARCHES = 3
+
+/**
+ * Keywords too general to say anything about taste, so they're never searched (ADR-0038):
+ * based on novel or book, based on true story, based on comic, sequel, remake, murder, woman
+ * director, and the during- and after-credits stingers.
+ */
+export const GENERIC_KEYWORDS: ReadonlySet<number> = new Set([
+  818, 9672, 9717, 9663, 9714, 9826, 187056, 179431, 179430,
+])
+
+/**
+ * The major studios and distributors: sharing one says little about taste, so the studio part
+ * ignores them (ADR-0038). Studios with a clear identity (New Line, Miramax, Blumhouse, Hammer…)
+ * still count. Disney, Paramount, Columbia, DreamWorks, MGM, 20th Century Fox and Studios,
+ * Universal, Sony, United Artists, Village Roadshow, Warner Bros., Summit, TriStar, StudioCanal,
+ * Legendary, Lions Gate and Lionsgate, Relativity.
+ */
+export const MAJOR_STUDIOS: ReadonlySet<number> = new Set([
+  2, 4, 5, 7, 21, 25, 127928, 33, 34, 60, 79, 174, 491, 559, 694, 923, 35, 1632, 7295,
+])
 
 /** At most this many picks by one director (ADR-0032). */
 export const SPREAD_CAP = 2
@@ -190,9 +242,13 @@ export interface Pick {
   sameWriter?: { writer: string; liked: string }
   /** Set when it's in the same series as a film you liked: the liked film's title. */
   sameSeries?: { liked: string }
+  /** Set when a top-billed actor was also in a film you liked (ADR-0038). */
+  sameCast?: { actor: string; liked: string }
+  /** Set when a studio (not a major) also made a film you liked (ADR-0038). */
+  sameStudio?: { studio: string; liked: string }
   /** True when it filled an explore slot: a genre your likes haven't covered (ADR-0032). */
   explore?: true
-  /** The ten part scores (0–1), shown in the weights lab. */
+  /** The twelve part scores (0–1), shown in the weights lab. */
   parts: Record<ScorePart, number>
 }
 
@@ -220,11 +276,34 @@ function nextInSeries(
   return untagged.slice(0, 1)
 }
 
+/**
+ * The keywords to search for candidates (ADR-0038): the ones in your taste profile that weigh at
+ * least 2 (two likes, say, or three likes and a dislike), strongest first, leaving out
+ * GENERIC_KEYWORDS. Ties go by id, so the same tags always search the same keywords.
+ */
+export function keywordsToSearch(input: TasteTags): number[] {
+  return [...keywordProfile(input, () => true)]
+    .filter(([k, w]) => w >= 2 && !GENERIC_KEYWORDS.has(k))
+    .sort(([a, wa], [b, wb]) => wb - wa || a - b)
+    .slice(0, KEYWORD_SEARCHES)
+    .map(([k]) => k)
+}
+
 // Step 1: gathers every film your likes recommend or list as similar, and the next film in their
 // series, counting how many likes suggest each. A film a liked film suggests in more than one way
 // counts once for it. Films you've already tagged, and a liked film suggesting itself, are skipped.
+// Then each keyword search counts as one more suggestion for its films, "because" of the liked
+// films with that keyword (ADR-0038). Only films whose main genre one of your likes has: a
+// keyword crosses genres ("halloween" finds Scooby-Doo, filed under Family first), and the
+// explore slots would lift those.
 function collectCandidates(input: TasteInput): Map<number, Candidate> {
   const candidates = new Map<number, Candidate>()
+  const suggest = (film: ScorerFilm, because: readonly string[]) => {
+    const c = candidates.get(film.id) ?? { film, support: 0, because: [] }
+    c.support += 1
+    for (const title of because) if (!c.because.includes(title)) c.because.push(title)
+    candidates.set(film.id, c)
+  }
   for (const { film: source, recommendations, similar = [], series = [] } of input.liked) {
     const next = nextInSeries(series, source, input.excluded)
     const alike = similar.filter(
@@ -234,10 +313,19 @@ function collectCandidates(input: TasteInput): Map<number, Candidate> {
     const suggested = new Map([...recommendations, ...alike, ...next].map((f) => [f.id, f]))
     for (const film of suggested.values()) {
       if (input.excluded.has(film.id) || film.id === source.id) continue
-      const c = candidates.get(film.id) ?? { film, support: 0, because: [] }
-      c.support += 1
-      if (!c.because.includes(source.title)) c.because.push(source.title)
-      candidates.set(film.id, c)
+      suggest(film, [source.title])
+    }
+  }
+  const likedGenres = new Set(input.liked.flatMap((l) => l.film.genreIds))
+  for (const { keywordId, films } of input.keywordSearches ?? []) {
+    const because = input.liked
+      .filter((l) => l.film.keywordIds?.includes(keywordId))
+      .map((l) => l.film.title)
+    for (const film of films) {
+      const primary = film.genreIds[0]
+      if (input.excluded.has(film.id) || primary === undefined || !likedGenres.has(primary))
+        continue
+      suggest(film, because)
     }
   }
   return candidates
@@ -264,7 +352,7 @@ function genreProfile(input: TasteInput): Map<number, number> {
  * Keyword weights, unscaled: liked +1, Want to see +0.5, disliked −1, from loaded keywords.
  * `keep` leaves films out, so a sequel isn't matched against its own series (ADR-0037).
  */
-function keywordProfile(input: TasteInput, keep: (f: ScorerFilm) => boolean): Map<number, number> {
+function keywordProfile(input: TasteTags, keep: (f: ScorerFilm) => boolean): Map<number, number> {
   const weights = new Map<number, number>()
   const add = (films: readonly ScorerFilm[], weight: number) => {
     for (const f of films.filter(keep))
@@ -283,6 +371,10 @@ function keywordProfile(input: TasteInput, keep: (f: ScorerFilm) => boolean): Ma
 function shareOf<T>(values: readonly T[], value: T): number {
   return values.filter((v) => v === value).length / values.length
 }
+
+// A film's companies without the majors (MAJOR_STUDIOS), which say little about taste.
+const indie = (companies: readonly Person[] = []) =>
+  companies.filter((c) => !MAJOR_STUDIOS.has(c.id))
 
 // For each person (by id), the title of a liked film they worked on, from the given credits.
 function likedBy(films: readonly ScorerFilm[], people: (f: ScorerFilm) => readonly Person[]) {
@@ -342,6 +434,8 @@ export function recommend(
       keywords: keywordProfile(input, keep),
       directors: likedBy(outside, (f) => f.directors ?? []),
       writers: likedBy(outside, (f) => f.writers ?? []),
+      cast: likedBy(outside, (f) => f.cast ?? []),
+      studios: likedBy(outside, (f) => indie(f.companies)),
     }
   }
   const comparedWith = (c: Candidate) => {
@@ -378,6 +472,8 @@ export function recommend(
     const credits = comparedWith(c)
     const director = firstShared(details?.directors ?? [], credits.directors)
     const writer = firstShared(details?.writers ?? [], credits.writers)
+    const actor = firstShared(details?.cast ?? [], credits.cast)
+    const studio = firstShared(indie(details?.companies), credits.studios)
     const seriesId = likedSeriesOf(c)
     const series = seriesId === null ? undefined : likedBySeries.get(seriesId)
     const parts: Record<ScorePart, number> = {
@@ -399,6 +495,8 @@ export function recommend(
       director: director ? 1 : 0,
       writer: writer ? 1 : 0,
       series: series ? 1 : 0,
+      cast: actor ? 1 : 0,
+      studio: studio ? 1 : 0,
     }
     // The weighted sum of the parts. With weights summing to 1 this is already 0–1.
     const score = clamp01(SCORE_PARTS.reduce((sum, p) => sum + weights[p] * parts[p], 0))
@@ -411,6 +509,8 @@ export function recommend(
       ...(director && { sameDirector: { director: director.name, liked: director.liked } }),
       ...(writer && { sameWriter: { writer: writer.name, liked: writer.liked } }),
       ...(series && { sameSeries: { liked: series } }),
+      ...(actor && { sameCast: { actor: actor.name, liked: actor.liked } }),
+      ...(studio && { sameStudio: { studio: studio.name, liked: studio.liked } }),
     }
   })
 

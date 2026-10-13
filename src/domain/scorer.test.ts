@@ -5,6 +5,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_WEIGHTS,
+  GENERIC_KEYWORDS,
+  KEYWORD_SEARCHES,
+  keywordsToSearch,
+  MAJOR_STUDIOS,
   DIVERSITY_PENALTY,
   EXPLORE_SLOTS,
   normalizeWeights,
@@ -57,6 +61,8 @@ const ZERO = {
   director: 0,
   writer: 0,
   series: 0,
+  cast: 0,
+  studio: 0,
 }
 
 function input(overrides: Partial<TasteInput> = {}): TasteInput {
@@ -69,21 +75,23 @@ describe('recommend (ADR-0026)', () => {
     expect(total).toBeCloseTo(1, 10)
   })
 
-  it('uses the v3 weights the owner tuned in the weights lab (ADR-0037)', () => {
+  it('uses the v3 weights the owner tuned, plus cast and studio (ADR-0037, ADR-0038)', () => {
     const shown = Object.fromEntries(
       SCORE_PARTS.map((p) => [p, Math.round(DEFAULT_WEIGHTS[p] * 100)]),
     )
     expect(shown).toEqual({
-      support: 17,
-      genre: 17,
-      quality: 14,
-      deepCut: 11,
-      decade: 9,
-      language: 6,
-      keywords: 8,
-      director: 8,
+      support: 15,
+      genre: 15,
+      quality: 13,
+      deepCut: 10,
+      decade: 8,
+      language: 5,
+      keywords: 7,
+      director: 7,
       writer: 5,
-      series: 7,
+      series: 6,
+      cast: 5,
+      studio: 4,
     })
     expect(DIVERSITY_PENALTY).toBe(0.03)
   })
@@ -594,5 +602,115 @@ describe('scorer v2 (ADR-0032)', () => {
     expect(picks.some((p) => p.explore)).toBe(false)
     // Still in the feed, just not lifted into an explore slot.
     expect(picks.at(-1)?.film.id).toBe(comedy.id)
+  })
+})
+
+describe('cast, studio and keyword searches (ADR-0038)', () => {
+  const russell = { id: 6856, name: 'Kurt Russell' }
+  const hammer = { id: 1314, name: 'Hammer Films' }
+  const universal = { id: 33, name: 'Universal Pictures' }
+
+  it('scores a shared top-billed actor, but not one a sequel shares with its own series', () => {
+    const S = 3
+    const liked = film({ title: 'Escape from New York', seriesId: S, cast: [russell] })
+    const sequel = film({ seriesId: S, year: 1996 })
+    const thing = film()
+    const other = film()
+    const picks = recommend(
+      input({
+        liked: [{ film: liked, recommendations: [thing, other], series: [liked, sequel] }],
+        excluded: new Set([liked.id]),
+        details: new Map([
+          [thing.id, { keywordIds: [], directors: [], cast: [russell] }],
+          [other.id, { keywordIds: [], directors: [] }],
+          [sequel.id, { keywordIds: [], directors: [], cast: [russell], seriesId: S }],
+        ]),
+      }),
+    )
+    expect(pickOf(picks, thing.id).parts.cast).toBe(1)
+    expect(pickOf(picks, thing.id).sameCast).toEqual({
+      actor: 'Kurt Russell',
+      liked: 'Escape from New York',
+    })
+    expect(pickOf(picks, other.id).parts.cast).toBe(0)
+    expect(pickOf(picks, other.id).sameCast).toBeUndefined()
+    expect(pickOf(picks, sequel.id).parts.cast).toBe(0)
+  })
+
+  it('scores a shared studio, ignoring the majors', () => {
+    expect(MAJOR_STUDIOS.has(universal.id)).toBe(true)
+    const liked = film({ title: 'Dracula', companies: [hammer, universal] })
+    const hammerFilm = film()
+    const universalFilm = film()
+    const picks = recommend(
+      input({
+        liked: [{ film: liked, recommendations: [hammerFilm, universalFilm] }],
+        details: new Map([
+          [hammerFilm.id, { keywordIds: [], directors: [], companies: [hammer] }],
+          [universalFilm.id, { keywordIds: [], directors: [], companies: [universal] }],
+        ]),
+      }),
+    )
+    expect(pickOf(picks, hammerFilm.id).parts.studio).toBe(1)
+    expect(pickOf(picks, hammerFilm.id).sameStudio).toEqual({
+      studio: 'Hammer Films',
+      liked: 'Dracula',
+    })
+    expect(pickOf(picks, universalFilm.id).parts.studio).toBe(0)
+    expect(pickOf(picks, universalFilm.id).sameStudio).toBeUndefined()
+  })
+
+  it('searches the keywords your likes share most, strongest first, skipping general ones', () => {
+    const SLASHER = 12339
+    const CABIN = 3616
+    const MASK = 1701
+    const ONCE = 500
+    const NOVEL = 818
+    expect(GENERIC_KEYWORDS.has(NOVEL)).toBe(true)
+    const like = (keywordIds: number[]) => ({ film: film({ keywordIds }), recommendations: [] })
+    const tags = {
+      liked: [
+        like([SLASHER, CABIN, MASK, ONCE, NOVEL]),
+        like([SLASHER, CABIN, MASK, NOVEL]),
+        like([SLASHER, MASK, NOVEL]),
+      ],
+      wanted: [],
+      // A dislike takes one off: MASK drops from 3 to 2, ties CABIN, and comes first on id.
+      disliked: [film({ keywordIds: [MASK] })],
+    }
+    expect(KEYWORD_SEARCHES).toBe(3)
+    // NOVEL is general and ONCE is in only one like, so neither is searched.
+    expect(keywordsToSearch(tags)).toEqual([SLASHER, MASK, CABIN])
+  })
+
+  it('adds keyword search results in your genres as candidates, because of the likes with that keyword', () => {
+    const SLASHER = 12339
+    const halloween = film({ title: 'Halloween', keywordIds: [SLASHER] })
+    const scream = film({ title: 'Scream', keywordIds: [SLASHER] })
+    const alien = film({ title: 'Alien' })
+    const blackChristmas = film()
+    const tagged = film()
+    // Horror is in its genres, but it's filed under Family first: not one of your likes' genres.
+    const scooby = film({ genreIds: [10751, HORROR] })
+    const noGenres = film({ genreIds: [] })
+    const picks = recommend(
+      input({
+        liked: [
+          { film: halloween, recommendations: [blackChristmas] },
+          { film: scream, recommendations: [] },
+          { film: alien, recommendations: [] },
+        ],
+        keywordSearches: [
+          { keywordId: SLASHER, films: [blackChristmas, tagged, scooby, noGenres] },
+        ],
+        excluded: new Set([tagged.id]),
+      }),
+    )
+    // Recommended by Halloween and found by the search: two suggestions.
+    expect(pickOf(picks, blackChristmas.id)).toMatchObject({
+      because: ['Halloween', 'Scream'],
+      parts: { support: 1 },
+    })
+    expect(picks.map((p) => p.film.id)).toEqual([blackChristmas.id])
   })
 })

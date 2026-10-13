@@ -80,6 +80,16 @@ const PARTS: Record<ScorePart, { label: string; short: string; hint: string }> =
     short: 'Ser.',
     hint: 'Part of a series you liked a film from, e.g. a sequel.',
   },
+  cast: {
+    label: 'Same actor',
+    short: 'Cast',
+    hint: 'Stars a top-billed actor from a film you liked (top 20 candidates only).',
+  },
+  studio: {
+    label: 'Same studio',
+    short: 'Stu.',
+    hint: 'Made by a studio behind a film you liked, not counting the majors (top 20 only).',
+  },
 }
 
 // URL values are untrusted: each must be a whole number in range, or it falls back to the default.

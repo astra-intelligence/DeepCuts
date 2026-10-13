@@ -6,6 +6,7 @@
 // instead of quietly cutting the feed short in production.
 import { describe, expect, it } from 'vitest'
 import rateLimitConfig from '../../workers/rate-limit/wrangler.toml?raw'
+import { KEYWORD_SEARCHES } from '../domain/scorer'
 import { LIMITS, MAX_SERIES, RERANK } from './useRecommendations'
 
 // Home shows four pick cassettes, each needing its details for the credit lines. Counted in
@@ -32,10 +33,11 @@ describe('first Home load vs the rate limit', () => {
   })
 
   it('fits a heavy profile, with headroom', () => {
-    // One details call per tagged film, one per liked series, one per re-rank candidate.
+    // One details call per tagged film, one per liked series, one per keyword search (ADR-0038),
+    // one per re-rank candidate.
     const tagged = LIMITS.liked + LIMITS.watchlist + LIMITS.disliked
-    const worstCase = tagged + MAX_SERIES + RERANK + HOME_CARDS + OTHER_CALLS
-    expect(worstCase).toBe(68)
+    const worstCase = tagged + MAX_SERIES + KEYWORD_SEARCHES + RERANK + HOME_CARDS + OTHER_CALLS
+    expect(worstCase).toBe(71)
     expect(worstCase + HEADROOM).toBeLessThanOrEqual(apiLimit(rateLimitConfig))
   })
 })
