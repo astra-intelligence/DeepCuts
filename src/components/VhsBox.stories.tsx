@@ -32,7 +32,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** A grid tile's box, at rest: turned 6° so a sliver of the spine shows. */
+/** A grid tile's box, at rest: straight on until hovered. */
 export const Default: Story = {}
 /** No poster: an empty placeholder on the front, with the spine and sticker as usual. */
 export const NoPoster: Story = { args: { movie: { ...film, poster_path: null } } }
