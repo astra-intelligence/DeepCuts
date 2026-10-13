@@ -80,18 +80,19 @@ describe('recommend (ADR-0026)', () => {
       SCORE_PARTS.map((p) => [p, Math.round(DEFAULT_WEIGHTS[p] * 100)]),
     )
     expect(shown).toEqual({
-      support: 15,
-      genre: 15,
-      quality: 13,
-      deepCut: 10,
-      decade: 8,
-      language: 5,
-      keywords: 7,
-      director: 7,
+      support: 17,
+      genre: 17,
+      quality: 14,
+      deepCut: 11,
+      decade: 9,
+      language: 6,
+      keywords: 8,
+      director: 8,
       writer: 5,
-      series: 6,
-      cast: 5,
-      studio: 4,
+      series: 7,
+      // Off until tuned, so the owner's mix applies exactly (ADR-0038 amendment).
+      cast: 0,
+      studio: 0,
     })
     expect(DIVERSITY_PENALTY).toBe(0.03)
   })

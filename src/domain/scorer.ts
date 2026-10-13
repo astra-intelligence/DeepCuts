@@ -126,8 +126,8 @@ export type Weights = Record<ScorePart, number>
 /**
  * Weights v3 (ADR-0037), tuned by the owner in the weights lab on 2026-10-12. Support and keywords
  * drop and quality, genre, decade and language rise, so one strong signal can't carry a film.
- * Cast and studio (ADR-0038) start at writer's level and below; retune them in the lab. They add
- * up to 1.11, so they're normalized to sum to exactly 1.
+ * Cast and studio (ADR-0038) start at 0, so the owner's tuned mix applies exactly; raise them in
+ * the lab. They add up to 1.02, so they're normalized to sum to exactly 1.
  */
 export const DEFAULT_WEIGHTS: Weights = normalizeWeights({
   support: 0.17,
@@ -140,8 +140,8 @@ export const DEFAULT_WEIGHTS: Weights = normalizeWeights({
   director: 0.08,
   writer: 0.05,
   series: 0.07,
-  cast: 0.05,
-  studio: 0.04,
+  cast: 0,
+  studio: 0,
 })
 
 /**

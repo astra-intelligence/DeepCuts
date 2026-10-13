@@ -31,21 +31,21 @@ describe('weights lab (ADR-0026)', () => {
   it('shows a labelled, described slider per part and the ranked picks', async () => {
     await likeThenOpen('/lab/weights')
     const support = await screen.findByRole('slider', { name: 'Recommended by your likes' })
-    expect(support).toHaveValue('15')
+    expect(support).toHaveValue('17')
     expect(support).toHaveAccessibleDescription(
       'How many of your liked films recommend it, or share its series.',
     )
     // Twelve score parts (ADR-0032, ADR-0038) plus genre variety.
     expect(screen.getAllByRole('slider')).toHaveLength(13)
     expect(screen.getByRole('slider', { name: 'Same writer' })).toHaveValue('5')
-    expect(screen.getByRole('slider', { name: 'Same series' })).toHaveValue('6')
+    expect(screen.getByRole('slider', { name: 'Same series' })).toHaveValue('7')
 
     const table = await screen.findByRole('table')
     const rows = within(table).getAllByRole('row').slice(1)
     expect(rows.length).toBeGreaterThan(0)
     // At the defaults nothing has moved.
     for (const row of rows) expect(row).toHaveTextContent(/^1?\d.*–\d+%/)
-    expect(screen.getByText(/support: 0\.15/)).toBeInTheDocument()
+    expect(screen.getByText(/support: 0\.17/)).toBeInTheDocument()
   })
 
   it('keeps settings in the URL, scales them to 100%, and ignores bad values', async () => {
@@ -65,12 +65,12 @@ describe('weights lab (ADR-0026)', () => {
     const deepCut = await screen.findByRole('slider', { name: 'Deep cut' })
     await act(() => deepCut.focus())
     await user.keyboard('{ArrowRight}')
-    expect(router.state.location.search).toContain('deepCut=11')
-    expect(deepCut).toHaveValue('11')
+    expect(router.state.location.search).toContain('deepCut=12')
+    expect(deepCut).toHaveValue('12')
 
     await user.click(screen.getByRole('link', { name: 'Reset to defaults' }))
     expect(router.state.location.search).toBe('')
-    expect(screen.getByRole('slider', { name: 'Deep cut' })).toHaveValue('10')
+    expect(screen.getByRole('slider', { name: 'Deep cut' })).toHaveValue('11')
   })
 
   it('warns when every weight is zero', async () => {
