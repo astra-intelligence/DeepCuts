@@ -25,7 +25,10 @@ describe('home', () => {
   it('stacks Top Ten, the watchlist and Discovery as three shelves, features 1 to 3', async () => {
     renderRoute('/')
     await screen.findByRole('heading', { level: 2, name: 'Top Ten' })
-    const shelves = screen.getAllByRole('region')
+    // Only the shelves: the toast area is a region too, once Sonner has loaded.
+    const shelves = screen
+      .getAllByRole('region')
+      .filter((r) => r.getAttribute('aria-labelledby')?.startsWith('shelf-'))
     expect(shelves.map((r) => r.getAttribute('aria-labelledby'))).toEqual([
       'shelf-top-ten',
       'shelf-watchlist',
