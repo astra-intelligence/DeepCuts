@@ -12,7 +12,7 @@ const meta = {
     (Story, { args }) => (
       <div
         style={genreTone(args.genreIds)}
-        className="relative aspect-2/3 w-40 rounded-poster border border-b-3 border-poster-border border-b-(--tone) bg-poster-placeholder"
+        className="relative aspect-2/3 w-40 border border-b-3 border-poster-border border-b-(--tone) bg-poster-placeholder"
       >
         <Story />
       </div>

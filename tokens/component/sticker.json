@@ -14,7 +14,7 @@
   "shadow": {
     "$type": "shadow",
     "sticker": {
-      "$value": "{elevation.raised}"
+      "$value": "{elevation.stamp}"
     }
   }
 }

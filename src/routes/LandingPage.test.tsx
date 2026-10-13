@@ -25,7 +25,7 @@ describe('landing page (signed out)', () => {
     )
   })
 
-  it('shows only the logo and Sign in: no search, no tab bar, no films', async () => {
+  it('shows only the logo and Sign in: no search, no films', async () => {
     renderRoute('/', { initialSession: SIGNED_OUT })
     await screen.findByRole('heading', { level: 1, name: 'Your movies, close at hand' })
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
@@ -42,8 +42,8 @@ describe('landing page (signed out)', () => {
     await user.click(within(screen.getByRole('banner')).getByRole('link', { name: 'Sign in' }))
     await user.click(await screen.findByRole('button', { name: /Continue with a demo account/ }))
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
-    // Home's real panels, with the tab bar back.
-    expect(await screen.findByRole('navigation', { name: 'Main' })).toBeInTheDocument()
+    // Home's real panels, with the account menu in the header.
+    expect(await screen.findByRole('button', { name: 'Account menu for Mike' })).toBeInTheDocument()
     expect(await findToast('Signed in as Mike.')).toBeInTheDocument()
     expect(
       within(screen.getByRole('region', { name: 'Movies I want to watch' })).getByRole('link', {

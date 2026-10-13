@@ -1,4 +1,5 @@
-// Tests for the logo: one accessible image named "Deep Cuts", and a unique gradient id per copy.
+// Tests for the logo: one accessible image named "Deep Cuts", or nothing for assistive tech when
+// it's decorative (a link around it carries the name).
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { Logo } from './Logo'
@@ -9,14 +10,9 @@ describe('Logo', () => {
     expect(screen.getByRole('img', { name: 'Deep Cuts' })).toBeInTheDocument()
   })
 
-  it('gives each instance a unique gradient id', () => {
-    const { container } = render(
-      <>
-        <Logo />
-        <Logo />
-      </>,
-    )
-    const ids = [...container.querySelectorAll('linearGradient')].map((g) => g.id)
-    expect(new Set(ids).size).toBe(2)
+  it('is hidden from assistive tech when decorative', () => {
+    const { container } = render(<Logo decorative />)
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
   })
 })

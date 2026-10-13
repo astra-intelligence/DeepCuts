@@ -1,12 +1,14 @@
 {
-  "$description": "Tier 3: a card resting on the page (lists, account panels, empty states).",
+  "$description": "Tier 3: a panel resting on the page (lists, account panels, empty states). Square, flat, outlined (ADR-0040).",
   "color": {
     "$type": "color",
     "card": {
-      "bg": { "$value": "{color.surface.raised}" },
-      "border": { "$value": "{color.border.default}" }
+      "bg": {
+        "$value": "{color.surface.raised}"
+      },
+      "border": {
+        "$value": "{color.border.default}"
+      }
     }
-  },
-  "radius": { "$type": "dimension", "card": { "$value": "{radius.container}" } },
-  "shadow": { "$type": "shadow", "card": { "$value": "{elevation.raised}" } }
+  }
 }

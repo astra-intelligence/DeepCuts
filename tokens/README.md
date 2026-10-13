@@ -6,9 +6,9 @@ DTCG 2025.10 JSON, built by Style Dictionary (`npm run tokens`) into every outpu
 | ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
 | 1 Primitive | `primitive/`   | Raw values: color anchors (`color.json`), generated ramps (`hues.json`, `npm run tokens:ramps`), spacing, radius, sizes, blur (`dimension.json`), type (`typography.json`), `shadow.json`, `motion.json`. Non-color values are **Tailwind's defaults** | Other tokens. In code only the spacing and type scales (`p-4`, `text-sm`) |
 | 1 Brand     | `brand/`       | The logo's exact colors                                                                                                                                                                                                                                | Only `Logo.tsx` and the app icon                                          |
-| 2 Semantic  | `semantic/`    | Mode-independent roles: font families, radius and elevation roles, motion                                                                                                                                                                              | Components and component tokens                                           |
+| 2 Semantic  | `semantic/`    | Mode-independent roles: font families, elevation roles, motion (corners are square)                                                                                                                                                                    | Components and component tokens                                           |
 | 2 Theme     | `themes/dark/` | Mode-dependent color roles. A light theme is `themes/light/` with the same names                                                                                                                                                                       | Components and component tokens                                           |
-| 3 Component | `component/`   | Card, button, field, popover, tag toggle, nav, slider, poster, sticker, VHS box                                                                                                                                                                        | That component                                                            |
+| 3 Component | `component/`   | Card, button, field, popover, tag toggle, slider, poster, sticker, VHS box                                                                                                                                                                             | That component                                                            |
 
 ## Names in code
 
@@ -19,7 +19,7 @@ DTCG 2025.10 JSON, built by Style Dictionary (`npm run tokens`) into every outpu
 | `color.surface.default`   | `bg-surface`           |
 | `color.fg.muted`          | `text-fg-muted`        |
 | `color.button.primary.bg` | `bg-button-primary-bg` |
-| `radius.card`             | `rounded-card`         |
+| `elevation.box`           | `shadow-box`           |
 | `elevation.raised`        | `shadow-raised`        |
 | `font.family.display`     | `font-display`         |
 

@@ -1,37 +1,26 @@
 {
-  "$description": "Tier 2: corner and elevation roles (ADR-0027).",
-  "radius": {
-    "$type": "dimension",
-    "subtle": {
-      "$value": "{radius.sm}",
-      "$description": "Thumbnails and inline badges"
-    },
-    "control": {
-      "$value": "{radius.md}",
-      "$description": "Buttons, toggles, posters, small icon tiles"
-    },
-    "container": {
-      "$value": "{radius.lg}",
-      "$description": "Cards, fields, notices, icon tiles"
-    },
-    "prominent": {
-      "$value": "{radius.xl}",
-      "$description": "Popovers, avatars, items inside the tab bar"
-    },
-    "dock": {
-      "$value": "{radius.2xl}",
-      "$description": "The floating tab bar"
-    }
-  },
+  "$description": "Tier 2: elevation roles (ADR-0027). Corners are square everywhere (ADR-0040), so there are no radius roles; round things use rounded-full.",
   "elevation": {
     "$type": "shadow",
-    "raised": {
-      "$value": "{shadow.sm}",
-      "$description": "Cards resting on the page"
+    "stamp": {
+      "$value": "{shadow.hard-3}",
+      "$description": "Stamps and stickers"
     },
-    "floating": {
-      "$value": "{shadow.2xl}",
-      "$description": "Popovers and the floating tab bar"
+    "cta": {
+      "$value": "{shadow.hard-5}",
+      "$description": "Call-to-action buttons"
+    },
+    "box": {
+      "$value": "{shadow.hard-7}",
+      "$description": "VHS boxes and popovers"
+    },
+    "box-hover": {
+      "$value": "{shadow.hard-9}",
+      "$description": "A VHS box lifted on hover"
+    },
+    "poster": {
+      "$value": "{shadow.hard-12}",
+      "$description": "The largest poster on a page"
     }
   }
 }

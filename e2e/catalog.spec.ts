@@ -37,7 +37,7 @@ test.describe('signed out (ADR-0034)', () => {
       'Movies I want to watch',
       'Discovery',
     ])
-    // No search, no tab bar: they only lead to signed-in pages.
+    // No search: it only leads to signed-in pages.
     await expect(page.getByRole('combobox')).toHaveCount(0)
     await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(0)
     // No call to action on the page itself (owner, 2026-10-11); the header's Sign in remains.
@@ -114,53 +114,33 @@ test('header search → detail → back, keyboard only', async ({ page }) => {
   ).toBeVisible()
 })
 
-// From `md` (768px) the header's account menu replaces the tab bar (owner, 2026-10-12).
-const isWide = (page: Page) => (page.viewportSize()?.width ?? 0) >= 768
-
-/** Goes to My Lists the way a person would at this width: the tab bar, or the account menu. */
+/** Goes to My Lists the way a person would: through the account menu (there's no tab bar). */
 async function openMyLists(page: Page) {
-  if (isWide(page)) {
-    await page
-      .getByRole('banner')
-      .getByRole('button', { name: /account menu/ })
-      .click()
-    await page.getByRole('menuitem', { name: 'My Lists' }).click()
-  } else {
-    await page
-      .getByRole('navigation', { name: 'Main' })
-      .getByRole('link', { name: 'My Lists' })
-      .click()
-  }
+  await page
+    .getByRole('banner')
+    .getByRole('button', { name: /^Account menu for / })
+    .click()
+  await page.getByRole('menuitem', { name: 'My Lists' }).click()
 }
 
-test('main navigation is reachable and marks the current page', async ({ page }) => {
+test('the account menu is the way to My Lists at every width (ADR-0040)', async ({ page }) => {
   await page.goto('/')
-  const nav = page.getByRole('navigation', { name: 'Main' })
-  if (isWide(page)) {
-    // No tab bar; the account menu opens by keyboard and passes axe while open.
-    await expect(nav).toBeHidden()
-    const chip = page.getByRole('banner').getByRole('button', { name: 'Mike, account menu' })
-    expect((await chip.boundingBox())?.height).toBeGreaterThanOrEqual(44)
-    await chip.focus()
-    await page.keyboard.press('Enter')
-    const menu = page.getByRole('menu', { name: 'Mike, account menu' })
-    await expect(menu.getByRole('menuitem')).toHaveText(['My Lists', 'Sign out'])
-    await expect(menu.getByText('Signed in with the demo account')).toBeVisible()
-    await expectNoA11yViolations(page)
-    // Escape closes it and puts focus back on the chip.
-    await page.keyboard.press('Escape')
-    await expect(menu).toHaveCount(0)
-    await expect(chip).toBeFocused()
-    await openMyLists(page)
-    await expect(page).toHaveURL(/\/lists$/)
-    return
-  }
-  // Two tabs while the Search page is hidden.
-  await expect(nav.getByRole('link')).toHaveText(['Home', 'My Lists'])
-  await nav.getByRole('link', { name: 'My Lists' }).click()
-  await expect(nav.getByRole('link', { name: 'My Lists' })).toHaveAttribute('aria-current', 'page')
-  const box = await nav.getByRole('link', { name: 'My Lists' }).boundingBox()
-  expect(box?.height).toBeGreaterThanOrEqual(44)
+  // No tab bar; the account menu opens by keyboard and passes axe while open.
+  await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(0)
+  const chip = page.getByRole('banner').getByRole('button', { name: 'Account menu for Mike' })
+  expect((await chip.boundingBox())?.height).toBeGreaterThanOrEqual(44)
+  await chip.focus()
+  await page.keyboard.press('Enter')
+  const menu = page.getByRole('menu', { name: 'Account menu for Mike' })
+  await expect(menu.getByRole('menuitem')).toHaveText(['My Lists', 'Sign out'])
+  await expect(menu.getByText('Signed in with the demo account')).toBeVisible()
+  await expectNoA11yViolations(page)
+  // Escape closes it and puts focus back on the chip.
+  await page.keyboard.press('Escape')
+  await expect(menu).toHaveCount(0)
+  await expect(chip).toBeFocused()
+  await openMyLists(page)
+  await expect(page).toHaveURL(/\/lists$/)
 })
 
 test('detail tags toggle and save by keyboard, all at 44px or more', async ({ page }) => {
@@ -243,10 +223,7 @@ test.describe('signing in and registering', () => {
 
     await expect(page).toHaveURL(/\/$/)
     await expect(toasts(page).getByText('Signed in as Mike.')).toBeVisible()
-    // A link to Account on phones; the account menu's button from `md`.
-    const chip = page
-      .getByRole('banner')
-      .getByRole(isWide(page) ? 'button' : 'link', { name: /^Mike, / })
+    const chip = page.getByRole('banner').getByRole('button', { name: 'Account menu for Mike' })
     await expect(chip).toBeVisible()
     expect((await chip.boundingBox())?.height).toBeGreaterThanOrEqual(44)
 
@@ -258,16 +235,9 @@ test.describe('signing in and registering', () => {
     await page.goto('/lists')
     await expect(page.getByRole('link', { name: /The Thing/ })).toBeVisible()
 
+    // One press in the menu.
     await chip.click()
-    if (isWide(page)) {
-      // One press in the menu.
-      await page.getByRole('menuitem', { name: 'Sign out' }).click()
-    } else {
-      await expect(page.getByRole('heading', { level: 1, name: 'Mike Curts' })).toBeVisible()
-      await expectNoA11yViolations(page)
-      await page.getByRole('button', { name: 'Sign out' }).click()
-      await page.getByRole('button', { name: 'Yes, sign out' }).click()
-    }
+    await page.getByRole('menuitem', { name: 'Sign out' }).click()
     // Signing out lands on the landing page, and stays signed out after a reload.
     await expect(page).toHaveURL(/\/$/)
     await expect(toasts(page).getByText('Signed out.')).toBeVisible()
@@ -303,10 +273,7 @@ test.describe('signing in and registering', () => {
     await expect(page).toHaveURL(/\/$/)
     await expect(toasts(page).getByText('Account created. Signed in as Ada.')).toBeVisible()
     await page.reload()
-    const chip = page
-      .getByRole('banner')
-      .getByRole(isWide(page) ? 'button' : 'link', { name: /^Ada, / })
-    await chip.click()
+    await page.getByRole('banner').getByRole('button', { name: 'Account menu for Ada' }).click()
     await expect(page.getByText('Practice account, made on this device')).toBeVisible()
   })
 })

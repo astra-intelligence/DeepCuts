@@ -1,7 +1,7 @@
 // The Detail page (/movie/:id): one film's details, your tags for it, and where to watch it.
 //
 // Information only (ADR-0018): no ratings or reviews of our own. It has its own full-bleed
-// layout without the tab bar, with the film's backdrop behind the page.
+// layout, with the film's backdrop behind the page.
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Button } from 'react-aria-components'
@@ -107,7 +107,7 @@ function useDetailDismiss() {
   }
 }
 
-// Detail opens above the app shell (design v2): no tab bar; back, logo and search float on top.
+// Detail opens above the app shell (design v2): back, logo and search float on top.
 function DetailLayout({
   children,
   closing,
@@ -177,7 +177,7 @@ function DetailLayout({
         aria-label="Deep Cuts, go to Home"
         className="absolute top-[max(1.5rem,env(safe-area-inset-top))] right-5 z-10 inline-flex min-h-11 items-center md:fixed md:right-8"
       >
-        <Logo decorative className="h-7 w-auto" />
+        <Logo decorative className="h-9 w-auto" />
       </Button>
       <div className="absolute top-[max(5rem,calc(env(safe-area-inset-top)+4rem))] right-5 left-5 z-10 md:fixed md:top-[max(1.125rem,env(safe-area-inset-top))] md:right-auto md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2">
         <MovieSearch />
@@ -239,7 +239,7 @@ function MovieDetail({ id, onDismiss }: { id: number; onDismiss: () => void }) {
           <span>{meta.join(' · ')}</span>
           {rating && (
             <span
-              className="rounded-subtle border border-border-control px-1.5 py-0.5"
+              className="border border-border-control px-1.5 py-0.5"
               aria-label={`Rated ${rating}`}
             >
               {rating}
@@ -267,13 +267,7 @@ function MovieDetail({ id, onDismiss }: { id: number; onDismiss: () => void }) {
                 return (
                   <li key={p.provider_id} title={p.provider_name}>
                     {logo ? (
-                      <img
-                        src={logo}
-                        alt={p.provider_name}
-                        width={32}
-                        height={32}
-                        className="rounded-control"
-                      />
+                      <img src={logo} alt={p.provider_name} width={32} height={32} className="" />
                     ) : (
                       <span className="text-sm">{p.provider_name}</span>
                     )}
@@ -304,7 +298,7 @@ function NotFound() {
       <h1 className="font-display text-4xl">Film not found</h1>
       <p className="mt-2 text-fg-muted">
         We couldn’t find that film.{' '}
-        <Link to={HOME.path} className="text-info underline">
+        <Link to={HOME.path} className="text-accent underline">
           Go to {HOME.label}
         </Link>
       </p>

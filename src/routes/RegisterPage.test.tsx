@@ -59,7 +59,7 @@ describe('registration (ADR-0031)', () => {
     // The toast can show before the lazy /lists page has loaded, so wait for the header.
     await screen.findByRole('heading', { level: 1, name: 'My Lists' })
     expect(
-      within(screen.getByRole('banner')).getByRole('link', { name: 'Ada, open your account' }),
+      within(screen.getByRole('banner')).getByRole('button', { name: 'Account menu for Ada' }),
     ).toBeInTheDocument()
   })
 

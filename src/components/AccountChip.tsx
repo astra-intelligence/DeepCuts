@@ -1,7 +1,7 @@
 // The account control at the right of the header (ADR-0025). Signed out it's "Sign in". Signed in
-// it's the avatar + first name: on phones a link to the Account page, and from `md` a button that
-// opens the account menu (who you are, My Lists, settings, sign out), which replaces the floating
-// Home / My Lists tab bar there (owner decision 2026-10-12).
+// it's the avatar + first name, a button that opens the account menu (who you are, My Lists,
+// settings, sign out). The menu is the way to My Lists at every width: there is no tab bar
+// (owner decisions 2026-10-12 and 2026-10-13, ADR-0040).
 import { useQuery } from '@tanstack/react-query'
 import {
   Button,
@@ -20,9 +20,10 @@ import { useSession } from '../session/SessionContext'
 import { useTagQueries } from '../session/tagQueries'
 import { Icon } from './Icon'
 
-// Shared look for both states, so the header doesn't shift when someone signs in.
+// Shared size for both states, so the header doesn't shift when someone signs in: 44px tall, in
+// the display face.
 const chip =
-  'flex min-h-11 items-center gap-2 rounded-container border border-border-control bg-surface-raised py-1 pr-3 pl-1 text-sm font-bold whitespace-nowrap text-fg'
+  'flex min-h-11 items-center gap-2 font-display text-base tracking-wider whitespace-nowrap uppercase'
 
 /** Header account control (ADR-0025): "Sign in" until signed in, then initial + first name. */
 export function AccountChip() {
@@ -30,37 +31,20 @@ export function AccountChip() {
   const { pathname, search } = useLocation()
 
   if (session.kind === 'account') {
-    const { account } = session
-    const first = firstName(account.name)
     return (
-      <>
-        {/* Phones: a link to the Account page, unchanged; phones keep their tab bar too. */}
-        <Link
-          to="/account"
-          aria-label={`${first}, open your account`}
-          className={`${chip} md:hidden`}
-        >
-          <Avatar name={account.name} />
-          {first}
-        </Link>
-        {/* From `md`: the same chip opens the account menu instead. */}
-        <AccountMenu account={account} className={`${chip} hidden md:flex`} />
-      </>
+      <AccountMenu
+        account={session.account}
+        className={`${chip} border-2 border-border py-1 pr-3 pl-1 text-fg hover:border-border-control`}
+      />
     )
   }
   return (
     // Remember where sign-in started, so it can return there.
-    // Phones keep the quiet chip. From `md` the header has room to spare, so signing in becomes
-    // the one filled call to action next to the search, with the icon inline instead of in a tile.
-    // Same 44px height either way, so signing in doesn't shift the header.
     <Link
       to="/sign-in"
       state={{ from: pathname + search }}
-      className={`${chip} md:gap-1.5 md:border-transparent md:bg-button-primary-bg md:pr-4 md:pl-3.5 md:text-button-primary-fg md:hover:bg-button-primary-bg/85`}
+      className={`${chip} bg-button-primary-bg px-4 text-button-primary-fg hover:bg-button-primary-bg-hover`}
     >
-      <span className="grid size-9 place-items-center rounded-control bg-surface-overlay text-fg-muted md:size-auto md:bg-transparent md:text-inherit">
-        <Icon name="user" />
-      </span>
       Sign in
     </Link>
   )
@@ -68,17 +52,17 @@ export function AccountChip() {
 
 // One row in the menu: 44px tall for touch, highlighted while focused or hovered.
 const item =
-  'flex min-h-11 cursor-pointer items-center gap-2.5 rounded-control px-3 text-sm font-semibold text-fg outline-none data-focused:bg-surface-overlay'
+  'flex min-h-11 cursor-pointer items-center gap-2.5 px-3 text-sm font-bold text-fg outline-none data-focused:bg-surface-overlay'
 
 /**
- * The account menu (from `md`): a chip-shaped button and its dropdown. React Aria's Menu gives
+ * The account menu: a chip-shaped button and its dropdown. React Aria's Menu gives
  * it the menu-button keyboard pattern (arrows move, Escape closes and returns focus to the chip).
  */
 function AccountMenu({ account, className }: { account: Account; className: string }) {
   const first = firstName(account.name)
   return (
     <MenuTrigger>
-      <Button aria-label={`${first}, account menu`} className={className}>
+      <Button aria-label={`Account menu for ${first}`} className={className}>
         <Avatar name={account.name} />
         {first}
         <Icon name="back" className="size-4 -rotate-90 text-fg-muted" />
@@ -86,7 +70,7 @@ function AccountMenu({ account, className }: { account: Account; className: stri
       <Popover
         placement="bottom end"
         offset={6}
-        className="w-72 rounded-popover border border-popover-border bg-popover-bg p-1 shadow-popover shadow-surface/90"
+        className="w-72 border-2 border-popover-border bg-popover-bg p-1 shadow-popover"
       >
         <AccountMenuItems account={account} />
       </Popover>
@@ -116,7 +100,7 @@ function AccountMenuItems({ account }: { account: Account }) {
       {/* Who's signed in: a section heading, so screen readers announce it with the items. */}
       <MenuSection>
         <Header className="grid gap-0.5 px-3 pt-2.5 pb-3">
-          <span className="font-display text-xl leading-tight">{account.name}</span>
+          <span className="font-display text-xl tracking-wider uppercase">{account.name}</span>
           <span className="text-sm text-fg-muted">{SIGNED_IN_WITH[account.method]}</span>
           <span className="text-sm text-fg-muted">
             {films} {films === 1 ? 'film' : 'films'} tagged
@@ -134,7 +118,7 @@ function AccountMenuItems({ account }: { account: Account }) {
           </MenuItem>
         )}
       </MenuSection>
-      <Separator className="my-1 border-t border-border" />
+      <Separator className="my-1 border-t-2 border-dashed border-border" />
       <MenuItem id="sign-out" className={item}>
         <Icon name="arrow" className="size-5 text-fg-muted" />
         Sign out
@@ -143,13 +127,13 @@ function AccountMenuItems({ account }: { account: Account }) {
   )
 }
 
-/** A circle with the first letter of the name; decorative, the name is always nearby. */
+/** A mustard square with the first letter of the name; decorative, the name is always nearby. */
 export function Avatar({ name, large = false }: { name: string; large?: boolean }) {
   return (
     <span
       aria-hidden="true"
-      className={`grid shrink-0 place-items-center rounded-full border border-accent bg-surface-selected font-bold text-fg-on-selected ${
-        large ? 'size-14 text-2xl' : 'size-9 text-base'
+      className={`grid shrink-0 place-items-center bg-accent font-display text-fg-on-accent ${
+        large ? 'size-14 text-3xl' : 'size-9 text-xl'
       }`}
     >
       {name.trim().charAt(0).toUpperCase()}

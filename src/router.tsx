@@ -45,7 +45,7 @@ const LAB_ROUTES: RouteObject[] = import.meta.env.DEV
 export function createRoutes(features: Features = FEATURES): RouteObject[] {
   const homePath = homeOf().path
   return [
-    // Pages inside the main shell: header, search band and tab bar (AppLayout).
+    // Pages inside the main shell: header with search and the account menu (AppLayout).
     {
       path: '/',
       element: <AppLayout />,
@@ -83,7 +83,7 @@ export function createRoutes(features: Features = FEATURES): RouteObject[] {
     { path: '/sign-in', lazy: signIn, errorElement: <RouteError /> },
     // Registration shares that layout (AuthLayout, ADR-0031).
     { path: '/register', lazy: register, errorElement: <RouteError /> },
-    // Detail has its own full-bleed layout without the tab bar (design v2). Signed in only.
+    // Detail has its own full-bleed layout (design v2). Signed in only.
     {
       element: <RequireAccount />,
       errorElement: <RouteError />,

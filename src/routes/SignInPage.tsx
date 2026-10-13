@@ -56,9 +56,9 @@ export function SignInPage() {
             <Button
               onPress={() => start(m.id)}
               isPending={pending !== null}
-              className="flex min-h-13 w-full items-center gap-3 rounded-button border border-button-secondary-border bg-button-secondary-bg px-3.5 text-left text-sm font-semibold hover:border-accent data-pending:opacity-70"
+              className="flex min-h-13 w-full items-center gap-3 border border-button-secondary-border bg-button-secondary-bg px-3.5 text-left text-sm font-semibold hover:border-accent data-pending:opacity-70"
             >
-              <span className="grid size-8 shrink-0 place-items-center rounded-control bg-surface-selected text-accent">
+              <span className="grid size-8 shrink-0 place-items-center bg-surface-overlay text-accent">
                 <Icon name="user" className="size-4.5" />
               </span>
               <span>
@@ -75,7 +75,7 @@ export function SignInPage() {
 
       <p className="text-sm text-fg-muted">
         New here? {/* Passes `from` along, so registering also returns where sign-in started. */}
-        <Link to="/register" state={{ from }} className="text-info underline">
+        <Link to="/register" state={{ from }} className="text-accent underline">
           Create an account
         </Link>
       </p>

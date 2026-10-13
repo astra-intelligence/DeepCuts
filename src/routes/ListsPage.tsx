@@ -63,7 +63,7 @@ export function ListsPage() {
               to={`?tag=${t.tag}`}
               aria-current={active ? 'true' : undefined}
               style={tagColor(t.tag) as CSSProperties}
-              className={`flex min-h-27 flex-col items-start rounded-card border p-3 shadow-card md:min-h-34 ${
+              className={`flex min-h-27 flex-col items-start border p-3 md:min-h-34 ${
                 active
                   ? 'border-(--tag) bg-(--tag)/10'
                   : 'border-card-border bg-card-bg hover:border-border-control'
@@ -118,10 +118,7 @@ function ListRow({ id }: { id: number }) {
   const { data: m } = useQuery(movieQueries.detail(id))
   if (!m) {
     return (
-      <li
-        aria-hidden="true"
-        className="h-32 animate-pulse rounded-card border border-card-border bg-card-bg"
-      />
+      <li aria-hidden="true" className="h-32 animate-pulse border border-card-border bg-card-bg" />
     )
   }
   const meta = [
@@ -133,7 +130,7 @@ function ListRow({ id }: { id: number }) {
   return (
     <li
       style={genreTone(m.genres.map((g) => g.id))}
-      className="rounded-card border border-card-border bg-card-bg p-3 shadow-card md:p-4"
+      className="border border-card-border bg-card-bg p-3 md:p-4"
     >
       <MovieLink movie={m} meta={meta} />
     </li>
@@ -147,7 +144,7 @@ function ListCassette({ id }: { id: number }) {
   if (!m) {
     return (
       <li aria-hidden="true" className="flex">
-        <div className="aspect-[0.547] w-full animate-pulse rounded-subtle border border-card-border bg-card-bg" />
+        <div className="aspect-[0.547] w-full animate-pulse border border-card-border bg-card-bg" />
       </li>
     )
   }

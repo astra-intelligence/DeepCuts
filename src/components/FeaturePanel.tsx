@@ -27,11 +27,11 @@ export function FeaturePanel({
       aria-labelledby={headingId}
       // `--panel` colors the icon tile and anything inside that uses `(--panel)`.
       style={{ '--panel': panel.tone } as CSSProperties}
-      className="flex h-full min-w-0 flex-col rounded-card border border-card-border bg-card-bg p-4 shadow-card md:p-5"
+      className="flex h-full min-w-0 flex-col border border-card-border bg-card-bg p-4 md:p-5"
     >
       <div className="mb-3 flex items-center gap-3">
         {/* The tile's tint is the panel color at low opacity, so it reads in both themes. */}
-        <span className="grid size-10 shrink-0 place-items-center rounded-container bg-(--panel)/15 text-(--panel)">
+        <span className="grid size-10 shrink-0 place-items-center bg-(--panel)/15 text-(--panel)">
           <Icon name={panel.icon} />
         </span>
         <h2 id={headingId} className="min-w-0 flex-1 font-display text-2xl leading-tight">
@@ -40,7 +40,7 @@ export function FeaturePanel({
         {action && (
           <Link
             to={action.to}
-            className="inline-flex min-h-11 shrink-0 items-center text-sm font-semibold text-info underline"
+            className="inline-flex min-h-11 shrink-0 items-center text-sm font-semibold text-accent underline"
           >
             {action.label}
           </Link>

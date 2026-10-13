@@ -1,25 +1,19 @@
 {
-  "$description": "Exact colors of the owner's logo artwork (docs/design/brand/). Used ONLY by the logo and app icon (ADR-0023).",
+  "$description": "Exact colors of the Triple Feature wordmark and favicon (docs/design/triple-feature/). Used ONLY by the logo and app icon (ADR-0023, ADR-0040).",
   "brand": {
     "$type": "color",
     "logo": {
-      "gradient": {
-        "start": {
-          "$value": "#71cfd2",
-          "$description": "Top of the DEEP / frame gradient"
-        },
-        "end": {
-          "$value": "#319fa9",
-          "$description": "Bottom of the DEEP / frame gradient"
-        }
+      "red": {
+        "$value": "#c8261b",
+        "$description": "The DEEP block and the favicon's left half"
       },
-      "cuts": {
-        "$value": "#efb135",
-        "$description": "Gold of the CUTS lettering"
+      "bone": {
+        "$value": "#efe4cf",
+        "$description": "DEEP lettering and the CUTS block"
       },
       "ink": {
-        "$value": "#12121a",
-        "$description": "App-icon plate and knockouts"
+        "$value": "#120d0a",
+        "$description": "CUTS lettering"
       }
     }
   }

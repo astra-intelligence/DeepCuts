@@ -4,11 +4,10 @@
 @import 'tailwindcss';
 /* Fonts are bundled with the app, not loaded from Google: the CSP allows no third-party font
    hosts (ADR-0008). Only the weights in use are imported. */
-@import '@fontsource/manrope/400.css';
-@import '@fontsource/manrope/600.css';
-@import '@fontsource/manrope/700.css';
-@import '@fontsource/dm-serif-display/400.css';
-@import '@fontsource/saira/800.css';
+@import '@fontsource/anton/400.css';
+@import '@fontsource/special-elite/400.css';
+@import '@fontsource/courier-prime/400.css';
+@import '@fontsource/courier-prime/700.css';
 @import './styles/tokens.css';
 
 /* Tokens (ADR-0027): tiers 1–3, the dark theme layer, and the Tailwind theme GENERATED from them
@@ -128,25 +127,45 @@
   background-blend-mode: screen, screen, normal, multiply, normal;
 }
 
-/* "Sky rise" (design approved 2026-10-07): the backdrop of the app shell pages. A vertical glow of
-   the `surface-glow` token rises from the bottom of the window and is gone by 500px up, so the
-   header, headings and the top of the feed sit on plain ink. Fine film grain on top gives the
-   flat ink some texture (SVG noise as a data URI, which the CSP allows; its alpha is baked in at
-   5.4%). Used on a fixed layer, so it stays pinned to the window while the page scrolls. */
-@utility page-backdrop {
-  background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.75 0 0 0 0 0.8 0 0 0 0 0.78 0 0 0 0.054 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")
-      0 0 / 160px 160px,
-    linear-gradient(
-      to top,
-      color-mix(in srgb, var(--color-surface-glow) 80%, transparent) 0,
-      color-mix(in srgb, var(--color-surface-glow) 30%, transparent) 260px,
-      transparent 500px
-    );
-  /* High-contrast modes get the plain system background instead. */
+/* Triple Feature textures (ADR-0040). All three are decorative: put them on `aria-hidden` layers
+   with no pointer events. */
+
+/* Film grain over the whole window (AppLayout renders one fixed layer with it). SVG noise as a
+   data URI, which the CSP allows, blended onto everything below it. Generated once as a tile
+   instead of a full-window SVG filter, so the browser rasterises it once and only composites it
+   while scrolling. High-contrast modes drop it. */
+@utility film-grain {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E")
+    0 0 / 180px 180px;
+  opacity: 0.22;
+  mix-blend-mode: overlay;
   @media (forced-colors: active) {
-    background: none;
+    display: none;
   }
+}
+
+/* Faint vertical scratches on the page background, like a worn print. */
+@utility film-scratch {
+  background-image: repeating-linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-fg) 3.5%, transparent) 0 1px,
+    transparent 1px 140px
+  );
+}
+
+/* A halftone dot screen, for poster placeholders and illustration wells. */
+@utility halftone {
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--color-shadow) 35%, transparent) 1.2px,
+    transparent 1.4px
+  );
+  background-size: 7px 7px;
+}
+
+/* The mustard dashed rule in section headers: grows to fill the row between title and meta. */
+@utility dashed-rule {
+  height: 6px;
+  background: repeating-linear-gradient(90deg, var(--color-accent) 0 18px, transparent 18px 28px);
 }
 
 /* Loader behind film images (`LoadingImage`): the placeholder color with a soft band of light
@@ -183,8 +202,16 @@
   }
 }
 
-/* Gentle entrance for onboarding steps (`animate-enter`); disabled by the reduced-motion rule above. */
+/* Gentle entrance for onboarding steps (`animate-enter`), and the ticker's slow loop
+   (`animate-ticker`, Ticker.tsx: one half of its track per 50s). Both are disabled by the
+   reduced-motion rule above. */
 @theme {
+  --animate-ticker: ticker 50s linear infinite;
+  @keyframes ticker {
+    to {
+      transform: translateX(-50%);
+    }
+  }
   @keyframes enter {
     from {
       opacity: 0;

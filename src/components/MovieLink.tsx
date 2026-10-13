@@ -23,7 +23,7 @@ export function MovieLink({
   return (
     <Link
       to={`/movie/${movie.id}`}
-      className="grid min-h-26 min-w-0 grid-cols-[4rem_minmax(0,1fr)] items-center gap-3.5 rounded-control md:grid-cols-[4.75rem_minmax(0,1fr)] md:gap-4.5"
+      className="grid min-h-26 min-w-0 grid-cols-[4rem_minmax(0,1fr)] items-center gap-3.5 md:grid-cols-[4.75rem_minmax(0,1fr)] md:gap-4.5"
     >
       {/* The poster is decorative (alt=""): the title right next to it names the link. A film
           without a poster gets an empty placeholder of the same size. */}
@@ -32,12 +32,12 @@ export function MovieLink({
           src={poster}
           alt=""
           loading="lazy"
-          className="h-24 w-16 rounded-poster border-b-3 border-(--tone) object-cover md:h-26 md:w-19"
+          className="h-24 w-16 border-b-3 border-(--tone) object-cover md:h-26 md:w-19"
         />
       ) : (
         <span
           aria-hidden="true"
-          className="h-24 w-16 rounded-poster border-b-3 border-(--tone) bg-poster-placeholder md:h-26 md:w-19"
+          className="h-24 w-16 border-b-3 border-(--tone) bg-poster-placeholder md:h-26 md:w-19"
         />
       )}
       <span className="flex min-w-0 flex-col gap-1.5">
@@ -51,7 +51,7 @@ export function MovieLink({
             {movie.overview}
           </span>
         )}
-        <span className="flex items-center gap-1.5 text-sm font-semibold text-info">
+        <span className="flex items-center gap-1.5 text-sm font-semibold text-accent">
           <Icon name="eye" className="size-4" /> View details
         </span>
       </span>

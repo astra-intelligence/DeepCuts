@@ -32,7 +32,7 @@ const INVITE_REFUSED = 'This invite can’t be used. It may have expired or been
 // Shared field styles. The whole field box shows the focus ring (focus-ring-within), and turns
 // the danger color while it has an error.
 const fieldBox =
-  'focus-ring-within flex min-h-12 items-center rounded-field border border-field-border bg-field-bg focus-within:border-field-border-focus group-data-invalid:border-fg-danger'
+  'focus-ring-within flex min-h-12 items-center border border-field-border bg-field-bg focus-within:border-field-border-focus group-data-invalid:border-fg-danger'
 const inputClass =
   'min-w-0 flex-1 self-stretch bg-transparent px-3 text-base text-fg outline-none placeholder:text-fg-placeholder'
 
@@ -104,7 +104,7 @@ export function RegisterPage() {
 
       {/* ADR-0025's rule: a mock must never pass for a real account. */}
       {practiceRegistration && (
-        <p className="rounded-container border border-dashed border-border-control p-3 text-sm text-fg-muted">
+        <p className="border border-dashed border-border-control p-3 text-sm text-fg-muted">
           <strong className="text-fg">Practice registration.</strong> No passkey or real account is
           created yet. Your name is kept on this device; the invite code is checked, then discarded.
         </p>
@@ -151,7 +151,7 @@ export function RegisterPage() {
         <Button
           type="submit"
           isPending={pending}
-          className="flex min-h-12 w-full items-center justify-center rounded-button bg-button-primary-bg text-sm font-semibold text-button-primary-fg hover:bg-button-primary-bg/85 data-pending:opacity-70"
+          className="flex min-h-12 w-full items-center justify-center bg-button-primary-bg text-sm font-semibold text-button-primary-fg hover:bg-button-primary-bg/85 data-pending:opacity-70"
         >
           Create passkey
         </Button>
@@ -166,11 +166,11 @@ export function RegisterPage() {
 
       <p className="text-sm text-fg-muted">
         Already have an account?{' '}
-        <Link to="/sign-in" state={{ from }} className="text-info underline">
+        <Link to="/sign-in" state={{ from }} className="text-accent underline">
           Sign in
         </Link>
         . No invite?{' '}
-        <Link to="/sign-in" state={{ from }} className="text-info underline">
+        <Link to="/sign-in" state={{ from }} className="text-accent underline">
           Try the demo
         </Link>
         .

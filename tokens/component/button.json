@@ -1,18 +1,44 @@
 {
-  "$description": "Tier 3: buttons. Primary is the one main action; secondary is everything else.",
+  "$description": "Tier 3: buttons (ADR-0040). Primary is a mustard utility button; CTA is the one blood-red call to action on a page; secondary is a bone outline.",
   "color": {
     "$type": "color",
     "button": {
       "primary": {
-        "bg": { "$value": "{color.accent.default}" },
-        "fg": { "$value": "{color.fg.on-accent}" }
+        "bg": {
+          "$value": "{color.accent.default}"
+        },
+        "bg-hover": {
+          "$value": "{color.accent.hover}"
+        },
+        "fg": {
+          "$value": "{color.fg.on-accent}"
+        }
+      },
+      "cta": {
+        "bg": {
+          "$value": "{color.danger}"
+        },
+        "fg": {
+          "$value": "{color.fg.on-danger}"
+        }
       },
       "secondary": {
-        "bg": { "$value": "{color.surface.overlay}" },
-        "fg": { "$value": "{color.fg.default}" },
-        "border": { "$value": "{color.border.control}" }
+        "bg": {
+          "$value": "{color.surface.default}"
+        },
+        "fg": {
+          "$value": "{color.fg.default}"
+        },
+        "border": {
+          "$value": "{color.border.emphasis}"
+        }
       }
     }
   },
-  "radius": { "$type": "dimension", "button": { "$value": "{radius.control}" } }
+  "shadow": {
+    "$type": "shadow",
+    "button-cta": {
+      "$value": "{elevation.cta}"
+    }
+  }
 }
