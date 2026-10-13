@@ -33,6 +33,11 @@ import { useTagQueries } from './tagQueries'
  * enough (cut from 10 to fit the rate limit, owner 2026-10-07).
  */
 export const LIMITS = { liked: 20, watchlist: 5, disliked: 5 } as const
+/**
+ * How many picks Home's Discovery shelf shows: two full rows in the 1200px column (ADR-0040). Each
+ * needs its details for the credit lines; most are already loaded by the re-rank (RERANK).
+ */
+export const HOME_PICKS = 10
 /** How many top candidates get their keywords and directors loaded for the re-rank (ADR-0028). */
 export const RERANK = 20
 /** How many liked series (most recent likes first) bring their films in as candidates. */

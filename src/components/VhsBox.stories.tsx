@@ -40,3 +40,9 @@ export const NoPoster: Story = { args: { movie: { ...film, poster_path: null } }
 export const LongTitle: Story = {
   args: { movie: { ...film, title: 'Dr. Strangelove or: How I Learned to Stop Worrying' } },
 }
+/** On the Top Ten shelf: the mustard rank tab. */
+export const RankTab: Story = { args: { badge: { kind: 'rank', rank: 1 } } }
+/** On the watchlist shelf: the ADMIT ONE ticket. */
+export const Ticket: Story = { args: { badge: { kind: 'ticket' } } }
+/** A Discovery pick: the blood-red match stamp. */
+export const MatchStamp: Story = { args: { badge: { kind: 'match', match: 92 } } }

@@ -1,4 +1,4 @@
-// The small uppercase label above headings ("YOUR CORNER").
+// The small typewriter label above headings ("Feature Nº 1", "Your account"; ADR-0040).
 import type { ReactNode } from 'react'
 
 // Colors an eyebrow may use. `contextual` follows the page accent (ADR-0020).
@@ -9,7 +9,8 @@ const TONES = {
 } as const
 
 /**
- * Small uppercase label above a heading (design v2). The tone carries no meaning on its own.
+ * Small typewriter label above a heading: Special Elite, sentence case, widely spaced
+ * (ADR-0040). The tone carries no meaning on its own.
  * @param as - `h2` when the label is itself a section's heading (Home's sections), so the
  *   page's heading outline stays intact.
  */
@@ -27,10 +28,7 @@ export function Eyebrow({
   id?: string
 }) {
   return (
-    <Tag
-      id={id}
-      className={`text-sm font-bold tracking-widest uppercase ${TONES[tone]} ${className}`}
-    >
+    <Tag id={id} className={`font-label text-sm tracking-widest ${TONES[tone]} ${className}`}>
       {children}
     </Tag>
   )

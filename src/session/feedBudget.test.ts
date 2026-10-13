@@ -7,11 +7,15 @@
 import { describe, expect, it } from 'vitest'
 import rateLimitConfig from '../../workers/rate-limit/wrangler.toml?raw'
 import { KEYWORD_SEARCHES } from '../domain/scorer'
-import { LIMITS, MAX_SERIES, RERANK } from './useRecommendations'
+import { TOP_TEN_SIZE } from '../domain/topTen'
+import { HOME_PICKS, LIMITS, MAX_SERIES, RERANK } from './useRecommendations'
 
-// Home shows four pick cassettes, each needing its details for the credit lines. Counted in
-// full: most are already loaded by the re-rank, but an explore slot can come from outside it.
-const HOME_CARDS = 4
+// Home's Discovery shelf: each pick needs its details for the credit lines. Counted in full: most
+// are already loaded by the re-rank, but an explore slot can come from outside it.
+const HOME_CARDS = HOME_PICKS
+// Home's Top Ten shelf: one details call per ranked film, which may not be tagged. (The watchlist
+// shelf shows the films the scorer already loads, LIMITS.watchlist, so it adds nothing.)
+const TOP_TEN = TOP_TEN_SIZE
 // Other calls a first load can make: the popular feed, the session check, and the account's
 // tag records (cached for 30 s, so one call, plus one spare for a refresh).
 const OTHER_CALLS = 4
@@ -36,8 +40,9 @@ describe('first Home load vs the rate limit', () => {
     // One details call per tagged film, one per liked series, one per keyword search (ADR-0038),
     // one per re-rank candidate.
     const tagged = LIMITS.liked + LIMITS.watchlist + LIMITS.disliked
-    const worstCase = tagged + MAX_SERIES + KEYWORD_SEARCHES + RERANK + HOME_CARDS + OTHER_CALLS
-    expect(worstCase).toBe(71)
+    const worstCase =
+      tagged + MAX_SERIES + KEYWORD_SEARCHES + RERANK + HOME_CARDS + TOP_TEN + OTHER_CALLS
+    expect(worstCase).toBe(87)
     expect(worstCase + HEADROOM).toBeLessThanOrEqual(apiLimit(rateLimitConfig))
   })
 })

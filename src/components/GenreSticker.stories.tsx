@@ -22,12 +22,10 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** On a grid tile (48px). */
-export const OnPoster: Story = { args: { className: 'absolute top-1.5 right-1.5' } }
-/** On the featured card (72px). */
-export const Large: Story = { args: { size: 'lg', className: 'absolute top-3.5 right-3.5' } }
+/** On a VHS box (54px). */
+export const OnPoster: Story = { args: { className: 'absolute top-2.5 right-2.5' } }
 
-/** Every genre, each with its own tilt and wear. */
+/** Every genre, each with its own wear. */
 export const AllGenres: Story = {
   decorators: [(Story) => <Story />],
   render: () => (

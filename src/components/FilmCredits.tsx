@@ -5,8 +5,8 @@ import type { Credits } from '../api/tmdb'
 export function Because({ titles }: { titles: string[] | undefined }) {
   if (!titles?.length) return null
   return (
-    <span className="mt-1 block text-sm text-fg-muted">
-      Because you liked <cite className="text-fg not-italic">{titles.join(' and ')}</cite>
+    <span className="mt-1 block font-label text-sm text-accent">
+      Because you liked <cite className="not-italic">{titles.join(' and ')}</cite>
     </span>
   )
 }

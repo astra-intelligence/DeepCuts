@@ -34,7 +34,7 @@
    every box still in its resting pose.
 
    Design system. Colors: the vhs-box component tokens and the film's genre tone (`--tone`, set
-   by genreTone()). Type: the brand font, weight, tracking and case tokens. Motion: the
+   by genreTone()). Type: the display font, tracking and case tokens. Motion: the
    motion.turn role. The geometry and angles below are this component's own tuning knobs, not
    shared design decisions, so they live here as documented custom properties (like the genre
    sticker's sizes in GenreSticker.tsx); the dev-only lab (/lab/vhs) overrides them to try new
@@ -49,7 +49,6 @@
   :root {
     --vhs-aspect: 0.547; /* width / height */
     --vhs-depth: 0.24; /* depth as a share of the width */
-    --vhs-corner: 0.007; /* corner radius as a share of the width (about 1.5px on desktop) */
     --vhs-rest-y: 6deg; /* turn at rest (positive shows the spine) */
     --vhs-rest-x: -2deg; /* tilt at rest (negative = top toward you) */
     --vhs-lean-y: 24deg; /* mouse: turn with the pointer at a side edge */
@@ -66,16 +65,24 @@
   /* ---- Stage and box ------------------------------------------------------------------------ */
 
   /* One tile's 3D stage. Its own perspective gives every box its own vanishing point, so boxes
-     at the edges of the grid don't skew more than the ones in the middle. */
+     at the edges of the grid don't skew more than the ones in the middle.
+     The hard offset shadow (ADR-0040: 7px, 9px while the mouse holds the box) is a drop shadow
+     on the stage rather than a box-shadow on the cover, so it follows the box's outline as it
+     turns instead of turning with the cover. Same offsets as the elevation.box/box-hover tokens
+     (a drop shadow has no spread, so the token's value can't be used as is). */
   .vhs-scene {
     position: relative;
     display: block;
     container-type: inline-size;
     perspective: var(--vhs-perspective);
     perspective-origin: 50% 35%;
+    filter: drop-shadow(7px 7px 0 var(--color-shadow));
+  }
+  [data-vhs-active] .vhs-scene {
+    filter: drop-shadow(9px 9px 0 var(--color-shadow));
   }
 
-  /* The box. Derived sizes: --h (height), --d (depth), --corner. --still-y/--still-x are its
+  /* The box. Derived sizes: --h (height), --d (depth). --still-y/--still-x are its
      resting pose (the rest angles; the keyboard pose on touch screens). --turn-*, --rise are
      its current pose, which the rules below change. Shared paints: --grain (paper grain, SVG
      noise as a data URI, which the CSP allows) and --print (the genre color bleached a quarter
@@ -83,7 +90,6 @@
   .vhs-box {
     --h: calc(100cqw / var(--vhs-aspect));
     --d: calc(100cqw * var(--vhs-depth));
-    --corner: calc(100cqw * var(--vhs-corner));
     --still-y: var(--vhs-rest-y);
     --still-x: var(--vhs-rest-x);
     --turn-y: var(--still-y);
@@ -172,11 +178,10 @@
   }
 
   /* Front: the poster, printed edge to edge on matte card, with edges rubbed pale where the
-     sleeve slid against its neighbours on the shelf. */
+     sleeve slid against its neighbours on the shelf. Square corners (ADR-0040). */
   .vhs-front {
     inset: 0;
     overflow: hidden;
-    border-radius: var(--corner);
     background: var(--color-vhs-box-shell);
     box-shadow: inset 0 0 calc(100cqw * 0.02)
       color-mix(in srgb, var(--color-vhs-box-card) 30%, transparent);
@@ -187,6 +192,17 @@
     height: 100%;
     object-fit: var(--vhs-art-fit);
     object-position: var(--vhs-art-position);
+  }
+  /* The fold along the spine: a pale strip down the cover's left edge, 7px on a 190px box
+     (ADR-0040's clamshell hinge). */
+  .vhs-front::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 1;
+    width: calc(100cqw * 0.037);
+    background: color-mix(in srgb, var(--color-fg) 14%, transparent);
+    pointer-events: none;
   }
   /* Matte finish over the art: paper grain and one broad, soft light falloff (no glossy glare). */
   .vhs-front::after {
@@ -216,7 +232,6 @@
     width: var(--d);
     height: 100%;
     overflow: hidden;
-    border-radius: var(--corner);
     transform-origin: left center;
     transform: translateZ(calc(var(--d) * -1)) rotateY(-90deg);
     background:
@@ -278,7 +293,6 @@
     right: 0;
     width: var(--d);
     height: 100%;
-    border-radius: var(--corner);
     transform-origin: right center;
     transform: translateZ(calc(var(--d) * -1)) rotateY(90deg);
     background: color-mix(in srgb, var(--color-vhs-box-light) 5%, var(--color-vhs-box-shell));
@@ -296,7 +310,6 @@
     width: calc(var(--h) * 0.86);
     height: calc(var(--d) * 0.52);
     padding-inline: calc(var(--d) * 0.25);
-    border-radius: var(--corner);
     translate: -50% -50%;
     rotate: 90deg;
     background: var(--print);
