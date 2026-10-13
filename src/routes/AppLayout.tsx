@@ -48,8 +48,10 @@ export function AppLayout() {
   return (
     // Bottom padding keeps the last content clear of the fixed tab bar (and the iPhone home bar).
     // Signed out, and from `md`, there's no tab bar, so only the safe area is kept clear.
+    // Full window width, so the header's bar can span it; the header's contents and <main> are
+    // centred within their own maximum widths.
     <div
-      className={`mx-auto min-h-dvh w-full max-w-360 overflow-x-clip ${
+      className={`min-h-dvh w-full overflow-x-clip ${
         signedIn
           ? 'pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-[max(1.5rem,env(safe-area-inset-bottom))]'
           : 'pb-[max(1.5rem,env(safe-area-inset-bottom))]'
@@ -64,40 +66,45 @@ export function AppLayout() {
           the search centred between logo and account, which halves the header's height on desktop.
           The DOM order (logo, search, account) is the desktop reading order; below `lg`,
           `order-last` moves the search to its own row, so keyboard focus goes logo → search →
-          account there. `md` keeps the phone rhythm with wider gutters and a roomier bottom. */}
+          account there. `md` keeps the phone rhythm with wider gutters and a roomier bottom.
+          The bar (background, blur, bottom border) spans the whole window; the row inside keeps
+          the 1440px (`max-w-360`) centred width, so the logo and account stay where they were on
+          wide screens (owner, 2026-10-13). */}
       <header
         ref={header}
-        className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-x-2.5 gap-y-5 border-b border-border bg-surface/95 px-5 pt-[max(0.625rem,env(safe-area-inset-top))] pb-3 backdrop-blur-lg md:px-8 md:pb-5 lg:flex-nowrap lg:gap-x-6 lg:pt-[max(0.75rem,env(safe-area-inset-top))] lg:pb-3"
+        className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur-lg"
       >
-        {/* 46px tall below `lg`, matching the old 64px first row minus its padding, so the phone
+        <div className="mx-auto flex max-w-360 flex-wrap items-center justify-between gap-x-2.5 gap-y-5 px-5 pt-[max(0.625rem,env(safe-area-inset-top))] pb-3 md:px-8 md:pb-5 lg:flex-nowrap lg:gap-x-6 lg:pt-[max(0.75rem,env(safe-area-inset-top))] lg:pb-3">
+          {/* 46px tall below `lg`, matching the old 64px first row minus its padding, so the phone
             layout is pixel-identical to before; the usual 44px in the one-row `lg` header. */}
-        <Link
-          to="/"
-          aria-label="Deep Cuts, go to Home"
-          className="inline-flex min-h-11.5 shrink-0 items-center lg:min-h-11"
-        >
-          <Logo decorative className="h-7 w-auto md:h-8" />
-        </Link>
-        {/* Grows to fill the row up to a readable width; the auto margins then centre it.
+          <Link
+            to="/"
+            aria-label="Deep Cuts, go to Home"
+            className="inline-flex min-h-11.5 shrink-0 items-center lg:min-h-11"
+          >
+            <Logo decorative className="h-7 w-auto md:h-8" />
+          </Link>
+          {/* Grows to fill the row up to a readable width; the auto margins then centre it.
             `min-w-0` lets it shrink below the input's built-in width (else it overflows at 320px). */}
-        {signedIn && (
-          <div className="order-last min-w-0 basis-full lg:order-none lg:mx-auto lg:max-w-lg lg:flex-1 lg:basis-auto">
-            <MovieSearch />
-          </div>
-        )}
-        <div className="flex shrink-0 items-center gap-2">
-          {/* "Tune my picks" onboarding is hidden behind a feature flag for now. */}
-          {FEATURES.onboarding && signedIn && (
-            <Link
-              to="/tune"
-              aria-label="Tune my picks"
-              title="Tune my picks"
-              className="grid size-11 place-items-center rounded-container border border-border-control bg-surface-raised text-accent hover:border-accent hover:bg-surface-selected"
-            >
-              <Icon name="heart" />
-            </Link>
+          {signedIn && (
+            <div className="order-last min-w-0 basis-full lg:order-none lg:mx-auto lg:max-w-lg lg:flex-1 lg:basis-auto">
+              <MovieSearch />
+            </div>
           )}
-          <AccountChip />
+          <div className="flex shrink-0 items-center gap-2">
+            {/* "Tune my picks" onboarding is hidden behind a feature flag for now. */}
+            {FEATURES.onboarding && signedIn && (
+              <Link
+                to="/tune"
+                aria-label="Tune my picks"
+                title="Tune my picks"
+                className="grid size-11 place-items-center rounded-container border border-border-control bg-surface-raised text-accent hover:border-accent hover:bg-surface-selected"
+              >
+                <Icon name="heart" />
+              </Link>
+            )}
+            <AccountChip />
+          </div>
         </div>
       </header>
 
