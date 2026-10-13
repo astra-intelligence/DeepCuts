@@ -63,6 +63,10 @@
         "$value": "#f27c81",
         "$description": "Dislike only: the one red that is readable as small text on ink (ADR-0020). The hue ramps skip red for this reason"
       }
+    },
+    "neon": {
+      "$value": "#39ff14",
+      "$description": "Neon green: a 100% match (owner, 2026-10-13). Only ever the far end of the match blend"
     }
   }
 }

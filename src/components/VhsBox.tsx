@@ -11,8 +11,9 @@
 // A box can carry one badge (ADR-0040), stuck on its cover so it turns with the box (owner,
 // 2026-10-13): a mustard rank tab (Top Ten), an ADMIT ONE ticket (the watchlist) or a blood-red
 // match sticker (Discovery). Badges are decoration too: the caption under the box says the same.
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type CSSProperties } from 'react'
 import { imageUrl, releaseYear, type MovieSummary } from '../api/tmdb'
+import { inkOnMatch, matchBlend } from '../domain/matchColor'
 import { GenreSticker } from './GenreSticker'
 import { LoadingImage } from './LoadingImage'
 import './VhsBox.css'
@@ -200,11 +201,19 @@ function Badge({ badge }: { badge: VhsBadge }) {
           Admit one
         </span>
       )
-    case 'match':
-      // A blood-red starburst price sticker with a bone edge, stuck on the cover's bottom-left
-      // corner, slightly crooked (owner, 2026-10-13).
+    case 'match': {
+      // A starburst price sticker stuck on the cover's bottom-left corner, slightly crooked, its
+      // fill blending from blood red (0%) to neon green (100%) by the match (owner, 2026-10-13;
+      // matchColor.ts). The number is large text in whichever of ink and bone reads on the fill;
+      // MATCH sits on an ink band, so it reads at any color.
+      const ink = inkOnMatch(badge.match)
       return (
-        <span className="absolute bottom-3 left-2 z-2 grid size-18 -rotate-12 place-content-center text-center font-display leading-none text-fg-on-danger uppercase sm:size-22">
+        <span
+          style={matchBlend(badge.match) as CSSProperties}
+          className={`absolute bottom-3 left-2 z-2 grid size-18 -rotate-12 place-content-center justify-items-center text-center font-display leading-none uppercase sm:size-22 ${
+            ink ? 'text-fg-on-accent' : 'text-fg-on-danger'
+          }`}
+        >
           <svg viewBox="-4 -4 108 108" className="absolute inset-0 size-full overflow-visible">
             {/* The hard shadow: the same burst, offset down and right (elevation.stamp). */}
             <polygon points={STARBURST} transform="translate(4 4)" className="fill-shadow" />
@@ -212,12 +221,13 @@ function Badge({ badge }: { badge: VhsBadge }) {
               points={STARBURST}
               strokeWidth="4"
               strokeLinejoin="round"
-              className="fill-danger stroke-fg"
+              className="vhs-match-burst stroke-fg"
             />
           </svg>
-          <span className="relative text-xl sm:text-2xl">{badge.match}%</span>
-          <span className="relative text-xs">Match</span>
+          <span className="relative text-2xl">{badge.match}%</span>
+          <span className="relative mt-0.5 bg-surface px-1 py-0.5 text-xs text-fg">Match</span>
         </span>
       )
+    }
   }
 }

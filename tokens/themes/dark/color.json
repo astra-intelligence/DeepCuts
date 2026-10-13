@@ -84,6 +84,15 @@
       "$value": "{color.mustard.default}",
       "$description": "Favourite films: the Top Ten (ADR-0035). Decorative; always next to its label"
     },
+    "match": {
+      "$description": "The match sticker's color blends from low (0%) to high (100%) in OKLCH, through orange and yellow (owner, 2026-10-13). Its number is large text, and MATCH sits on an ink band; contrast for every value is checked in src/domain/matchColor.test.ts",
+      "low": {
+        "$value": "{color.blood}"
+      },
+      "high": {
+        "$value": "{color.neon}"
+      }
+    },
     "shadow": {
       "$value": "{color.black}",
       "$description": "Hard offset shadows (ADR-0040)"

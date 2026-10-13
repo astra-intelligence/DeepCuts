@@ -168,6 +168,13 @@
     }
   }
 
+  /* The match sticker's fill: blood red at 0% to neon green at 100%, through orange and yellow
+     (OKLCH takes the shorter way round the hue circle). VhsBox sets --match from the pick's
+     match (matchColor.ts); the text colors are checked against every value in its test. */
+  .vhs-match-burst {
+    fill: color-mix(in oklch, var(--color-match-high) var(--match), var(--color-match-low));
+  }
+
   /* ---- Faces --------------------------------------------------------------------------------- */
 
   .vhs-face {
