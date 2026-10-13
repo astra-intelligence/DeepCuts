@@ -177,6 +177,15 @@ export function VhsBox({
   )
 }
 
+// The match sticker's outline: a 20-point starburst on a 100×100 grid, points at radius 50 and
+// shallow notches at 43, so the middle stays roomy enough for "92%" and "MATCH".
+const POINTS = 20
+const STARBURST = Array.from({ length: POINTS * 2 }, (_, i) => {
+  const r = i % 2 === 0 ? 50 : 43
+  const a = (Math.PI * i) / POINTS
+  return `${(50 + r * Math.sin(a)).toFixed(1)},${(50 - r * Math.cos(a)).toFixed(1)}`
+}).join(' ')
+
 /** The badge in front of the box (see VhsBadge). */
 function Badge({ badge }: { badge: VhsBadge }) {
   switch (badge.kind) {
@@ -195,11 +204,22 @@ function Badge({ badge }: { badge: VhsBadge }) {
         </span>
       )
     case 'match':
-      // A round blood-red stamp with a bone ring, in the bottom-left corner, hanging just off the left edge (owner, 2026-10-13).
+      // A blood-red starburst price sticker with a bone edge, stuck on the cover's bottom-left
+      // corner, slightly crooked (owner, 2026-10-13).
       return (
-        <span className="absolute bottom-2 -left-3 z-2 grid size-15 -rotate-12 place-content-center rounded-full border-3 border-fg bg-danger text-center font-display leading-none text-fg-on-danger uppercase shadow-stamp sm:size-18.5">
-          <span className="text-xl sm:text-2xl">{badge.match}%</span>
-          <span className="text-xs">Match</span>
+        <span className="absolute bottom-3 left-2 z-2 grid size-18 -rotate-12 place-content-center text-center font-display leading-none text-fg-on-danger uppercase sm:size-22">
+          <svg viewBox="-4 -4 108 108" className="absolute inset-0 size-full overflow-visible">
+            {/* The hard shadow: the same burst, offset down and right (elevation.stamp). */}
+            <polygon points={STARBURST} transform="translate(4 4)" className="fill-shadow" />
+            <polygon
+              points={STARBURST}
+              strokeWidth="4"
+              strokeLinejoin="round"
+              className="fill-danger stroke-fg"
+            />
+          </svg>
+          <span className="relative text-xl sm:text-2xl">{badge.match}%</span>
+          <span className="relative text-xs">Match</span>
         </span>
       )
   }
