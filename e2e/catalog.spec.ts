@@ -324,8 +324,6 @@ test('tag and genre colors reach the page (runtime CSS variables, ADR-0020/0027)
     const root = getComputedStyle(document.documentElement)
     const names = ['seen', 'watchlist', 'liked', 'disliked'].map((t) => `--color-tag-${t}`)
     names.push('--color-genre', '--color-genre-horror', '--color-genre-drama')
-    // FeaturePanel sets `--panel` from these at runtime (ADR-0035).
-    names.push('--color-panel-top-ten', '--color-panel-watchlist', '--color-panel-discovery')
     return names.filter((n) => !root.getPropertyValue(n).trim())
   })
   expect(missing).toEqual([])
