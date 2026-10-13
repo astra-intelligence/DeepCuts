@@ -8,6 +8,7 @@ import { movieQueries } from '../../api/queries'
 import { imageUrl, type MovieSummary } from '../../api/tmdb'
 import { Logo } from '../../components/Logo'
 import { MovieSearch } from '../../components/MovieSearch'
+import { useHeaderHeight } from '../../hooks/useHeaderHeight'
 import { useRouteFocus } from '../../hooks/useRouteFocus'
 import { AccountChip } from '../../components/AccountChip'
 import { SkipLink } from '../AppLayout'
@@ -19,6 +20,9 @@ import { useTuneState } from './useTuneState'
 export function TunePage() {
   useRouteFocus()
   const [state, update] = useTuneState()
+  // Toasts (e.g. a tag that didn't save) appear just below this header (SonnerToaster.tsx).
+  const header = useRef<HTMLElement>(null)
+  useHeaderHeight(header)
   // The backdrop of the top popular film, as a moody background.
   const background = useQuery(movieQueries.discover()).data?.results[0]
   const image = imageUrl(background?.backdrop_path ?? null, 'w1280')
@@ -58,7 +62,10 @@ export function TunePage() {
             : 'bg-linear-to-b from-surface/10 via-surface/70 via-55% to-surface to-90% md:bg-radial md:from-surface/50 md:via-surface/80 md:to-surface'
         }`}
       />
-      <header className="relative z-10 flex min-h-16 items-center justify-between gap-2.5 px-5 pt-[max(0.625rem,env(safe-area-inset-top))] pb-2 md:px-8">
+      <header
+        ref={header}
+        className="relative z-10 flex min-h-16 items-center justify-between gap-2.5 px-5 pt-[max(0.625rem,env(safe-area-inset-top))] pb-2 md:px-8"
+      >
         <Link
           to="/"
           aria-label="Deep Cuts, go to Home"

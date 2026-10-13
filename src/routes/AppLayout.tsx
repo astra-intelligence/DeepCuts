@@ -2,12 +2,14 @@
 // and (on phones) the tab bar; from `md` the account menu in the header replaces it. (Detail and Sign in have their own layouts.) Signed out, the shell around the
 // landing page is just the logo and Sign in: search and the tabs lead only to signed-in pages
 // (ADR-0034).
+import { useRef } from 'react'
 import { Link, NavLink, Outlet } from 'react-router'
 import { FEATURES } from '../config/features'
 import { AccountChip } from '../components/AccountChip'
 import { Icon, type IconName } from '../components/Icon'
 import { Logo } from '../components/Logo'
 import { MovieSearch } from '../components/MovieSearch'
+import { useHeaderHeight } from '../hooks/useHeaderHeight'
 import { useRouteFocus } from '../hooks/useRouteFocus'
 import { useSession } from '../session/SessionContext'
 
@@ -39,6 +41,9 @@ export function SkipLink() {
  */
 export function AppLayout() {
   useRouteFocus()
+  // Toasts appear just below this header (SonnerToaster.tsx).
+  const header = useRef<HTMLElement>(null)
+  useHeaderHeight(header)
   const signedIn = useSession().session.kind === 'account'
   return (
     // Bottom padding keeps the last content clear of the fixed tab bar (and the iPhone home bar).
@@ -60,7 +65,10 @@ export function AppLayout() {
           The DOM order (logo, search, account) is the desktop reading order; below `lg`,
           `order-last` moves the search to its own row, so keyboard focus goes logo → search →
           account there. `md` keeps the phone rhythm with wider gutters and a roomier bottom. */}
-      <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-x-2.5 gap-y-5 border-b border-border bg-surface/95 px-5 pt-[max(0.625rem,env(safe-area-inset-top))] pb-3 backdrop-blur-lg md:px-8 md:pb-5 lg:flex-nowrap lg:gap-x-6 lg:pt-[max(0.75rem,env(safe-area-inset-top))] lg:pb-3">
+      <header
+        ref={header}
+        className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-x-2.5 gap-y-5 border-b border-border bg-surface/95 px-5 pt-[max(0.625rem,env(safe-area-inset-top))] pb-3 backdrop-blur-lg md:px-8 md:pb-5 lg:flex-nowrap lg:gap-x-6 lg:pt-[max(0.75rem,env(safe-area-inset-top))] lg:pb-3"
+      >
         {/* 46px tall below `lg`, matching the old 64px first row minus its padding, so the phone
             layout is pixel-identical to before; the usual 44px in the one-row `lg` header. */}
         <Link
