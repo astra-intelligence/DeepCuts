@@ -98,25 +98,28 @@ export type ScorePart = (typeof SCORE_PARTS)[number]
 export type Weights = Record<ScorePart, number>
 
 /**
- * Weights v2 (ADR-0032). Genre drops from 34% to 15% so it nudges rather than gates; director,
- * writer and series carry the "more from what you liked" signal. Provisional: retune in the
- * weights lab. Normalized so they sum to exactly 1.
+ * Weights v3 (ADR-0037), tuned by the owner in the weights lab on 2026-10-12. Support and keywords
+ * drop and quality, genre, decade and language rise, so one strong signal can't carry a film.
+ * They add up to 1.02, so they're normalized to sum to exactly 1.
  */
 export const DEFAULT_WEIGHTS: Weights = normalizeWeights({
-  support: 0.22,
-  genre: 0.15,
-  quality: 0.07,
-  deepCut: 0.12,
-  decade: 0.07,
-  language: 0.04,
-  keywords: 0.12,
-  director: 0.09,
+  support: 0.17,
+  genre: 0.17,
+  quality: 0.14,
+  deepCut: 0.11,
+  decade: 0.09,
+  language: 0.06,
+  keywords: 0.08,
+  director: 0.08,
   writer: 0.05,
   series: 0.07,
 })
 
-/** Each earlier pick with the same primary genre lowers a candidate's rank by this much. */
-export const DIVERSITY_PENALTY = 0.05
+/**
+ * Each earlier pick with the same primary genre lowers a candidate's rank by this much (tuned to
+ * 0.03 on 2026-10-12, ADR-0037; was 0.05).
+ */
+export const DIVERSITY_PENALTY = 0.03
 
 /**
  * TMDB's similar films include barely-rated ones (1 vote, 0 votes) that the deep-cut part would

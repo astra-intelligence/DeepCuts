@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_WEIGHTS,
+  DIVERSITY_PENALTY,
   EXPLORE_SLOTS,
   normalizeWeights,
   recommend,
@@ -68,22 +69,23 @@ describe('recommend (ADR-0026)', () => {
     expect(total).toBeCloseTo(1, 10)
   })
 
-  it('uses the v2 weights: genre nudges, director, writer and series count (ADR-0032)', () => {
+  it('uses the v3 weights the owner tuned in the weights lab (ADR-0037)', () => {
     const shown = Object.fromEntries(
       SCORE_PARTS.map((p) => [p, Math.round(DEFAULT_WEIGHTS[p] * 100)]),
     )
     expect(shown).toEqual({
-      support: 22,
-      genre: 15,
-      quality: 7,
-      deepCut: 12,
-      decade: 7,
-      language: 4,
-      keywords: 12,
-      director: 9,
+      support: 17,
+      genre: 17,
+      quality: 14,
+      deepCut: 11,
+      decade: 9,
+      language: 6,
+      keywords: 8,
+      director: 8,
       writer: 5,
       series: 7,
     })
+    expect(DIVERSITY_PENALTY).toBe(0.03)
   })
 
   it('returns nothing without likes', () => {

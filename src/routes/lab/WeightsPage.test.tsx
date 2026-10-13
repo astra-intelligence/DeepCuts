@@ -31,7 +31,7 @@ describe('weights lab (ADR-0026)', () => {
   it('shows a labelled, described slider per part and the ranked picks', async () => {
     await likeThenOpen('/lab/weights')
     const support = await screen.findByRole('slider', { name: 'Recommended by your likes' })
-    expect(support).toHaveValue('22')
+    expect(support).toHaveValue('17')
     expect(support).toHaveAccessibleDescription(
       'How many of your liked films recommend it, or share its series.',
     )
@@ -45,7 +45,7 @@ describe('weights lab (ADR-0026)', () => {
     expect(rows.length).toBeGreaterThan(0)
     // At the defaults nothing has moved.
     for (const row of rows) expect(row).toHaveTextContent(/^1?\d.*–\d+%/)
-    expect(screen.getByText(/support: 0\.22/)).toBeInTheDocument()
+    expect(screen.getByText(/support: 0\.17/)).toBeInTheDocument()
   })
 
   it('keeps settings in the URL, scales them to 100%, and ignores bad values', async () => {
@@ -53,11 +53,11 @@ describe('weights lab (ADR-0026)', () => {
       '/lab/weights?support=50&genre=50&quality=0&deepCut=0&decade=0&language=0&keywords=0&director=0&writer=0&series=0&diversity=999',
     )
     expect(await screen.findByRole('slider', { name: 'Genre fit' })).toHaveValue('50')
-    // Out-of-range diversity falls back to the default 5.
-    expect(screen.getByRole('slider', { name: 'Genre variety' })).toHaveValue('5')
+    // Out-of-range diversity falls back to the default 3.
+    expect(screen.getByRole('slider', { name: 'Genre variety' })).toHaveValue('3')
     const settings = screen.getByText(/support: 0\.50/)
     expect(settings).toHaveTextContent('genre: 0.50')
-    expect(settings).toHaveTextContent('diversityPenalty: 0.05')
+    expect(settings).toHaveTextContent('diversityPenalty: 0.03')
   })
 
   it('updates the URL from the keyboard and resets to the defaults', async () => {
@@ -65,12 +65,12 @@ describe('weights lab (ADR-0026)', () => {
     const deepCut = await screen.findByRole('slider', { name: 'Deep cut' })
     await act(() => deepCut.focus())
     await user.keyboard('{ArrowRight}')
-    expect(router.state.location.search).toContain('deepCut=13')
-    expect(deepCut).toHaveValue('13')
+    expect(router.state.location.search).toContain('deepCut=12')
+    expect(deepCut).toHaveValue('12')
 
     await user.click(screen.getByRole('link', { name: 'Reset to defaults' }))
     expect(router.state.location.search).toBe('')
-    expect(screen.getByRole('slider', { name: 'Deep cut' })).toHaveValue('12')
+    expect(screen.getByRole('slider', { name: 'Deep cut' })).toHaveValue('11')
   })
 
   it('warns when every weight is zero', async () => {
