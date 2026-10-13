@@ -12,15 +12,7 @@
     },
     "box": {
       "$value": "{shadow.hard-7}",
-      "$description": "VHS boxes and popovers"
-    },
-    "box-hover": {
-      "$value": "{shadow.hard-9}",
-      "$description": "A VHS box lifted on hover"
-    },
-    "poster": {
-      "$value": "{shadow.hard-12}",
-      "$description": "The largest poster on a page"
+      "$description": "VHS boxes and popovers (a lifted VHS box goes to 9px; VhsBox.css)"
     }
   }
 }

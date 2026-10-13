@@ -1,52 +1,38 @@
-// The shared frame for the app's three ideas (ADR-0035). The landing page fills it with an
-// illustration and a line of copy; Home fills it with the real content. Same card, same header,
-// same color per idea, so the landing page previews exactly what signing in gives you.
-import type { CSSProperties, ReactNode } from 'react'
-import { Link } from 'react-router'
-import { Icon } from './Icon'
+// One feature on the landing page's bill, "Tonight's program" (ADR-0035, ADR-0040 §6a): a
+// "Feature Nº n" label, the feature's heading, its illustration and a line of copy. Home shows
+// the same three ideas as shelves (ShelfSection), in the same order.
+import type { ReactNode } from 'react'
+import { Eyebrow } from './Eyebrow'
 import type { PanelDef } from './panels'
 
 /**
- * A full-height card with a colored icon tile, the panel's `h2`, an optional link on the right,
- * and its content. Put it in a grid cell: `h-full` lines panels in one row up to the same height.
- * @param panel - Which idea this is (`PANELS[...]`): title, icon and color.
- * @param action - A link in the header, e.g. "See all" to the full list.
+ * A program panel: raised ink, a line border, the label and an `h3`, then its content (the
+ * illustration and copy). Put it in a grid cell: `h-full` lines panels in one row up to the same
+ * height.
+ * @param feature - Its number on the bill, shown as "Feature Nº 1".
  */
 export function FeaturePanel({
   panel,
-  action,
+  feature,
   children,
 }: {
   panel: PanelDef
-  action?: { to: string; label: string }
+  feature: number
   children: ReactNode
 }) {
   const headingId = `panel-${panel.id}`
   return (
     <section
       aria-labelledby={headingId}
-      // `--panel` colors the icon tile and anything inside that uses `(--panel)`.
-      style={{ '--panel': panel.tone } as CSSProperties}
-      className="flex h-full min-w-0 flex-col border border-card-border bg-card-bg p-4 md:p-5"
+      className="flex h-full min-w-0 flex-col border-2 border-card-border bg-card-bg p-7"
     >
-      <div className="mb-3 flex items-center gap-3">
-        {/* The tile's tint is the panel color at low opacity, so it reads in both themes. */}
-        <span className="grid size-10 shrink-0 place-items-center bg-(--panel)/15 text-(--panel)">
-          <Icon name={panel.icon} />
-        </span>
-        <h2 id={headingId} className="min-w-0 flex-1 font-display text-2xl leading-tight">
-          {panel.title}
-        </h2>
-        {action && (
-          <Link
-            to={action.to}
-            className="inline-flex min-h-11 shrink-0 items-center text-sm font-semibold text-accent underline"
-          >
-            {action.label}
-          </Link>
-        )}
-      </div>
-      {/* `flex-1` lets content push a footer (e.g. a hint) to the bottom of a stretched panel. */}
+      <Eyebrow className="mb-1">Feature Nº {feature}</Eyebrow>
+      <h3
+        id={headingId}
+        className="mb-5 font-display text-4xl leading-none tracking-wide uppercase"
+      >
+        {panel.title}
+      </h3>
       <div className="flex flex-1 flex-col">{children}</div>
     </section>
   )

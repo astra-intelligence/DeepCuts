@@ -19,11 +19,7 @@
   ["color-tag-seen", "color-surface-default", 4.5],
   ["color-tag-seen", "color-surface-raised", 4.5],
   ["color-tag-seen", "color-surface-overlay", 4.5],
-  ["color-panel-top-ten", "color-card-bg", 3],
   ["color-favourite", "color-card-bg", 4.5],
-  ["color-panel-watchlist", "color-card-bg", 3],
-  ["color-panel-discovery", "color-card-bg", 3],
-  ["color-surface-default", "color-panel-discovery", 4.5],
   ["color-tag-watchlist", "color-surface-default", 4.5],
   ["color-tag-watchlist", "color-surface-raised", 4.5],
   ["color-tag-watchlist", "color-surface-overlay", 4.5],
@@ -102,38 +98,155 @@
   ["color-field-border-focus", "color-field-bg", 3],
   ["color-slider-track", "color-surface-default", 3],
   ["color-slider-thumb", "color-surface-default", 3],
-  ["color-poster-border", "color-surface-default", 3],
   ["color-sticker-ink", "color-sticker-paper", 4.5],
   ["color-top-ten-sticker-ink", "color-top-ten-sticker-face", 4.5],
   [
     "color-top-ten-sticker-ink",
-    { "mix": ["color-top-ten-sticker-face", 0.75, "color-top-ten-sticker-paper"] },
+    {
+      "mix": ["color-top-ten-sticker-face", 0.75, "color-top-ten-sticker-paper"]
+    },
     4.5
   ],
-  ["color-sticker-ink", { "mix": ["color-genre-action", 0.65, "color-sticker-paper"] }, 4.5],
-  ["color-sticker-ink", { "mix": ["color-genre-adventure", 0.65, "color-sticker-paper"] }, 4.5],
-  ["color-sticker-ink", { "mix": ["color-genre-animation", 0.65, "color-sticker-paper"] }, 4.5],
-  ["color-sticker-ink", { "mix": ["color-genre-comedy", 0.65, "color-sticker-paper"] }, 4.5],
-  ["color-sticker-ink", { "mix": ["color-genre-crime", 0.65, "color-sticker-paper"] }, 4.5],
-  ["color-sticker-ink", { "mix": ["color-genre-default", 0.65, "color-sticker-paper"] }, 4.5],
-  ["color-sticker-ink", { "mix": ["color-genre-documentary", 0.65, "color-sticker-paper"] }, 4.5],
-  ["color-sticker-ink", { "mix": ["color-genre-drama", 0.65, "color-sticker-paper"] }, 4.5],
-  ["color-sticker-ink", { "mix": ["color-genre-family", 0.65, "color-sticker-paper"] }, 4.5],
-  ["color-sticker-ink", { "mix": ["color-genre-fantasy", 0.65, "color-sticker-paper"] }, 4.5],
-  ["color-sticker-ink", { "mix": ["color-genre-history", 0.65, "color-sticker-paper"] }, 4.5],
-  ["color-sticker-ink", { "mix": ["color-genre-horror", 0.65, "color-sticker-paper"] }, 4.5],
-  ["color-sticker-ink", { "mix": ["color-genre-music", 0.65, "color-sticker-paper"] }, 4.5],
-  ["color-sticker-ink", { "mix": ["color-genre-mystery", 0.65, "color-sticker-paper"] }, 4.5],
-  ["color-sticker-ink", { "mix": ["color-genre-romance", 0.65, "color-sticker-paper"] }, 4.5],
   [
     "color-sticker-ink",
-    { "mix": ["color-genre-science-fiction", 0.65, "color-sticker-paper"] },
+    {
+      "mix": ["color-genre-action", 0.65, "color-sticker-paper"]
+    },
     4.5
   ],
-  ["color-sticker-ink", { "mix": ["color-genre-thriller", 0.65, "color-sticker-paper"] }, 4.5],
-  ["color-sticker-ink", { "mix": ["color-genre-tv-movie", 0.65, "color-sticker-paper"] }, 4.5],
-  ["color-sticker-ink", { "mix": ["color-genre-war", 0.65, "color-sticker-paper"] }, 4.5],
-  ["color-sticker-ink", { "mix": ["color-genre-western", 0.65, "color-sticker-paper"] }, 4.5],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-adventure", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-animation", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-comedy", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-crime", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-default", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-documentary", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-drama", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-family", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-fantasy", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-history", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-horror", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-music", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-mystery", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-romance", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-science-fiction", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-thriller", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-tv-movie", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-war", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
+  [
+    "color-sticker-ink",
+    {
+      "mix": ["color-genre-western", 0.65, "color-sticker-paper"]
+    },
+    4.5
+  ],
   ["color-vhs-box-light", "color-vhs-box-shell", 4.5],
   ["color-vhs-box-ink", "color-vhs-box-card", 4.5],
   ["color-vhs-box-ink", "color-genre-action", 3],
@@ -168,5 +281,9 @@
   ["color-fg-danger", "color-surface-raised", 4.5],
   ["color-border-emphasis", "color-surface-default", 3],
   ["color-border-emphasis", "color-surface-raised", 3],
-  ["color-field-action-fg", "color-field-action-bg", 4.5]
+  ["color-field-action-fg", "color-field-action-bg", 4.5],
+  ["color-fg-on-accent", "color-tag-seen", 4.5],
+  ["color-fg-on-accent", "color-tag-watchlist", 4.5],
+  ["color-fg-on-accent", "color-tag-liked", 4.5],
+  ["color-fg-on-accent", "color-tag-disliked", 4.5]
 ]

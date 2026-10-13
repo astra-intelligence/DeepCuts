@@ -55,7 +55,9 @@ function SignedIn({ account }: { account: Account }) {
       <div className="mb-4 flex items-center gap-3">
         <Avatar name={account.name} large />
         <div>
-          <h1 className="font-display text-3xl leading-tight">{account.name}</h1>
+          <h1 className="font-display text-3xl leading-tight tracking-wide uppercase">
+            {account.name}
+          </h1>
           <p className="text-sm text-fg-muted">{SIGNED_IN_WITH[account.method]}</p>
         </div>
       </div>
@@ -64,9 +66,9 @@ function SignedIn({ account }: { account: Account }) {
         {/* Phones only: from `md` the account menu shows the count and links My Lists. */}
         <section
           aria-labelledby="lists-heading"
-          className="grid content-start gap-2.5 border border-card-border bg-card-bg p-4 md:hidden"
+          className="grid content-start gap-2.5 border-2 border-card-border bg-card-bg p-4 md:hidden"
         >
-          <h2 id="lists-heading" className="font-display text-2xl">
+          <h2 id="lists-heading" className="font-display text-2xl tracking-wide uppercase">
             Your lists
           </h2>
           <p className="text-sm text-fg-muted">
@@ -82,7 +84,7 @@ function SignedIn({ account }: { account: Account }) {
           )}
           <Link
             to="/lists"
-            className="flex min-h-11 w-fit items-center gap-1.5 text-sm font-semibold text-accent"
+            className="flex min-h-11 w-fit items-center gap-1.5 text-sm font-bold text-accent"
           >
             Open My Lists <Icon name="arrow" className="size-4" />
           </Link>
@@ -91,9 +93,9 @@ function SignedIn({ account }: { account: Account }) {
         {/* Phones only: from `md` Sign out is in the account menu. */}
         <section
           aria-labelledby="signout-heading"
-          className="grid content-start gap-2.5 border border-card-border bg-card-bg p-4 md:hidden"
+          className="grid content-start gap-2.5 border-2 border-card-border bg-card-bg p-4 md:hidden"
         >
-          <h2 id="signout-heading" className="font-display text-2xl">
+          <h2 id="signout-heading" className="font-display text-2xl tracking-wide uppercase">
             Sign out
           </h2>
           <p className="text-sm text-fg-muted">
@@ -104,7 +106,7 @@ function SignedIn({ account }: { account: Account }) {
               <Button
                 ref={confirmRef}
                 onPress={confirmSignOut}
-                className="flex h-11 items-center border border-button-secondary-border bg-button-secondary-bg px-3.5 text-sm font-semibold text-button-secondary-fg"
+                className="flex h-11 items-center border-2 border-button-secondary-border bg-button-secondary-bg px-3.5 font-display text-base tracking-widest text-button-secondary-fg uppercase"
               >
                 Yes, sign out
               </Button>
@@ -114,7 +116,7 @@ function SignedIn({ account }: { account: Account }) {
                   // Return focus to "Sign out" once it's back on screen (next frame).
                   requestAnimationFrame(() => askRef.current?.focus())
                 }}
-                className="flex h-11 items-center px-2 text-sm font-semibold text-accent"
+                className="flex h-11 items-center px-2 text-sm font-bold text-accent"
               >
                 Cancel
               </Button>
@@ -123,7 +125,7 @@ function SignedIn({ account }: { account: Account }) {
             <Button
               ref={askRef}
               onPress={() => setConfirming(true)}
-              className="flex h-11 w-36 items-center justify-center border border-button-secondary-border bg-button-secondary-bg text-sm font-semibold text-button-secondary-fg"
+              className="flex h-11 w-36 items-center justify-center border-2 border-button-secondary-border bg-button-secondary-bg font-display text-base tracking-widest text-button-secondary-fg uppercase"
             >
               Sign out
             </Button>

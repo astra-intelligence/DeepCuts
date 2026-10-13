@@ -21,7 +21,7 @@ export function FavoriteStep({ state, update }: StepProps) {
           Use the search above to find a favorite. You can tag it there and come right back.
         </p>
         {favorite && (
-          <p className="mb-3 ml-auto flex w-fit items-center gap-2 border border-accent bg-surface-overlay px-3 py-1.5 text-fg">
+          <p className="mb-3 ml-auto flex w-fit items-center gap-2 border-2 border-accent bg-surface-overlay px-3 py-1.5 text-fg">
             <Icon name="check" />
             <span className="flex flex-col">
               <small className="text-sm text-fg-muted">Your pick</small>

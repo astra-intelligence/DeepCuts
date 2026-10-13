@@ -181,7 +181,7 @@
       }
     },
     "$type": "dimension",
-    "$description": "Tailwind’s default spacing scale: step n = n × 0.25rem. Utilities accept any multiple of `unit`; the named steps are for Figma and native.",
+    "$description": "Tailwind\u2019s default spacing scale: step n = n \u00d7 0.25rem. Utilities accept any multiple of `unit`; the named steps are for Figma and native.",
     "unit": {
       "$value": {
         "value": 0.25,
@@ -219,69 +219,10 @@
       }
     }
   },
-  "radius": {
-    "$type": "dimension",
-    "$description": "Tailwind’s default radius scale.",
-    "xs": {
-      "$value": {
-        "value": 0.125,
-        "unit": "rem"
-      }
-    },
-    "sm": {
-      "$value": {
-        "value": 0.25,
-        "unit": "rem"
-      }
-    },
-    "md": {
-      "$value": {
-        "value": 0.375,
-        "unit": "rem"
-      }
-    },
-    "lg": {
-      "$value": {
-        "value": 0.5,
-        "unit": "rem"
-      }
-    },
-    "xl": {
-      "$value": {
-        "value": 0.75,
-        "unit": "rem"
-      }
-    },
-    "2xl": {
-      "$value": {
-        "value": 1,
-        "unit": "rem"
-      }
-    },
-    "3xl": {
-      "$value": {
-        "value": 1.5,
-        "unit": "rem"
-      }
-    },
-    "4xl": {
-      "$value": {
-        "value": 2,
-        "unit": "rem"
-      }
-    },
-    "full": {
-      "$value": {
-        "value": 9999,
-        "unit": "px"
-      },
-      "$description": "Fully rounded (pills, circles)."
-    }
-  },
   "size": {
     "breakpoint": {
       "$type": "dimension",
-      "$description": "Tailwind’s default breakpoints (min-width).",
+      "$description": "Tailwind\u2019s default breakpoints (min-width).",
       "sm": {
         "$value": {
           "value": 40,
@@ -315,7 +256,7 @@
     },
     "container": {
       "$type": "dimension",
-      "$description": "Tailwind’s default container widths (max-w-*, w-*).",
+      "$description": "Tailwind\u2019s default container widths (max-w-*, w-*).",
       "3xs": {
         "$value": {
           "value": 16,
@@ -398,7 +339,7 @@
   },
   "blur": {
     "$type": "dimension",
-    "$description": "Tailwind’s default blur scale (backdrop-blur-*).",
+    "$description": "Tailwind\u2019s default blur scale (backdrop-blur-*).",
     "xs": {
       "$value": {
         "value": 4,

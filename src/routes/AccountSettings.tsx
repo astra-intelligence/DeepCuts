@@ -14,12 +14,12 @@ import { useSession } from '../session/SessionContext'
 
 // Same field styles as the registration form.
 const fieldBox =
-  'focus-ring-within flex min-h-12 items-center border border-field-border bg-field-bg focus-within:border-field-border-focus group-data-invalid:border-fg-danger'
+  'focus-ring-within flex min-h-12 items-center border-2 border-field-border bg-field-bg focus-within:border-field-border-focus group-data-invalid:border-fg-danger'
 const inputClass =
   'min-w-0 flex-1 self-stretch bg-transparent px-3 text-base text-fg outline-none placeholder:text-fg-placeholder'
-const cardClass = 'grid content-start gap-2.5 border border-card-border bg-card-bg p-4'
+const cardClass = 'grid content-start gap-2.5 border-2 border-card-border bg-card-bg p-4'
 const secondaryButton =
-  'flex h-11 items-center justify-center border border-button-secondary-border bg-button-secondary-bg px-3.5 text-sm font-semibold text-button-secondary-fg data-pending:opacity-70'
+  'flex h-11 items-center justify-center border-2 border-button-secondary-border bg-button-secondary-bg px-3.5 font-display text-base tracking-widest uppercase text-button-secondary-fg data-pending:opacity-70'
 
 /** "Change name" and "Delete account" cards for a passkey account. */
 export function AccountSettings({ name }: { name: string }) {
@@ -57,7 +57,7 @@ function ChangeName({ name, rename }: { name: string; rename: (name: string) => 
 
   return (
     <section aria-labelledby="name-heading" className={cardClass}>
-      <h2 id="name-heading" className="font-display text-2xl">
+      <h2 id="name-heading" className="font-display text-2xl tracking-wide uppercase">
         Change name
       </h2>
       <Form
@@ -73,7 +73,7 @@ function ChangeName({ name, rename }: { name: string; rename: (name: string) => 
           autoComplete="name"
           className="group grid gap-1.5"
         >
-          <Label className="text-sm font-semibold">Name</Label>
+          <Label className="text-sm font-bold">Name</Label>
           <div className={fieldBox}>
             <Input className={inputClass} />
           </div>
@@ -111,7 +111,7 @@ function DeleteAccount({ deleteAccount }: { deleteAccount: () => Promise<void> }
 
   return (
     <section aria-labelledby="delete-heading" className={cardClass}>
-      <h2 id="delete-heading" className="font-display text-2xl">
+      <h2 id="delete-heading" className="font-display text-2xl tracking-wide uppercase">
         Delete account
       </h2>
       <p className="text-sm text-fg-muted">
@@ -134,7 +134,7 @@ function DeleteAccount({ deleteAccount }: { deleteAccount: () => Promise<void> }
               // Return focus to "Delete account" once it's back on screen (next frame).
               requestAnimationFrame(() => askRef.current?.focus())
             }}
-            className="flex h-11 items-center px-2 text-sm font-semibold text-accent"
+            className="flex h-11 items-center px-2 text-sm font-bold text-accent"
           >
             Cancel
           </Button>

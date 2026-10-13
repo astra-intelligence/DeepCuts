@@ -2,11 +2,20 @@
 // and a lede (ADR-0040).
 import { Eyebrow } from './Eyebrow'
 
+// Headline sizes from the dossier's scale (ADR-0040 §3) on Tailwind's: the landing page's poster
+// headline (about 64-124px there), Home's (48-88px) and every other page's.
+const SIZES = {
+  poster: 'text-6xl md:text-8xl lg:text-9xl',
+  hero: 'text-5xl md:text-7xl',
+  page: 'text-5xl',
+} as const
+
 /**
  * Label + display headline + lede, used at the top of every main page.
  * @param highlight - Words that end the headline in blood red with a hard shadow ("close at
  *   hand" on Home). Large text only: blood on ink is about 3.3:1, which passes only at this size.
- * @param size - `hero` for Home's larger headline; `page` for every other page.
+ * @param size - `poster` for the landing page's headline (the highlight on its own line), `hero`
+ *   for Home's, `page` for every other page.
  */
 export function PageHeading({
   eyebrow,
@@ -19,7 +28,7 @@ export function PageHeading({
   title: string
   highlight?: string
   lede?: string
-  size?: 'hero' | 'page'
+  size?: 'poster' | 'hero' | 'page'
 }) {
   return (
     <div className="mt-2 mb-8">
@@ -27,15 +36,15 @@ export function PageHeading({
       {/* Each page has exactly one <h1>; useRouteFocus moves focus to it after navigation. The
           highlight is part of the same heading, so it reads as one sentence. */}
       <h1
-        className={`font-display leading-none tracking-wide text-balance wrap-anywhere uppercase ${
-          size === 'hero' ? 'text-5xl md:text-7xl' : 'text-5xl'
-        }`}
+        className={`font-display leading-none tracking-wide text-balance wrap-anywhere uppercase ${SIZES[size]}`}
       >
         {title}
         {highlight && (
           <>
             {' '}
-            <span className="text-danger text-shadow-hard">{highlight}</span>
+            <span className={`text-danger text-shadow-hard ${size === 'poster' ? 'block' : ''}`}>
+              {highlight}
+            </span>
           </>
         )}
       </h1>

@@ -34,9 +34,9 @@
     /* Clear of the printed frame on every side, and of the dog-ear on the right. */
     @apply min-h-14 py-3.5 pr-8 pl-6;
     rotate: var(--tilt);
-    filter: drop-shadow(
-      0 2px 3px color-mix(in srgb, var(--color-top-ten-sticker-ink) 45%, transparent)
-    );
+    /* A hard 3px shadow, like the stamps (elevation.stamp, ADR-0040); a drop shadow so it
+       follows the die-cut outline. */
+    filter: drop-shadow(3px 3px 0 var(--color-shadow));
     transition:
       rotate var(--default-transition-duration) ease-out,
       translate var(--default-transition-duration) ease-out,

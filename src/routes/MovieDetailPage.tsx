@@ -168,7 +168,7 @@ function DetailLayout({
         ref={backRef}
         onPress={() => onDismiss()}
         aria-label="Back to previous screen"
-        className="absolute top-[max(1.125rem,env(safe-area-inset-top))] left-5 z-10 grid size-12 place-items-center rounded-full border border-border-control bg-surface-raised/80 backdrop-blur-md md:fixed"
+        className="absolute top-[max(1.125rem,env(safe-area-inset-top))] left-5 z-10 grid size-12 place-items-center border-2 border-border-emphasis bg-surface-raised hover:border-accent hover:text-accent md:fixed"
       >
         <Icon name="back" className="size-6" />
       </Button>
@@ -231,7 +231,7 @@ function MovieDetail({ id, onDismiss }: { id: number; onDismiss: () => void }) {
             the tags below. Pressing it saves at once; it then becomes a short notice. */}
         <DetailTopTen movieId={m.id} title={m.title} className="mb-4" />
         <h1
-          className={`font-display tracking-tight text-balance wrap-anywhere ${titleSize(m.title)}`}
+          className={`font-display tracking-wide text-balance wrap-anywhere uppercase ${titleSize(m.title)}`}
         >
           {m.title}
         </h1>
@@ -239,24 +239,25 @@ function MovieDetail({ id, onDismiss }: { id: number; onDismiss: () => void }) {
           <span>{meta.join(' · ')}</span>
           {rating && (
             <span
-              className="border border-border-control px-1.5 py-0.5"
+              className="border-2 border-border-control px-1.5 py-0.5"
               aria-label={`Rated ${rating}`}
             >
               {rating}
             </span>
           )}
         </p>
-        {m.overview && <p className="my-3.5 leading-relaxed text-fg-muted">{m.overview}</p>}
+        {/* Synopses are the one long text in the typewriter face, so the line stays under ~65
+            characters (owner, 2026-10-13). */}
+        {m.overview && (
+          <p className="my-3.5 max-w-prose leading-relaxed text-fg-soft">{m.overview}</p>
+        )}
 
         {/* The four tag toggles, with Save and Cancel once anything changes (ADR-0017 rules). */}
         <DetailTags movieId={m.id} title={m.title} onDismiss={onDismiss} />
 
         {/* A clear break between your tags and the streaming info (owner, 2026-10-07). */}
         <section aria-labelledby="where-to-watch" className="mt-12">
-          <h2
-            id="where-to-watch"
-            className="mb-2.5 text-sm font-bold tracking-widest text-fg-muted uppercase"
-          >
+          <h2 id="where-to-watch" className="mb-2.5 font-label text-sm tracking-widest text-accent">
             Where to watch ({REGION})
           </h2>
           {/* Service logos (with the name as alt text), or a short message. */}
@@ -267,7 +268,7 @@ function MovieDetail({ id, onDismiss }: { id: number; onDismiss: () => void }) {
                 return (
                   <li key={p.provider_id} title={p.provider_name}>
                     {logo ? (
-                      <img src={logo} alt={p.provider_name} width={32} height={32} className="" />
+                      <img src={logo} alt={p.provider_name} width={32} height={32} />
                     ) : (
                       <span className="text-sm">{p.provider_name}</span>
                     )}
@@ -295,7 +296,7 @@ function NotFound() {
   return (
     <div className="px-5 pt-40">
       <title>Film not found · Deep Cuts</title>
-      <h1 className="font-display text-4xl">Film not found</h1>
+      <h1 className="font-display text-5xl uppercase">Film not found</h1>
       <p className="mt-2 text-fg-muted">
         We couldn’t find that film.{' '}
         <Link to={HOME.path} className="text-accent underline">

@@ -151,7 +151,7 @@ export function WeightsPage() {
       ) : (
         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
           <section aria-labelledby="weights" className="grid gap-5 lg:sticky lg:top-48">
-            <h2 id="weights" className="text-lg font-semibold">
+            <h2 id="weights" className="text-lg font-bold">
               Weights
             </h2>
             {SCORE_PARTS.map((p) => (
@@ -175,14 +175,14 @@ export function WeightsPage() {
           </section>
 
           <section aria-labelledby="picks" className="min-w-0">
-            <h2 id="picks" className="text-lg font-semibold">
+            <h2 id="picks" className="text-lg font-bold">
               Your top {LIMIT}
             </h2>
             <p className="mb-2.5 text-sm text-fg-muted">
               Change is the move from the default weights. Part scores run 0–100.
             </p>
             {allZero && (
-              <p role="alert" className="mb-3 border border-border-control p-3 text-sm">
+              <p role="alert" className="mb-3 border-2 border-border-control p-3 text-sm">
                 Every weight is at zero, so every film scores 0%. Turn at least one up.
               </p>
             )}
@@ -240,7 +240,7 @@ function WeightSlider({
       onChange={onChange}
       className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3"
     >
-      <Label className="text-sm font-semibold">{label}</Label>
+      <Label className="text-sm font-bold">{label}</Label>
       <SliderOutput className="text-sm text-fg-muted tabular-nums">
         {({ state }) =>
           share === undefined ? state.getThumbValue(0) : `${state.getThumbValue(0)} · ${share}%`
@@ -249,14 +249,14 @@ function WeightSlider({
       <SliderTrack className="relative col-span-2 h-11">
         {({ state }) => (
           <>
-            <span className="absolute top-1/2 h-1.5 w-full -translate-y-1/2 rounded-full bg-slider-track" />
+            <span className="absolute top-1/2 h-1.5 w-full -translate-y-1/2 bg-slider-track" />
             <span
-              className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-slider-fill"
+              className="absolute top-1/2 h-1.5 -translate-y-1/2 bg-slider-fill"
               style={{ width: `${state.getThumbPercent(0) * 100}%` }}
             />
             <SliderThumb
               aria-describedby={hintId}
-              className="focus-ring-within top-1/2 size-6 rounded-full border-2 border-slider-thumb-border bg-slider-thumb data-dragging:scale-110"
+              className="focus-ring-within top-1/2 size-6 border-2 border-slider-thumb-border bg-slider-thumb data-dragging:scale-110"
             />
           </>
         )}
@@ -283,15 +283,15 @@ function Summary({ weights, diversityPenalty }: { weights: Weights; diversityPen
   }
 
   return (
-    <div className="grid gap-2.5 border border-card-border bg-card-bg p-4">
-      <h3 className="text-sm font-semibold">These settings</h3>
+    <div className="grid gap-2.5 border-2 border-card-border bg-card-bg p-4">
+      <h3 className="text-sm font-bold">These settings</h3>
       <pre className="overflow-x-auto text-sm text-fg-muted tabular-nums">
         <code>{text}</code>
       </pre>
       <div className="flex flex-wrap gap-2.5">
         <Button
           onPress={copy}
-          className="min-h-11 border border-button-secondary-border px-3.5 text-sm font-semibold hover:border-accent"
+          className="min-h-11 border-2 border-button-secondary-border px-3.5 font-display text-base tracking-widest uppercase hover:border-accent"
         >
           Copy settings
         </Button>
@@ -299,7 +299,7 @@ function Summary({ weights, diversityPenalty }: { weights: Weights; diversityPen
           to="/lab/weights"
           replace
           preventScrollReset
-          className="inline-flex min-h-11 items-center px-3.5 text-sm font-semibold text-accent"
+          className="inline-flex min-h-11 items-center px-3.5 text-sm font-bold text-accent"
         >
           Reset to defaults
         </Link>
@@ -320,24 +320,24 @@ function PicksTable({
   baselineRank: Map<number, number>
 }) {
   return (
-    <div className="overflow-x-auto border border-card-border">
+    <div className="overflow-x-auto border-2 border-card-border">
       <table className="w-full text-left text-sm tabular-nums">
         <thead className="bg-surface-raised text-fg-muted">
           <tr>
-            <th scope="col" className="px-3 py-2 font-semibold">
+            <th scope="col" className="px-3 py-2 font-bold">
               #
             </th>
-            <th scope="col" className="px-3 py-2 font-semibold">
+            <th scope="col" className="px-3 py-2 font-bold">
               Film
             </th>
-            <th scope="col" className="px-3 py-2 font-semibold">
+            <th scope="col" className="px-3 py-2 font-bold">
               Change
             </th>
-            <th scope="col" className="px-3 py-2 font-semibold">
+            <th scope="col" className="px-3 py-2 font-bold">
               Match
             </th>
             {SCORE_PARTS.map((p) => (
-              <th key={p} scope="col" className="px-3 py-2 font-semibold">
+              <th key={p} scope="col" className="px-3 py-2 font-bold">
                 <abbr title={PARTS[p].label} className="no-underline">
                   {PARTS[p].short}
                 </abbr>
@@ -349,7 +349,7 @@ function PicksTable({
           {picks.map((r, i) => (
             <tr key={r.movie.id} className="border-t border-border">
               <td className="px-3 py-2 text-fg-muted">{i + 1}</td>
-              <th scope="row" className="min-w-40 px-3 py-2 font-semibold">
+              <th scope="row" className="min-w-40 px-3 py-2 font-bold">
                 <Link to={`/movie/${r.movie.id}`} className="text-accent underline">
                   {r.movie.title}
                 </Link>{' '}
@@ -376,7 +376,7 @@ function PicksTable({
 
 /** Rank change against the default weights, as words for screen readers and arrows on screen. */
 function Change({ from, to }: { from: number | undefined; to: number }) {
-  if (from === undefined) return <span className="font-semibold text-accent">New</span>
+  if (from === undefined) return <span className="font-bold text-accent">New</span>
   const moved = from - to
   if (moved === 0) return <span className="text-fg-muted">–</span>
   return (

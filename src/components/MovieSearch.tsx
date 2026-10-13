@@ -119,7 +119,7 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
                   id={movie.id}
                   textValue={movie.title}
                   style={genreTone(movie.genre_ids)}
-                  className="flex min-h-16 cursor-pointer items-center gap-2.5 border-b border-l-3 border-b-border border-l-(--tone) p-1.5 outline-none last:border-b-0 data-focused:bg-surface-overlay"
+                  className="border-b-border-2 flex min-h-16 cursor-pointer items-center gap-2.5 border-b border-l-3 border-l-(--tone) p-1.5 outline-none last:border-b-0 data-focused:bg-surface-overlay"
                 >
                   {poster ? (
                     <LoadingImage src={poster} alt="" className="h-12 w-9 shrink-0 object-cover" />
@@ -136,7 +136,7 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
                     </small>
                   </span>
                   <span className="flex shrink-0 items-center gap-1.5 font-display text-sm tracking-wider whitespace-nowrap text-accent uppercase">
-                    <Icon name="eye" className="size-4" /> View details
+                    View details <span aria-hidden="true">→</span>
                   </span>
                 </ListBoxItem>
               )

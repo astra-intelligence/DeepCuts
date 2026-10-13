@@ -3,9 +3,6 @@
   "color": {
     "$type": "color",
     "poster": {
-      "border": {
-        "$value": "{color.border.control}"
-      },
       "placeholder": {
         "$value": "{color.surface.overlay}"
       }

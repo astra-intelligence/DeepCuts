@@ -72,12 +72,14 @@ export function RateStep({ state, update }: StepProps) {
           <Eyebrow>
             Tune your picks · {state.n} of {PICKS}
           </Eyebrow>
-          <h1 className="font-display text-4xl tracking-tight md:text-5xl">What do you think?</h1>
+          <h1 className="font-display text-4xl tracking-wide uppercase md:text-5xl">
+            What do you think?
+          </h1>
         </div>
       </div>
       <article
         aria-label={pick.title}
-        className="relative flex min-h-130 flex-col justify-end overflow-hidden border border-card-border bg-card-bg md:min-h-140"
+        className="relative flex min-h-130 flex-col justify-end overflow-hidden border-2 border-card-border bg-card-bg md:min-h-140"
       >
         {image && (
           <LoadingImage src={image} alt="" className="absolute inset-0 size-full object-cover" />
@@ -117,7 +119,7 @@ export function RateStep({ state, update }: StepProps) {
           ))}
           <Button
             onPress={next}
-            className="col-span-2 flex h-11 w-36 items-center justify-center gap-2 self-center justify-self-center bg-button-primary-bg px-3.5 font-semibold text-button-primary-fg hover:bg-button-primary-bg/85 md:col-span-1"
+            className="col-span-2 flex h-11 w-36 items-center justify-center gap-2 self-center justify-self-center bg-button-primary-bg px-3.5 font-display text-base tracking-widest text-button-primary-fg uppercase hover:bg-button-primary-bg-hover md:col-span-1"
           >
             <Icon name="arrow" /> Next film
           </Button>

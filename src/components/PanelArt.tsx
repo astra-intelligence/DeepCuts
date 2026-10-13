@@ -1,27 +1,28 @@
-// The landing page's three small illustrations, one per panel (ADR-0035): a ranked list, a fan of
-// saved cassettes, and a row of picks with a match badge.
+// The landing page's three small illustrations, one per feature (ADR-0035, ADR-0040 §6a): ranked
+// numerals beside posters, two overlapping ADMIT ONE stubs, and three posters with a match stamp.
 //
-// Inline SVG drawn only with theme tokens (`fill-*`, `stroke-*`, and the panel's own `--panel`
-// color from FeaturePanel), so the art follows the theme and needs no image files. Purely
-// decorative (`aria-hidden`): the panel's heading and copy carry the meaning (ADR-0009).
+// Inline SVG drawn only with theme tokens (`fill-*`, `stroke-*`), so it follows the theme and
+// needs no image files. It sits in a halftone "well" (FeaturePanel's content). Purely decorative
+// (`aria-hidden`): the panel's heading and copy carry the meaning (ADR-0009).
 import type { PanelId } from './panels'
 
-// Shared look for the stand-in posters.
-const poster = 'fill-poster-placeholder stroke-poster-border'
+// Shared look for the stand-in posters: raised ink with a line border, square like the boxes.
+const poster = 'fill-surface-raised stroke-border-strong'
 
-/** The illustration for one panel. Fills its container's width at a 240×132 aspect ratio. */
+/** The illustration for one feature, in its halftone well (about 166px tall). */
 export function PanelArt({ id }: { id: PanelId }) {
   return (
-    <svg aria-hidden="true" viewBox="0 0 240 132" className="h-auto w-full max-w-80">
-      {id === 'top-ten' && <RankedList />}
-      {id === 'watchlist' && <SavedFan />}
-      {id === 'discovery' && <PicksRow />}
-    </svg>
+    <div className="grid h-42 place-items-center border-2 border-border bg-surface halftone px-4">
+      <svg aria-hidden="true" viewBox="0 0 240 132" className="h-full max-h-36 w-full max-w-80">
+        {id === 'top-ten' && <RankedList />}
+        {id === 'watchlist' && <TicketStubs />}
+        {id === 'discovery' && <PicksRow />}
+      </svg>
+    </div>
   )
 }
 
-// Three ranked rows: a number, a poster, a title and a subtitle line. Number one is in the
-// panel color.
+// Three ranked rows: a big numeral, a poster and two text bars. Number one is in mustard.
 function RankedList() {
   return (
     <g>
@@ -30,26 +31,16 @@ function RankedList() {
         return (
           <g key={i}>
             <text
-              x="14"
-              y={y + 26}
+              x="16"
+              y={y + 30}
               textAnchor="middle"
-              className={`font-display text-2xl ${i === 0 ? 'fill-(--panel)' : 'fill-fg-muted'}`}
+              className={`font-display text-4xl ${i === 0 ? 'fill-accent' : 'fill-fg-muted'}`}
             >
               {i + 1}
             </text>
-            <rect x="34" y={y} width="24" height="34" rx="3" className={poster} />
-            <rect x="70" y={y + 8} width={150 - i * 26} height="8" rx="4" className="fill-fg/70" />
-            <rect
-              x="70"
-              y={y + 22}
-              width={90 - i * 14}
-              height="6"
-              rx="3"
-              className="fill-fg-muted/50"
-            />
-            {i < 2 && (
-              <line x1="34" x2="230" y1={y + 39} y2={y + 39} className="stroke-card-border" />
-            )}
+            <rect x="38" y={y} width="24" height="34" className={poster} strokeWidth="2" />
+            <rect x="74" y={y + 8} width={150 - i * 26} height="8" className="fill-fg/70" />
+            <rect x="74" y={y + 22} width={90 - i * 14} height="6" className="fill-fg-muted/50" />
           </g>
         )
       })}
@@ -57,61 +48,69 @@ function RankedList() {
   )
 }
 
-// Three cassettes fanned out like a stack to get to, the front one bookmarked.
-function SavedFan() {
+// One stub: a ticket with a dashed perforation near its right end and ADMIT ONE printed on it.
+function Stub({ x, y, rotate, tone }: { x: number; y: number; rotate: number; tone: string }) {
   return (
-    <g>
-      <rect
-        x="52"
-        y="22"
-        width="60"
-        height="92"
-        rx="4"
-        transform="rotate(-9 82 68)"
-        className={poster}
+    <g transform={`rotate(${rotate} ${x + 70} ${y + 26})`}>
+      <rect x={x} y={y} width="140" height="52" className={tone} />
+      <line
+        x1={x + 110}
+        x2={x + 110}
+        y1={y + 4}
+        y2={y + 48}
+        strokeDasharray="4 4"
+        strokeWidth="2"
+        className="stroke-surface/60"
       />
-      <rect
-        x="128"
-        y="22"
-        width="60"
-        height="92"
-        rx="4"
-        transform="rotate(9 158 68)"
-        className={poster}
-      />
-      <rect x="90" y="16" width="60" height="96" rx="4" className={`${poster} stroke-(--panel)`} />
-      {/* The bookmark ribbon on the front cassette. */}
-      <path d="M128 16h14v24l-7-5-7 5Z" className="fill-(--panel)" />
-      <rect x="100" y="90" width="40" height="6" rx="3" className="fill-fg-muted/50" />
+      <text
+        x={x + 55}
+        y={y + 33}
+        textAnchor="middle"
+        className="fill-fg-on-accent font-display text-base tracking-widest"
+      >
+        ADMIT ONE
+      </text>
     </g>
   )
 }
 
-// A row of three picks; the middle one is lifted, outlined and badged with its match.
+// Two overlapping ticket stubs, bone behind and mustard in front: films saved for later.
+function TicketStubs() {
+  return (
+    <g>
+      <Stub x={34} y={24} rotate={-8} tone="fill-fg" />
+      <Stub x={66} y={58} rotate={5} tone="fill-accent" />
+    </g>
+  )
+}
+
+// Three posters; the middle one is blood red and stamped with its match.
 function PicksRow() {
   return (
     <g>
-      <rect x="22" y="40" width="56" height="82" rx="4" className={poster} />
-      <rect x="162" y="40" width="56" height="82" rx="4" className={poster} />
-      <rect
-        x="90"
-        y="32"
-        width="60"
-        height="88"
-        rx="4"
-        className={`${poster} stroke-(--panel)`}
-        strokeWidth="2"
-      />
-      <rect x="94" y="6" width="52" height="20" rx="10" className="fill-(--panel)" />
-      <text x="120" y="20.5" textAnchor="middle" className="fill-surface text-xs font-bold">
-        92%
-      </text>
-      {/* Two small four-point sparkles: something new found for you. */}
-      <path d="m196 8 2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" className="fill-(--panel)" />
-      <path
-        d="m42 18 1.5 3.5 3.5 1.5-3.5 1.5-1.5 3.5-1.5-3.5-3.5-1.5 3.5-1.5Z"
-        className="fill-(--panel)"
-      />
+      <rect x="22" y="34" width="56" height="84" className={poster} strokeWidth="2" />
+      <rect x="162" y="34" width="56" height="84" className={poster} strokeWidth="2" />
+      <rect x="92" y="26" width="56" height="92" className="fill-danger" />
+      <g transform="rotate(-12 120 40)">
+        <circle cx="120" cy="40" r="24" strokeWidth="3" className="fill-accent stroke-surface" />
+        <text
+          x="120"
+          y="42"
+          textAnchor="middle"
+          className="fill-fg-on-accent font-display text-base"
+        >
+          92%
+        </text>
+        <text
+          x="120"
+          y="53"
+          textAnchor="middle"
+          fontSize="8"
+          className="fill-fg-on-accent font-display"
+        >
+          MATCH
+        </text>
+      </g>
     </g>
   )
 }

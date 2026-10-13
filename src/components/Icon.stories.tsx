@@ -3,7 +3,6 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Icon, type IconName } from './Icon'
 
 const NAMES: IconName[] = [
-  'home',
   'search',
   'list',
   'back',
@@ -14,9 +13,7 @@ const NAMES: IconName[] = [
   'ban',
   'check',
   'user',
-  'x',
   'star',
-  'sparkle',
 ]
 
 const meta = { title: 'Components/Icon', component: Icon, args: { name: 'search' } } satisfies Meta<
