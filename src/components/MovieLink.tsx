@@ -2,6 +2,7 @@
 import { Link } from 'react-router'
 import { imageUrl, type MovieSummary } from '../api/tmdb'
 import { Icon } from './Icon'
+import { LoadingImage } from './LoadingImage'
 
 /**
  * Poster + text link for list rows (Search, My Lists). Expects `--tone` from `genreTone()` on a
@@ -27,7 +28,7 @@ export function MovieLink({
       {/* The poster is decorative (alt=""): the title right next to it names the link. A film
           without a poster gets an empty placeholder of the same size. */}
       {poster ? (
-        <img
+        <LoadingImage
           src={poster}
           alt=""
           loading="lazy"

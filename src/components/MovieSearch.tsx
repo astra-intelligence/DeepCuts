@@ -9,6 +9,7 @@ import { genreTone, primaryGenreName } from '../domain/genres'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { useTagQueries } from '../session/tagQueries'
 import { Icon } from './Icon'
+import { LoadingImage } from './LoadingImage'
 
 // Four, as in the design: the list never needs to scroll, even at 320px (axe scrollable-region-focusable).
 const MAX_SUGGESTIONS = 4
@@ -121,7 +122,7 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
                   className="flex min-h-16 cursor-pointer items-center gap-2.5 border-b border-l-3 border-b-border border-l-(--tone) p-1.5 outline-none last:border-b-0 data-focused:bg-surface-overlay"
                 >
                   {poster ? (
-                    <img
+                    <LoadingImage
                       src={poster}
                       alt=""
                       className="h-12 w-9 shrink-0 rounded-subtle object-cover"

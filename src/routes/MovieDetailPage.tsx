@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { movieQueries } from '../api/queries'
 import { certification, formatRuntime, imageUrl, providersFor, releaseYear } from '../api/tmdb'
 import { Icon } from '../components/Icon'
+import { LoadingImage } from '../components/LoadingImage'
 import { HOME } from '../config/features'
 import { Logo } from '../components/Logo'
 import { MovieSearch } from '../components/MovieSearch'
@@ -217,7 +218,9 @@ function MovieDetail({ id, onDismiss }: { id: number; onDismiss: () => void }) {
           From md it fills the whole viewport at its natural shape, and an overlay darkens the
           right side where the text sits. Scrims keep text readable over any image (ADR-0009). */}
       <div className="relative aspect-4/3 w-full md:fixed md:inset-0 md:aspect-auto">
-        {backdrop && <img src={backdrop} alt="" className="size-full object-cover object-top" />}
+        {backdrop && (
+          <LoadingImage src={backdrop} alt="" className="size-full object-cover object-top" />
+        )}
         <div className="absolute inset-0 bg-linear-to-b from-surface/70 via-transparent via-35% to-surface md:hidden" />
         <div className="absolute inset-0 hidden bg-linear-to-r from-transparent from-25% via-surface/85 via-55% to-surface to-75% md:block" />
         <div className="absolute inset-0 hidden bg-linear-to-b from-surface/60 via-transparent via-20% md:block" />

@@ -10,6 +10,7 @@
 import { useEffect, useRef } from 'react'
 import { imageUrl, releaseYear, type MovieSummary } from '../api/tmdb'
 import { GenreSticker } from './GenreSticker'
+import { LoadingImage } from './LoadingImage'
 import './VhsBox.css'
 
 /**
@@ -147,7 +148,7 @@ export function VhsBox({
         {/* The front cover: the poster (or an empty placeholder) and the genre sticker. */}
         <span className="vhs-face vhs-front">
           {poster ? (
-            <img src={poster} alt="" loading="lazy" />
+            <LoadingImage src={poster} alt="" loading="lazy" />
           ) : (
             <span className="block size-full bg-poster-placeholder" />
           )}
