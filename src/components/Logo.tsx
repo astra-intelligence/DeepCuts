@@ -4,32 +4,23 @@
 // at any size.
 //
 // Holidays: from time to time the logo swaps in seasonal artwork (e.g. all of October for
-// Halloween). Each holiday is one entry in SEASONAL_LOGOS below, with its own date window and
-// artwork component; the rest of the year shows the standard wordmark.
+// Halloween). Each holiday is one entry in SEASONAL_LOGOS (seasonalLogos.ts), with its own date
+// window, artwork component and favicon; the rest of the year shows the standard wordmark.
 
-import type { ComponentType } from 'react'
-import { currentSeason, type SeasonWindow } from '../domain/seasons'
-import { HalloweenLogo } from './HalloweenLogo'
-import { CUTS, DEEP, type LogoArtProps } from './logoGlyphs'
-
-/** Holiday artwork that replaces the standard wordmark while `window` is in season. */
-type SeasonalLogo = { id: string; window: SeasonWindow; Art: ComponentType<LogoArtProps> }
-
-/** Every seasonal logo, checked in order; the first in season wins. */
-const SEASONAL_LOGOS: readonly SeasonalLogo[] = [
-  // All of October (owner, 2026-10-13).
-  {
-    id: 'halloween',
-    window: { start: { month: 10, day: 1 }, end: { month: 10, day: 31 } },
-    Art: HalloweenLogo,
-  },
-]
+import { currentSeason } from '../domain/seasons'
+import { CUTS, DEEP, type LogoAlign, type LogoArtProps } from './logoGlyphs'
+import { SEASONAL_LOGOS } from './seasonalLogos'
 
 type LogoProps = {
   className?: string
   decorative?: boolean
   /** The day to pick artwork for. Defaults to today; stories and tests pass a fixed date. */
   date?: Date
+  /**
+   * The edge of the header the logo sits against. Holiday artwork can be bigger than the
+   * wordmark; it grows away from this edge so it never runs off the screen. Defaults to `start`.
+   */
+  align?: LogoAlign
 }
 
 /**
@@ -39,7 +30,12 @@ type LogoProps = {
  * says "Deep Cuts". Every variant keeps the accessible name "Deep Cuts": the brand doesn't change,
  * only its costume.
  */
-export function Logo({ className, decorative = false, date = new Date() }: LogoProps) {
+export function Logo({
+  className,
+  decorative = false,
+  date = new Date(),
+  align = 'start',
+}: LogoProps) {
   const Art = currentSeason(SEASONAL_LOGOS, date)?.Art ?? StandardLogo
   return (
     <Art
@@ -47,6 +43,7 @@ export function Logo({ className, decorative = false, date = new Date() }: LogoP
       role={decorative ? undefined : 'img'}
       aria-label={decorative ? undefined : 'Deep Cuts'}
       aria-hidden={decorative || undefined}
+      data-align={align}
     />
   )
 }

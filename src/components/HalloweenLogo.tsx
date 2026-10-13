@@ -4,8 +4,8 @@
 // colors and the faces are dark; on hover, or while the link around it has keyboard focus, the
 // blocks turn purple and orange and the faces light up and flicker (HalloweenLogo.css).
 //
-// The decorations hang outside the wordmark, so the artwork's box is bigger than the standard
-// logo's. Colors are the `brand.halloween` tokens; the letters are the shared wordmark glyphs.
+// The SVG's box is the wordmark's, the same as the standard logo, so swapping costumes never
+// moves a header; the decorations hang outside it (HalloweenLogo.css sizes and places them). Colors are the `brand.halloween` tokens; the letters are the shared wordmark glyphs.
 
 import { useId } from 'react'
 import { CUTS, DEEP, type LogoArtProps } from './logoGlyphs'
@@ -246,7 +246,7 @@ const BATS = [
  * The Deep Cuts wordmark in its Halloween costume. Takes the same props as every logo variant
  * (Logo.tsx sets the accessible name, or hides it when decorative).
  */
-export function HalloweenLogo(props: LogoArtProps) {
+export function HalloweenLogo({ className, ...props }: LogoArtProps) {
   // Unique ids so two logos on one page never share a filter or mask. React's ids contain
   // characters that aren't safe inside `url(#…)`, so keep only letters and digits.
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
@@ -257,7 +257,7 @@ export function HalloweenLogo(props: LogoArtProps) {
     <svg
       viewBox="0 0 502 128"
       {...props}
-      className={['halloween-logo', props.className].filter(Boolean).join(' ')}
+      className={['halloween-logo', className].filter(Boolean).join(' ')}
     >
       <defs>
         <filter id={glow} x="-50%" y="-50%" width="200%" height="200%">

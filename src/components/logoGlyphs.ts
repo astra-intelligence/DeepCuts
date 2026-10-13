@@ -29,4 +29,12 @@ export type LogoArtProps = {
   role?: 'img' | undefined
   'aria-label'?: string | undefined
   'aria-hidden'?: true | undefined
+  /**
+   * The edge the logo is pinned to (Logo's `align`). Holiday stylesheets read it to grow their
+   * decorations away from that edge; on the standard wordmark it does nothing.
+   */
+  'data-align'?: LogoAlign | undefined
 }
+
+/** Which edge of its header the logo sits against. */
+export type LogoAlign = 'start' | 'end'

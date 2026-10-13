@@ -20,6 +20,25 @@
   .halloween-logo {
     /* The decorations reach past the wordmark; let them draw over the padding around the logo. */
     overflow: visible;
+    /* From `md`: a size up from the standard logo so the costume reads clearly (owner,
+       2026-10-13). A transform, not a bigger box, so no header's layout moves: the artwork grows
+       from its top left corner, nudged down so the moon and bats stay on screen, and the bottom
+       pumpkins hang over whatever is below the header (the landing page's ticker). The translate
+       is a share of the logo's own height, so it holds at every logo size.
+       Phones keep the wordmark's own size: their headers are too tight for the bigger costume
+       (it covered the account chip at 320px and the search box on Detail). */
+    @variant md {
+      transform-origin: left top;
+      scale: 1.3;
+      translate: 0 32%;
+
+      /* Pinned to the right-hand edge (Logo's `align="end"`): grow leftwards instead, and step
+         in from the edge so the pumpkins on the right stay on screen. */
+      &[data-align='end'] {
+        transform-origin: right top;
+        translate: -14% 32%;
+      }
+    }
 
     & * {
       transition:
@@ -27,6 +46,14 @@
         opacity 0.5s ease,
         filter 0.5s ease;
     }
+  }
+
+  /* The decorations never take a click: where they overhang a neighbour (a button, the ticker),
+     the neighbour stays clickable. Hovering the wordmark itself still lights it. */
+  .halloween-logo__moon,
+  .halloween-logo__bat,
+  .halloween-logo__pumpkin {
+    pointer-events: none;
   }
 
   /* ---- At rest ------------------------------------------------------------------------------ */
