@@ -63,7 +63,7 @@ describe('landing page (signed out)', () => {
     expect(await findToast('Signed in as Mike.')).toBeInTheDocument()
     expect(
       within(screen.getByRole('region', { name: 'Movies I want to watch' })).getByRole('link', {
-        name: 'See all',
+        name: 'Movies I want to watch',
       }),
     ).toBeInTheDocument()
   })

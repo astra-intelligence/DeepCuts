@@ -130,7 +130,7 @@ describe('home', () => {
     expect(screen.getByRole('combobox', { name: 'Find a movie to view and tag' })).toHaveFocus()
   })
 
-  it('shows the latest watchlist films with their ADMIT ONE tickets, and See all', async () => {
+  it('shows the latest watchlist films with their ADMIT ONE tickets; the heading opens the list', async () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
@@ -142,7 +142,7 @@ describe('home', () => {
     const thing = await within(panel).findByRole('link', { name: /The Thing.*1982 · Horror/ })
     expect(thing.querySelector('[data-genre-sticker="horror"]')).toBeInTheDocument()
     expect(within(thing).getByText('Admit one')).toBeInTheDocument()
-    expect(within(panel).getByRole('link', { name: 'See all' })).toHaveAttribute(
+    expect(within(panel).getByRole('link', { name: 'Movies I want to watch' })).toHaveAttribute(
       'href',
       '/lists?tag=watchlist',
     )

@@ -114,14 +114,7 @@ function WatchlistShelf({ ids }: { ids: readonly number[] }) {
       id="watchlist"
       feature={2}
       title={PANELS.watchlist.title}
-      meta={
-        <Link
-          to="/lists?tag=watchlist"
-          className="inline-flex min-h-11 items-center font-display text-base tracking-widest text-accent uppercase underline underline-offset-4 hover:text-accent-hover"
-        >
-          See all
-        </Link>
-      }
+      to="/lists?tag=watchlist"
     >
       <ul className={SHELF_GRID}>
         {ids.length > 0 ? (

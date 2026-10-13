@@ -1,4 +1,5 @@
-// One film as a row in a list: poster, title, year/genre, a short overview and "View details".
+// One film as a row in a list: poster, title, year/genre and a short overview. The whole row is the
+// link; its title lights up on hover.
 import { Link } from 'react-router'
 import { imageUrl, type MovieSummary } from '../api/tmdb'
 import { LoadingImage } from './LoadingImage'
@@ -22,7 +23,7 @@ export function MovieLink({
   return (
     <Link
       to={`/movie/${movie.id}`}
-      className="grid min-h-26 min-w-0 grid-cols-[4rem_minmax(0,1fr)] items-center gap-3.5 md:grid-cols-[4.75rem_minmax(0,1fr)] md:gap-4.5"
+      className="group grid min-h-26 min-w-0 grid-cols-[4rem_minmax(0,1fr)] items-center gap-3.5 md:grid-cols-[4.75rem_minmax(0,1fr)] md:gap-4.5"
     >
       {/* The poster is decorative (alt=""): the title right next to it names the link. A film
           without a poster gets an empty placeholder of the same size. */}
@@ -40,7 +41,9 @@ export function MovieLink({
         />
       )}
       <span className="flex min-w-0 flex-col gap-1.5">
-        <strong className="font-bold wrap-anywhere">{movie.title}</strong>
+        <strong className="font-bold wrap-anywhere underline-offset-4 group-hover:text-accent group-hover:underline">
+          {movie.title}
+        </strong>
         <small className="text-sm text-fg-muted">
           {meta.join(' · ')}
           {disliked && <span className="ml-2 text-tag-disliked">Disliked</span>}
@@ -50,9 +53,6 @@ export function MovieLink({
             {movie.overview}
           </span>
         )}
-        <span className="font-display text-base tracking-widest text-accent uppercase underline underline-offset-4">
-          View details <span aria-hidden="true">→</span>
-        </span>
       </span>
     </Link>
   )
