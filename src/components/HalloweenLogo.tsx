@@ -1,6 +1,7 @@
 // The Halloween logo, shown every October (Logo.tsx, SEASONAL_LOGOS). The owner's artwork
 // (docs/design/halloween/deep-cuts-halloween-original.svg) drawn as data: the standard wordmark
-// ringed by jack-o'-lanterns, bats and a crescent moon. At rest the wordmark keeps its usual
+// ringed by jack-o'-lanterns under a crescent moon (the
+// artwork's bats are left out, owner 2026-10-13). At rest the wordmark keeps its usual
 // colors and the faces are dark; on hover, or while the link around it has keyboard focus, the
 // blocks turn purple and orange and the faces light up and flicker (HalloweenLogo.css).
 //
@@ -230,18 +231,6 @@ const IN_FRONT: Pumpkin[] = [
   },
 ]
 
-/** A bat with its wings spread, centred on 0,0; the eyes are separate so they can glow. */
-const BAT =
-  'M0 -3C-3 -7-5 -6-6 -3C-10 -8-16 -10-22 -6C-18 -4-17 0-18 3C-14 0-11 1-9 4C-7 1-4 2-2 4L0 6L2 4C4 2 7 1 9 4C11 1 14 0 18 3C17 0 18 -4 22 -6C16 -10 10 -8 6 -3C5 -6 3 -7 0 -3ZM-3 -4L-2.6 -8.5L-.8 -4.6ZM3 -4L2.6 -8.5L.8 -4.6Z'
-
-/** Where each bat flies, left to right across the top. */
-const BATS = [
-  'translate(22 -62) rotate(-8) scale(1.05)',
-  'translate(150 -56) rotate(10) scale(0.7)',
-  'translate(250 -70) rotate(-4) scale(0.55)',
-  'translate(330 -52) rotate(6) scale(0.8)',
-]
-
 /**
  * The Deep Cuts wordmark in its Halloween costume. Takes the same props as every logo variant
  * (Logo.tsx sets the accessible name, or hides it when decorative).
@@ -264,27 +253,21 @@ export function HalloweenLogo({ className, ...props }: LogoArtProps) {
           <feGaussianBlur stdDeviation="2.6" />
         </filter>
         {/* The crescent is a full moon with a second circle masked out, so it shows the real
-            page behind it in any theme (the original painted the cut in a fixed color). */}
-        <mask id={crescent} maskUnits="userSpaceOnUse" x="-48" y="-72" width="40" height="40">
-          <rect x="-48" y="-72" width="40" height="40" fill="white" />
-          <circle cx="-18" cy="-58" r="18" fill="black" />
+            page behind it in any theme (the original painted the cut in a fixed color). It sits
+            22 units lower than in the original, so it stays on screen with the logo nudged up. */}
+        <mask id={crescent} maskUnits="userSpaceOnUse" x="-48" y="-50" width="40" height="40">
+          <rect x="-48" y="-50" width="40" height="40" fill="white" />
+          <circle cx="-18" cy="-36" r="18" fill="black" />
         </mask>
       </defs>
 
       <circle
         className="halloween-logo__moon"
         cx="-28"
-        cy="-52"
+        cy="-30"
         r="20"
         mask={`url(#${crescent})`}
       />
-      {BATS.map((transform) => (
-        <g key={transform} className="halloween-logo__bat" transform={transform}>
-          <path d={BAT} />
-          <circle className="halloween-logo__bat-eye" cx="-1.4" cy="-2.6" r=".75" />
-          <circle className="halloween-logo__bat-eye" cx="1.4" cy="-2.6" r=".75" />
-        </g>
-      ))}
 
       {BEHIND.map((pumpkin) => (
         <JackOLantern key={pumpkin.at.join()} pumpkin={pumpkin} glow={glow} />
