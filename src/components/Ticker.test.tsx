@@ -13,7 +13,9 @@ describe('Ticker', () => {
   it('lists each item once for screen readers and hides the loop', () => {
     const { container } = render(<Ticker items={ITEMS} />)
     expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual(ITEMS)
-    expect(container.querySelector('[aria-hidden="true"]')).toHaveTextContent('Top Ten: 3 of 10 ranked')
+    expect(container.querySelector('[aria-hidden="true"]')).toHaveTextContent(
+      'Top Ten: 3 of 10 ranked',
+    )
   })
 
   it('renders nothing without items', () => {

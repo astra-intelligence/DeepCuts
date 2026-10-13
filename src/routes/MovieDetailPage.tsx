@@ -1,7 +1,7 @@
 // The Detail page (/movie/:id): one film's details, your tags for it, and where to watch it.
 //
 // Information only (ADR-0018): no ratings or reviews of our own. It has its own full-bleed
-// layout without the tab bar, with the film's backdrop behind the page.
+// layout, with the film's backdrop behind the page.
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Button } from 'react-aria-components'
@@ -107,7 +107,7 @@ function useDetailDismiss() {
   }
 }
 
-// Detail opens above the app shell (design v2): no tab bar; back, logo and search float on top.
+// Detail opens above the app shell (design v2): back, logo and search float on top.
 function DetailLayout({
   children,
   closing,

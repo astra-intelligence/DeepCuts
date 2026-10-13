@@ -37,7 +37,7 @@ test.describe('signed out (ADR-0034)', () => {
       'Movies I want to watch',
       'Discovery',
     ])
-    // No search, no tab bar: they only lead to signed-in pages.
+    // No search: it only leads to signed-in pages.
     await expect(page.getByRole('combobox')).toHaveCount(0)
     await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(0)
     // No call to action on the page itself (owner, 2026-10-11); the header's Sign in remains.
