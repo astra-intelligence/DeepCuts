@@ -195,9 +195,9 @@ function Badge({ badge }: { badge: VhsBadge }) {
         </span>
       )
     case 'match':
-      // A round blood-red stamp with a bone ring, hanging off the left edge at mid-height.
+      // A round blood-red stamp with a bone ring, in the bottom-left corner, hanging just off the left edge (owner, 2026-10-13).
       return (
-        <span className="absolute top-1/2 -left-3 z-2 grid size-15 -translate-y-1/2 -rotate-12 place-content-center rounded-full border-3 border-fg bg-danger text-center font-display leading-none text-fg-on-danger uppercase shadow-stamp sm:size-18.5">
+        <span className="absolute bottom-2 -left-3 z-2 grid size-15 -rotate-12 place-content-center rounded-full border-3 border-fg bg-danger text-center font-display leading-none text-fg-on-danger uppercase shadow-stamp sm:size-18.5">
           <span className="text-xl sm:text-2xl">{badge.match}%</span>
           <span className="text-xs">Match</span>
         </span>
