@@ -188,9 +188,10 @@ const STARBURST = Array.from({ length: POINTS * 2 }, (_, i) => {
 function Badge({ badge }: { badge: VhsBadge }) {
   switch (badge.kind) {
     case 'rank':
-      // A mustard tab against the cover's left edge, near the top.
+      // A mustard tab against the cover's right edge, near the bottom (owner, 2026-10-13): clear
+      // of the genre sticker at the top right.
       return (
-        <span className="absolute top-3.5 left-0 z-2 bg-accent px-2 py-1 font-display text-3xl leading-none text-fg-on-accent shadow-stamp">
+        <span className="absolute right-0 bottom-3.5 z-2 bg-accent px-2 py-1 font-display text-3xl leading-none text-fg-on-accent shadow-stamp">
           #{badge.rank}
         </span>
       )

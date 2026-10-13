@@ -143,16 +143,18 @@ describe('movie detail', () => {
   })
 
   describe('Top Ten (ADR-0036)', () => {
-    it('adds the film, replaces the sticker with a notice, and keeps it after a reload', async () => {
+    it('adds the film, shows its rank on the sticker, and keeps it after a reload', async () => {
       const user = userEvent.setup()
       const { unmount } = renderRoute('/movie/1091')
-      const sticker = await screen.findByRole('button', { name: 'Add to your Top 10' })
+      const sticker = await screen.findByRole('button', { name: 'Your pick? Add to Top 10' })
       await user.click(sticker)
 
-      const notice = await screen.findByText('This is one of your top 10!')
+      const notice = await screen.findByText(/#1 in Top 10/)
       // Focus follows the change, so keyboard and screen-reader users hear the result.
-      await waitFor(() => expect(notice).toHaveFocus())
-      expect(screen.queryByRole('button', { name: 'Add to your Top 10' })).not.toBeInTheDocument()
+      await waitFor(() => expect(notice.closest('[data-top-ten-pick]')).toHaveFocus())
+      expect(
+        screen.queryByRole('button', { name: 'Your pick? Add to Top 10' }),
+      ).not.toBeInTheDocument()
       expect(await demoTopTen().list()).toEqual([1091])
       expect(await findToast('Added The Thing to your Top Ten.')).toBeInTheDocument()
       // A Top Ten is not a tag: no tag was turned on.
@@ -162,7 +164,7 @@ describe('movie detail', () => {
 
       unmount()
       renderRoute('/movie/1091')
-      expect(await screen.findByText('This is one of your top 10!')).toBeInTheDocument()
+      expect(await screen.findByText(/#1 in Top 10/)).toBeInTheDocument()
     })
 
     it('Remove takes the film out and brings the sticker back', async () => {
@@ -170,7 +172,7 @@ describe('movie detail', () => {
       const user = userEvent.setup()
       renderRoute('/movie/1091')
       await user.click(await screen.findByRole('button', { name: 'Remove from Top Ten' }))
-      const sticker = await screen.findByRole('button', { name: 'Add to your Top 10' })
+      const sticker = await screen.findByRole('button', { name: 'Your pick? Add to Top 10' })
       await waitFor(() => expect(sticker).toHaveFocus())
       expect(await demoTopTen().list()).toEqual([5, 7])
       expect(await findToast('Removed The Thing from your Top Ten.')).toBeInTheDocument()
@@ -180,14 +182,16 @@ describe('movie detail', () => {
       await seedTopTen([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
       renderRoute('/movie/1091')
       expect(await screen.findByText('Your Top Ten is full.')).toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: 'Add to your Top 10' })).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Your pick? Add to Top 10' }),
+      ).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: 'Remove from Top Ten' })).not.toBeInTheDocument()
     })
 
     it('a failed save keeps the sticker and says so', async () => {
       const user = userEvent.setup()
       renderRoute('/movie/1091')
-      const sticker = await screen.findByRole('button', { name: 'Add to your Top 10' })
+      const sticker = await screen.findByRole('button', { name: 'Your pick? Add to Top 10' })
       // Imitate a browser that refuses to store anything (e.g. storage full).
       const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
         throw new Error('QuotaExceededError')
@@ -204,7 +208,8 @@ describe('movie detail', () => {
     it('a film in a full Top Ten can still be removed', async () => {
       await seedTopTen([1, 2, 3, 4, 5, 6, 7, 8, 9, 1091])
       renderRoute('/movie/1091')
-      expect(await screen.findByText('This is one of your top 10!')).toBeInTheDocument()
+      // The sticker shows the film's rank.
+      expect(await screen.findByText(/#10 in Top 10/)).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Remove from Top Ten' })).toBeInTheDocument()
     })
   })

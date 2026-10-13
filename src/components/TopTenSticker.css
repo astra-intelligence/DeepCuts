@@ -1,51 +1,49 @@
-/* The Top Ten sticker (TopTenSticker.tsx, ADR-0036): the "Add to your Top 10" button on Detail,
-   drawn as a weathered gold label from an '80s video rental store.
+/* The Top Ten sticker (TopTenSticker.tsx, ADR-0036), drawn as a "staff pick" shelf talker: the
+   card a rental clerk taped to the shelf under their favourite tape (owner's pick of three
+   mockups, 2026-10-13).
 
-   It belongs with the round genre sticker (same paper grain, sun bleaching, shelf scuffs and
-   rough edges) but must never be mistaken for it, so it is the opposite shape: a die-cut
-   rectangle with chamfered corners, a printed double frame, a two-line "ADD TO YOUR / TOP 10"
-   slug in the brand face, and one dog-eared corner, as if someone had started to peel it off.
+   A flat card in the favourite gold with one clipped corner, a strip of translucent tape across
+   the top, "YOUR PICK?" in the label face over "★ ADD TO TOP 10" in the poster face, stuck on a
+   little crooked. Once the film is in the Top Ten (`--pick`), the card turns to bone paper and
+   reads "YOUR PICK: ★ #4 IN TOP 10". It's a different shape from the round genre sticker and the
+   starburst match sticker, so it never reads as either.
 
-   Why a stylesheet: the clip path, the layered paper texture and the folded corner can't be
-   written readably as utility classes (AGENTS.md). Colors are the `top-ten-sticker` component
-   tokens; type comes from the type tokens through `@apply`; motion from the shared defaults.
+   Why a stylesheet: the clip path and the layered tape can't be written readably as utility
+   classes (AGENTS.md). Colors are the `top-ten-sticker` component tokens; type comes from the
+   type tokens through `@apply`; motion from the shared defaults.
 
-   Layers, bottom to top, all sharing one grid cell so the button sizes to its label:
-     .top-ten-sticker__face   the gold paper, clipped to the die-cut shape, edges roughened by
-                              the SVG filter the component renders (per-instance noise seed)
-     .top-ten-sticker__frame  the printed double rule, inset from the edge
-     .top-ten-sticker__label  the text, printed in ink (multiply, so the paper texture shows)
-     ::after                  the dog-eared corner: the label's pale backing, folded over
-   The clip path is on the face, not the button, so the global focus outline (drawn around the
-   button) is never clipped away (WCAG 2.4.7). */
+   Layers, all sharing one grid cell so the sticker sizes to its label:
+     .top-ten-sticker__card   the card, clipped to its shape
+     .top-ten-sticker__label  the two printed lines
+     .top-ten-sticker__tape   the strip of tape, overlapping the card's top edge
+   The clip path is on the card, not the sticker, so the global focus outline (drawn around the
+   sticker) is never clipped away (WCAG 2.4.7). */
 @reference "../index.css";
 
 @layer components {
   .top-ten-sticker {
-    /* How far the bottom-right corner is peeled back. The face's clip path and the folded
-       triangle both use it, so they always meet exactly. */
-    --peel: 0.9rem;
-    /* Stuck on by hand, a little crooked. Hover and press straighten it slightly. */
-    --tilt: -4deg;
+    /* The clipped bottom-left corner. */
+    --corner: 1.125rem;
+    /* Taped up by hand, a little crooked. Hover straightens it. */
+    --tilt: 2deg;
 
     position: relative;
     display: inline-grid;
-    place-items: center;
-    /* Clear of the printed frame on every side, and of the dog-ear on the right. */
-    @apply min-h-14 py-3.5 pr-8 pl-6;
+    place-items: stretch;
     rotate: var(--tilt);
     /* A hard 3px shadow, like the stamps (elevation.stamp, ADR-0040); a drop shadow so it
-       follows the die-cut outline. */
+       follows the clipped outline. */
     filter: drop-shadow(3px 3px 0 var(--color-shadow));
+    color: var(--color-top-ten-sticker-ink);
     transition:
       rotate var(--default-transition-duration) ease-out,
       translate var(--default-transition-duration) ease-out,
       scale var(--default-transition-duration) ease-out;
-    cursor: pointer;
   }
 
-  .top-ten-sticker[data-hovered] {
-    --tilt: -2deg;
+  /* Only the button moves; the "in your Top 10" sticker is a label. */
+  .top-ten-sticker:not(.top-ten-sticker--pick)[data-hovered] {
+    --tilt: 0deg;
     translate: 0 -1px;
   }
 
@@ -63,103 +61,56 @@
     grid-area: 1 / 1;
   }
 
-  /* The gold paper. Layers, top to bottom: shelf scuffs, a rubbed patch, a sun-bleached patch,
-     paper grain (SVG noise as a data URI, which the CSP allows), and the gold bleached 25%
-     toward the paper. The same recipe as the genre sticker's face, in a different shape. */
-  .top-ten-sticker__face {
-    width: 100%;
-    height: 100%;
-    background:
-      repeating-linear-gradient(
-        100deg,
-        transparent 0 9px,
-        color-mix(in srgb, var(--color-top-ten-sticker-paper) 20%, transparent) 9px 10px,
-        transparent 10px 23px
-      ),
-      radial-gradient(
-        ellipse at 82% 30%,
-        color-mix(in srgb, var(--color-top-ten-sticker-paper) 28%, transparent),
-        transparent 45%
-      ),
-      radial-gradient(
-        ellipse at 18% 75%,
-        color-mix(in srgb, var(--color-top-ten-sticker-paper) 34%, transparent),
-        transparent 60%
-      ),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0 0.42 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")
-        0 0 / 60px 60px,
-      color-mix(in srgb, var(--color-top-ten-sticker-face) 75%, var(--color-top-ten-sticker-paper));
-    background-blend-mode: screen, screen, normal, multiply, normal;
-    /* Die-cut: small chamfers on three corners, and the bottom-right corner missing where it has
-       been peeled back (the ::after triangle fills that spot with the folded-over backing). */
-    clip-path: polygon(
-      0.35rem 0,
-      calc(100% - 0.35rem) 0,
-      100% 0.35rem,
-      100% calc(100% - var(--peel)),
-      calc(100% - var(--peel)) 100%,
-      0.35rem 100%,
-      0 calc(100% - 0.35rem),
-      0 0.35rem
-    );
+  .top-ten-sticker__card {
+    background: var(--color-top-ten-sticker-face);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, var(--corner) 100%, 0 calc(100% - var(--corner)));
   }
 
-  /* The printed double rule, like the border on a store's price label. Slightly faded ink. */
-  .top-ten-sticker__frame {
-    align-self: stretch;
-    justify-self: stretch;
-    margin: 0.3rem;
-    border: 3px double color-mix(in srgb, var(--color-top-ten-sticker-ink) 70%, transparent);
-    border-radius: 0.15rem;
-    /* Stop the frame before the peeled corner, so it looks printed on the face, not the fold. */
-    clip-path: polygon(
-      0 0,
-      100% 0,
-      100% calc(100% - var(--peel) + 0.3rem),
-      calc(100% - var(--peel) + 0.3rem) 100%,
-      0 100%
-    );
-    pointer-events: none;
+  .top-ten-sticker--pick .top-ten-sticker__card {
+    background: var(--color-top-ten-sticker-paper);
   }
 
-  /* "ADD TO YOUR" over "TOP 10", printed in ink. `relative` keeps it above the face, whose
-     filter lifts it into a later paint layer. */
+  /* A strip of clear tape, crooked, over the card's top edge. `position: absolute` takes it out
+     of the grid, so it doesn't change the sticker's size. */
+  .top-ten-sticker__tape {
+    position: absolute;
+    top: calc(-1 * var(--spacing) * 2);
+    left: 50%;
+    @apply h-4.5 w-14;
+    translate: -50% 0;
+    rotate: -4deg;
+    background: color-mix(in srgb, var(--color-top-ten-sticker-paper) 55%, transparent);
+  }
+
+  /* On the bone card, plain tape would vanish; a faint ink tint keeps it visible. */
+  .top-ten-sticker--pick .top-ten-sticker__tape {
+    background: color-mix(in srgb, var(--color-top-ten-sticker-ink) 15%, transparent);
+  }
+
+  /* "YOUR PICK?" over "★ ADD TO TOP 10". Its padding sets the card's size; `relative` keeps it
+     above the card. */
   .top-ten-sticker__label {
     position: relative;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    color: var(--color-top-ten-sticker-ink);
-    mix-blend-mode: multiply;
-    @apply gap-1 font-display leading-none uppercase;
+    justify-content: center;
+    align-items: flex-start;
+    @apply min-h-14 gap-1 pt-3 pr-5 pb-3.5 pl-4 leading-none uppercase;
   }
 
   .top-ten-sticker__kicker {
-    @apply text-xs tracking-widest;
+    @apply font-label text-sm tracking-widest;
   }
 
   .top-ten-sticker__title {
     display: flex;
     align-items: center;
-    @apply gap-1 text-2xl tracking-wide;
+    @apply gap-1.5 font-display text-2xl tracking-wide;
   }
 
-  /* The dog-eared corner: a triangle of pale backing paper, folded over where the face is
-     clipped away, with a soft shadow along the fold. */
-  .top-ten-sticker::after {
-    content: '';
-    align-self: end;
-    justify-self: end;
-    width: var(--peel);
-    height: var(--peel);
-    background: linear-gradient(
-      135deg,
-      var(--color-top-ten-sticker-paper) 0 48%,
-      color-mix(in srgb, var(--color-top-ten-sticker-ink) 25%, transparent) 50%,
-      transparent 52%
-    );
-    clip-path: polygon(0 0, 100% 0, 0 100%);
-    pointer-events: none;
-    grid-area: 1 / 1;
+  @media (prefers-reduced-motion: reduce) {
+    .top-ten-sticker {
+      transition: none;
+    }
   }
 }

@@ -72,11 +72,7 @@ function TopTenShelf({ ids }: { ids: readonly number[] }) {
       id="top-ten"
       feature={1}
       title={PANELS['top-ten'].title}
-      meta={
-        <p className="font-label text-sm text-fg-muted">
-          {ids.length} of {TOP_TEN_SIZE} ranked
-        </p>
-      }
+      // No "3 of 10 ranked" count (owner, 2026-10-13): the dashed rule runs to the edge instead.
     >
       {/* An ordered list: the order is the meaning, and screen readers announce it. The open
           slot is the list's next place, so it's an item too. */}
