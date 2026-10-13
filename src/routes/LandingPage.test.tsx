@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { SIGNED_OUT } from '../adapters/SessionProvider'
 import { findToast, renderRoute } from '../test/renderRoute'
 
-const PANEL_HEADINGS = ['Top Ten', 'Movies I want to watch', 'Discovery']
+const PANEL_HEADINGS = ['Your Top Ten of All Time', 'My Watchlist', 'Discover Some Deep Cuts']
 
 describe('landing page (signed out)', () => {
   it('explains the three ideas as tonight’s program, in Home’s order', async () => {
@@ -62,8 +62,8 @@ describe('landing page (signed out)', () => {
     expect(await screen.findByRole('button', { name: 'Account menu for Mike' })).toBeInTheDocument()
     expect(await findToast('Signed in as Mike.')).toBeInTheDocument()
     expect(
-      within(screen.getByRole('region', { name: 'Movies I want to watch' })).getByRole('link', {
-        name: 'Movies I want to watch',
+      within(screen.getByRole('region', { name: 'My Watchlist' })).getByRole('link', {
+        name: 'My Watchlist',
       }),
     ).toBeInTheDocument()
   })

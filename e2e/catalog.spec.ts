@@ -34,9 +34,9 @@ test.describe('signed out (ADR-0034)', () => {
     await page.goto('/')
     const program = page.getByRole('region', { name: 'Tonight’s program' })
     await expect(program.getByRole('heading', { level: 3 })).toHaveText([
-      'Top Ten',
-      'Movies I want to watch',
-      'Discovery',
+      'Your Top Ten of All Time',
+      'My Watchlist',
+      'Discover Some Deep Cuts',
     ])
     // No search: it only leads to signed-in pages.
     await expect(page.getByRole('combobox')).toHaveCount(0)
@@ -300,7 +300,7 @@ test('liking a film tunes Home’s recommendations, with a match and the reason 
   await page.getByRole('link', { name: 'Deep Cuts, go to Home' }).click()
   // The top pick is the first row in Discovery (no featured card).
   const feature = page
-    .getByRole('region', { name: 'Discovery' })
+    .getByRole('region', { name: 'Discover Some Deep Cuts' })
     .getByRole('listitem')
     .first()
     .getByRole('link')

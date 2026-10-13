@@ -1,18 +1,51 @@
 // Tests for the logo: one accessible image named "Deep Cuts", or nothing for assistive tech when
-// it's decorative (a link around it carries the name).
+// it's decorative (a link around it carries the name), in every seasonal costume; and the
+// Halloween costume appears in October only.
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { Logo } from './Logo'
 
+// Fixed dates, so the tests never depend on today's date.
+const JULY = new Date(2026, 6, 4)
+const OCTOBER = new Date(2026, 9, 13)
+
 describe('Logo', () => {
-  it('exposes a single accessible image named "Deep Cuts"', () => {
-    render(<Logo />)
+  it.each([
+    ['standard', JULY],
+    ['Halloween', OCTOBER],
+  ])('exposes a single accessible image named "Deep Cuts" (%s)', (_, date) => {
+    render(<Logo date={date} />)
     expect(screen.getByRole('img', { name: 'Deep Cuts' })).toBeInTheDocument()
   })
 
-  it('is hidden from assistive tech when decorative', () => {
-    const { container } = render(<Logo decorative />)
+  it.each([
+    ['standard', JULY],
+    ['Halloween', OCTOBER],
+  ])('is hidden from assistive tech when decorative (%s)', (_, date) => {
+    const { container } = render(<Logo decorative date={date} />)
     expect(screen.queryByRole('img')).toBeNull()
     expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  it('wears the Halloween costume from Oct 1 to Oct 31 only', () => {
+    const costume = (date: Date) =>
+      render(<Logo date={date} />).container.querySelector('svg.halloween-logo')
+    expect(costume(new Date(2026, 9, 1, 0))).not.toBeNull()
+    expect(costume(new Date(2026, 9, 31, 23, 59))).not.toBeNull()
+    expect(costume(new Date(2026, 8, 30, 23, 59))).toBeNull()
+    expect(costume(new Date(2026, 10, 1, 0))).toBeNull()
+  })
+
+  it('gives each Halloween logo its own filter and mask ids', () => {
+    const { container } = render(
+      <>
+        <Logo date={OCTOBER} />
+        <Logo date={OCTOBER} decorative />
+      </>,
+    )
+    const ids = [...container.querySelectorAll('[id]')].map((el) => el.id)
+    expect(ids).toHaveLength(4)
+    expect(new Set(ids).size).toBe(4)
+    for (const id of ids) expect(id).toMatch(/^[\w-]+$/)
   })
 })

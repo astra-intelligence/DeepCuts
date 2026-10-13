@@ -1,5 +1,5 @@
 // Home (/), signed in: the app's three ideas as three full-width shelves, stacked in the order
-// Top Ten, Movies I want to watch, Discovery (ADR-0033, ADR-0040 §6b).
+// Top Ten, Watchlist, Discovery (ADR-0033, ADR-0040 §6b).
 //
 // Each shelf is a row of VHS boxes that wraps as its list grows: the whole Top Ten (ADR-0036)
 // with each box's rank on a tab and the next open slot, the latest watchlist films, and
@@ -198,12 +198,7 @@ function useDiscoveryPicks() {
 function DiscoveryShelf({ discovery }: { discovery: DiscoveryPicks }) {
   const { picks, usePicks, loading, failed } = discovery
   return (
-    <ShelfSection
-      id="discovery"
-      feature={3}
-      title={PANELS.discovery.title}
-      meta={<p className="font-label text-sm text-fg-muted">Deep cuts, picked for your taste</p>}
-    >
+    <ShelfSection id="discovery" feature={3} title={PANELS.discovery.title}>
       {/* Only the untuned feed explains itself: it's the one line that tells you what to do. */}
       {!usePicks && !failed && (
         <p className="-mt-2 mb-6 text-base text-fg-soft">

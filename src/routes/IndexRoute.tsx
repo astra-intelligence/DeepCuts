@@ -1,5 +1,5 @@
 // `/` (ADR-0035): the landing page when signed out, Home when signed in. Both show the same three
-// panels (Top Ten, Movies I want to watch, Discovery); the landing explains them, Home fills them.
+// panels (Top Ten, Watchlist, Discovery); the landing explains them, Home fills them.
 import { useSession } from '../session/SessionContext'
 import { HomePage } from './DiscoverPage'
 import { LandingPage } from './LandingPage'

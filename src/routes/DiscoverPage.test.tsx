@@ -14,7 +14,7 @@ import { server } from '../test/msw/server'
 
 /** The first (top-ranked) pick in the Discovery panel, once the picks have loaded. */
 async function firstPick() {
-  const panel = await screen.findByRole('region', { name: 'Discovery' })
+  const panel = await screen.findByRole('region', { name: 'Discover Some Deep Cuts' })
   // The first tile's link (the skeleton tiles are aria-hidden, so they never match).
   const [first] = await within(panel).findAllByRole('listitem')
   if (!first) throw new Error('no picks')
@@ -24,7 +24,7 @@ async function firstPick() {
 describe('home', () => {
   it('stacks Top Ten, the watchlist and Discovery as three shelves, features 1 to 3', async () => {
     renderRoute('/')
-    await screen.findByRole('heading', { level: 2, name: 'Top Ten' })
+    await screen.findByRole('heading', { level: 2, name: 'Your Top Ten of All Time' })
     // Only the shelves: the toast area is a region too, once Sonner has loaded.
     const shelves = screen
       .getAllByRole('region')
@@ -73,8 +73,7 @@ describe('home', () => {
     expect(await firstPick()).toHaveAccessibleName(/^The Thing/)
     // The big featured card is gone (owner, 2026-10-09): the top pick is the first cassette.
     expect(screen.queryByText(/featured deep cut/i)).not.toBeInTheDocument()
-    const panel = screen.getByRole('region', { name: 'Discovery' })
-    expect(within(panel).getByText('Deep cuts, picked for your taste')).toBeInTheDocument()
+    const panel = screen.getByRole('region', { name: 'Discover Some Deep Cuts' })
     const alien = within(panel).getByRole('link', { name: /Alien.*1979 · Horror/ })
     // Each box wears its VHS genre sticker, which stays out of the link's accessible name.
     expect(alien.querySelector('[data-genre-sticker="horror"]')).toHaveTextContent('Horror')
@@ -90,7 +89,7 @@ describe('home', () => {
   it('the Top Ten starts with an open slot that sends you to search, and shows a film added from Detail', async () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/')
-    const panel = await screen.findByRole('region', { name: 'Top Ten' })
+    const panel = await screen.findByRole('region', { name: 'Your Top Ten of All Time' })
     await user.click(within(panel).getByRole('button', { name: /^Add a film/ }))
     expect(screen.getByRole('combobox', { name: 'Find a movie to view and tag' })).toHaveFocus()
 
@@ -98,7 +97,7 @@ describe('home', () => {
     await user.click(await screen.findByRole('button', { name: 'Your pick? Add to Top 10' }))
     await screen.findByText(/#1 in Top 10/)
     await act(() => router.navigate('/'))
-    const updated = await screen.findByRole('region', { name: 'Top Ten' })
+    const updated = await screen.findByRole('region', { name: 'Your Top Ten of All Time' })
     expect(
       await within(updated).findByRole('link', { name: /^#1 The Thing.*1982 · Horror/ }),
     ).toBeInTheDocument()
@@ -111,7 +110,7 @@ describe('home', () => {
     await topTen.add(348) // Alien
     await topTen.add(1091) // The Thing
     renderRoute('/')
-    const panel = await screen.findByRole('region', { name: 'Top Ten' })
+    const panel = await screen.findByRole('region', { name: 'Your Top Ten of All Time' })
     await within(panel).findByRole('link', { name: /^#2 The Thing/ })
     const links = within(panel).getAllByRole('link')
     expect(links.map((l) => l.getAttribute('href'))).toEqual(['/movie/348', '/movie/1091'])
@@ -123,7 +122,7 @@ describe('home', () => {
   it('starts the watchlist shelf with an empty slot that sends you to search', async () => {
     const user = userEvent.setup()
     renderRoute('/')
-    const panel = await screen.findByRole('region', { name: 'Movies I want to watch' })
+    const panel = await screen.findByRole('region', { name: 'My Watchlist' })
     await user.click(within(panel).getByRole('button', { name: /^Nothing on the bill yet/ }))
     expect(screen.getByRole('combobox', { name: 'Find a movie to view and tag' })).toHaveFocus()
   })
@@ -136,11 +135,11 @@ describe('home', () => {
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
     await act(() => router.navigate('/'))
-    const panel = await screen.findByRole('region', { name: 'Movies I want to watch' })
+    const panel = await screen.findByRole('region', { name: 'My Watchlist' })
     const thing = await within(panel).findByRole('link', { name: /The Thing.*1982 · Horror/ })
     expect(thing.querySelector('[data-genre-sticker="horror"]')).toBeInTheDocument()
     expect(within(thing).getByText('Admit one')).toBeInTheDocument()
-    expect(within(panel).getByRole('link', { name: 'Movies I want to watch' })).toHaveAttribute(
+    expect(within(panel).getByRole('link', { name: 'My Watchlist' })).toHaveAttribute(
       'href',
       '/lists?tag=watchlist',
     )
@@ -198,7 +197,7 @@ describe('home with likes (ADR-0026)', () => {
     // Tiles name the director and writer; the old "Directed by X, like Y" reason is gone.
     await waitFor(() => expect(feature).toHaveTextContent('Director: John Carpenter'))
     expect(feature).not.toHaveTextContent('Directed by')
-    const panel = screen.getByRole('region', { name: 'Discovery' })
+    const panel = screen.getByRole('region', { name: 'Discover Some Deep Cuts' })
     const halloween = within(panel).getByRole('link', { name: /Halloween/ })
     expect(halloween).toHaveTextContent(/\d+% match/)
     await waitFor(() => expect(halloween).toHaveTextContent('Writers: John Carpenter, Debra Hill'))

@@ -178,7 +178,7 @@ function DetailLayout({
         aria-label="Deep Cuts, go to Home"
         className="absolute top-[max(1.5rem,env(safe-area-inset-top))] right-5 z-10 inline-flex min-h-11 items-center md:fixed md:right-8"
       >
-        <Logo decorative className="h-9 w-auto" />
+        <Logo decorative align="end" className="h-9 w-auto" />
       </Button>
       <div className="absolute top-[max(5rem,calc(env(safe-area-inset-top)+4rem))] right-5 left-5 z-10 md:fixed md:top-[max(1.125rem,env(safe-area-inset-top))] md:right-auto md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2">
         <MovieSearch />

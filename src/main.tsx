@@ -5,11 +5,15 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router'
 import { AppToaster } from './components/AppToaster'
+import { applySeasonalFavicon } from './components/seasonalLogos'
 import { createMockSessionProvider } from './adapters/local/MockSessionProvider'
 import { shouldRetry } from './api/retry'
 import { AppSessionProvider } from './session/AppSessionProvider'
 import { routes } from './router'
 import './index.css'
+
+// A holiday's tab icon, when one is in season (e.g. Halloween all October).
+applySeasonalFavicon()
 
 const root = document.getElementById('root')
 if (!root) throw new Error('Root element #root not found')
