@@ -7,6 +7,7 @@ import { movieQueries } from '../../api/queries'
 import { imageUrl, releaseYear } from '../../api/tmdb'
 import { Eyebrow } from '../../components/Eyebrow'
 import { Icon } from '../../components/Icon'
+import { LoadingImage } from '../../components/LoadingImage'
 import { TagToggle } from '../../components/TagToggle'
 import { TAGS } from '../../components/tags'
 import { primaryGenreName } from '../../domain/genres'
@@ -77,7 +78,9 @@ export function RateStep({ state, update }: StepProps) {
         aria-label={pick.title}
         className="relative flex min-h-130 flex-col justify-end overflow-hidden rounded-card border border-card-border bg-card-bg shadow-card md:min-h-140"
       >
-        {image && <img src={image} alt="" className="absolute inset-0 size-full object-cover" />}
+        {image && (
+          <LoadingImage src={image} alt="" className="absolute inset-0 size-full object-cover" />
+        )}
         {/* Fades the film image into the page so the title and buttons stay readable. */}
         <div className="absolute inset-0 bg-linear-to-b from-transparent from-20% via-surface/30 via-45% to-surface to-70%" />
         <div className="relative px-4.5 pb-3">

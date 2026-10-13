@@ -142,6 +142,40 @@
   }
 }
 
+/* Loader behind film images (`LoadingImage`): the placeholder color with a soft band of light
+   sweeping across it until the image arrives. Loaded images drop the background entirely, so
+   nothing keeps animating underneath them; failed ones keep the static placeholder. Reduced
+   motion gets the static placeholder only. */
+@utility image-loader {
+  background-color: var(--color-poster-placeholder);
+  &[data-loading] {
+    background-image: linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in srgb, var(--color-fg) 8%, transparent) 50%,
+      transparent 70%
+    );
+    background-size: 200% 100%;
+    animation: image-shimmer 1.4s ease-in-out infinite;
+  }
+  &[data-loaded] {
+    background: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &[data-loading] {
+      background-image: none;
+    }
+  }
+}
+@keyframes image-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
 /* Gentle entrance for onboarding steps (`animate-enter`); disabled by the reduced-motion rule above. */
 @theme {
   @keyframes enter {
