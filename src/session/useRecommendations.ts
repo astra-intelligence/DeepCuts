@@ -1,9 +1,10 @@
-// Feeds the scorer (ADR-0026, ADR-0028, ADR-0032) from the person's tags and cached TMDB data.
+// Feeds the scorer (ADR-0026, ADR-0028, ADR-0032, ADR-0037) from the person's tags and cached
+// TMDB data.
 //
 // Two passes:
-// 1. One details call per tagged film (with recommendations, keywords and credits appended), plus
-//    one series call per liked series (MAX_SERIES at most), gives the candidates; the scorer
-//    ranks them.
+// 1. One details call per tagged film (with recommended and similar films, keywords and credits
+//    appended), plus one series call per liked series (MAX_SERIES at most), gives the
+//    candidates; the scorer ranks them.
 // 2. The top RERANK candidates get one details call each for their keywords, credits and series, and
 //    the scorer ranks again with them. Every call is the same cached details query the Detail
 //    page uses, so opening a recommended film afterwards costs nothing.
@@ -116,13 +117,16 @@ export function useTaste(): Taste {
   // TMDB's own summaries of every candidate film, to show posters and titles for the picks.
   const summaries = new Map(
     likedMovies.flatMap((m) =>
-      [...(m.recommendations?.results ?? []), ...seriesOf(m)].map((r) => [r.id, r] as const),
+      [...(m.recommendations?.results ?? []), ...(m.similar?.results ?? []), ...seriesOf(m)].map(
+        (r) => [r.id, r] as const,
+      ),
     ),
   )
   const input: TasteInput = {
     liked: likedMovies.map((m) => ({
       film: toScorerFilm(m),
       recommendations: (m.recommendations?.results ?? []).map(toScorerFilm),
+      similar: (m.similar?.results ?? []).map(toScorerFilm),
       // Series films carry their series id, so the series part and spread rules know them.
       series: seriesOf(m).map((f) => ({
         ...toScorerFilm(f),

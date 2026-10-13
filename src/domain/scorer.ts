@@ -1,10 +1,10 @@
-// Recommendation scorer v2 (ADR-0026, ADR-0028, ADR-0032): turns a person's tags into ranked
-// film picks.
+// Recommendation scorer v3 (ADR-0026, ADR-0028, ADR-0032, ADR-0037): turns a person's tags into
+// ranked film picks.
 //
 // How it works, in four steps:
-// 1. Candidates: every film TMDB recommends for any film you liked, plus the other films in a
-//    liked film's series ("Friday the 13th" brings in its sequels). A film suggested by several
-//    of your likes is a stronger candidate.
+// 1. Candidates: every film TMDB recommends for any film you liked, the well-voted films in a
+//    shared genre that TMDB lists as similar to it, and the next film you haven't tagged in its series ("Friday the 13th" brings
+//    in Part 2). A film suggested by several of your likes is a stronger candidate.
 // 2. Taste profile: a weight per genre and per keyword, built from your tags (liked +1, Want to
 //    see +0.5, disliked −1), plus the decades, languages, directors, writers and series of the
 //    films you liked.
@@ -12,9 +12,12 @@
 //    combined with the weights into one score. "% match" is that score × 100.
 //    Keywords, directors and writers need one extra details call per candidate, so the caller
 //    fetches them only for the top candidates (`TasteInput.details`) and scores again: a re-rank
-//    (ADR-0028). Candidates without details score 0 on those parts.
+//    (ADR-0028). Candidates without details score 0 on those parts. A film in the series of one
+//    you liked is credited for that once, by the series part: its director, writer and keyword
+//    parts only count what it shares with liked films outside that series (ADR-0037).
 // 4. Rank: highest score first, spread out so one genre, series or director never clumps, with a
-//    few "explore" slots for genres your likes haven't covered, so no genre is shut out.
+//    few "explore" slots for genres your likes haven't covered, so no genre is shut out. At most
+//    one film per series, and a few in all from the series you liked (ADR-0037).
 //
 // Pure and deterministic: no network, no randomness, so the same tags always give the same
 // picks, every pick can say why it was chosen ("because you liked …"), and it is fully testable.
@@ -56,12 +59,14 @@ export interface FilmDetails {
 /** Everything the scorer knows about one person's taste. */
 export interface TasteInput {
   /**
-   * Liked films (most recent first) with the films TMDB recommends for each, and the other films
-   * in its series, if it belongs to one (ADR-0032).
+   * Liked films (most recent first) with the films TMDB recommends for each, the films TMDB lists
+   * as similar, and the films in its series, if it belongs to one (ADR-0032). Only the earliest
+   * series film you haven't tagged becomes a candidate (ADR-0037).
    */
   liked: readonly {
     film: ScorerFilm
     recommendations: readonly ScorerFilm[]
+    similar?: readonly ScorerFilm[]
     series?: readonly ScorerFilm[]
   }[]
   /** Want to see: a mild positive genre signal. */
@@ -113,8 +118,24 @@ export const DEFAULT_WEIGHTS: Weights = normalizeWeights({
 /** Each earlier pick with the same primary genre lowers a candidate's rank by this much. */
 export const DIVERSITY_PENALTY = 0.05
 
-/** At most this many picks from one series, or by one director (ADR-0032). */
+/**
+ * TMDB's similar films include barely-rated ones (1 vote, 0 votes) that the deep-cut part would
+ * lift. A similar film needs this many votes, and a genre in common with the liked film, to be a
+ * candidate (ADR-0037).
+ */
+export const SIMILAR_MIN_VOTES = 50
+
+/** At most this many picks by one director (ADR-0032). */
 export const SPREAD_CAP = 2
+
+/** At most this many picks from one series (ADR-0037; was 2 in ADR-0032). */
+export const SERIES_CAP = 1
+
+/**
+ * At most this many picks in all from the series of films you liked, so sequels can't fill the
+ * feed (ADR-0037).
+ */
+export const SERIES_PICKS = 3
 
 /**
  * Picks at these positions (0-based) go to a genre your likes haven't covered, when one is
@@ -184,13 +205,30 @@ const clamp01 = (n: number) => Math.min(1, Math.max(0, n))
 // 1984 → 1980; unknown years stay unknown.
 const decadeOf = (year: number | null) => (year === null ? null : Math.floor(year / 10) * 10)
 
-// Step 1: gathers every film your likes recommend, and the other films in their series, counting
-// how many likes suggest each. A film both recommended by and in the series of one liked film
+// The series film to suggest: the earliest one you haven't tagged (Part 2 after you like the
+// original, Part 3 once you've tagged Part 2). Unknown years go last; ties go by id.
+function nextInSeries(
+  series: readonly ScorerFilm[],
+  source: ScorerFilm,
+  excluded: ReadonlySet<number>,
+) {
+  const untagged = series.filter((f) => !excluded.has(f.id) && f.id !== source.id)
+  untagged.sort((a, b) => (a.year ?? Infinity) - (b.year ?? Infinity) || a.id - b.id)
+  return untagged.slice(0, 1)
+}
+
+// Step 1: gathers every film your likes recommend or list as similar, and the next film in their
+// series, counting how many likes suggest each. A film a liked film suggests in more than one way
 // counts once for it. Films you've already tagged, and a liked film suggesting itself, are skipped.
 function collectCandidates(input: TasteInput): Map<number, Candidate> {
   const candidates = new Map<number, Candidate>()
-  for (const { film: source, recommendations, series = [] } of input.liked) {
-    const suggested = new Map([...recommendations, ...series].map((f) => [f.id, f]))
+  for (const { film: source, recommendations, similar = [], series = [] } of input.liked) {
+    const next = nextInSeries(series, source, input.excluded)
+    const alike = similar.filter(
+      (f) =>
+        f.voteCount >= SIMILAR_MIN_VOTES && f.genreIds.some((g) => source.genreIds.includes(g)),
+    )
+    const suggested = new Map([...recommendations, ...alike, ...next].map((f) => [f.id, f]))
     for (const film of suggested.values()) {
       if (input.excluded.has(film.id) || film.id === source.id) continue
       const c = candidates.get(film.id) ?? { film, support: 0, because: [] }
@@ -219,11 +257,14 @@ function genreProfile(input: TasteInput): Map<number, number> {
   return new Map([...raw].map(([g, w]) => [g, max === 0 ? 0 : w / max]))
 }
 
-/** Keyword weights, unscaled: liked +1, Want to see +0.5, disliked −1, from loaded keywords. */
-function keywordProfile(input: TasteInput): Map<number, number> {
+/**
+ * Keyword weights, unscaled: liked +1, Want to see +0.5, disliked −1, from loaded keywords.
+ * `keep` leaves films out, so a sequel isn't matched against its own series (ADR-0037).
+ */
+function keywordProfile(input: TasteInput, keep: (f: ScorerFilm) => boolean): Map<number, number> {
   const weights = new Map<number, number>()
   const add = (films: readonly ScorerFilm[], weight: number) => {
-    for (const f of films)
+    for (const f of films.filter(keep))
       for (const k of f.keywordIds ?? []) weights.set(k, (weights.get(k) ?? 0) + weight)
   }
   add(
@@ -277,22 +318,47 @@ export function recommend(
   const likedLanguages = likedFilms.map((f) => f.language)
   const maxSupport = Math.max(...candidates.map((c) => c.support))
   const maxPopularity = Math.max(...candidates.map((c) => c.film.popularity))
+  // The series of the films you liked, each with the liked film's title.
+  const likedBySeries = new Map<number, string>()
+  for (const f of likedFilms) if (f.seriesId) likedBySeries.set(f.seriesId, f.title)
+  // A candidate's series, from the collection call (series candidates) or its loaded details,
+  // when it's the series of a film you liked.
+  const likedSeriesOf = (c: Candidate) => {
+    const id = c.film.seriesId ?? input.details?.get(c.film.id)?.seriesId
+    return id && likedBySeries.has(id) ? id : null
+  }
+  // What a candidate is compared with: your keyword profile and the directors and writers of
+  // your likes. A film in a liked series is compared only with films outside that series, so
+  // the series part is the one place it gets credit for being a sequel (ADR-0037). One profile
+  // per series (null: everything), built once.
+  const profiles = new Map<number | null, ReturnType<typeof profileFor>>()
+  function profileFor(series: number | null) {
+    const keep = (f: ScorerFilm) => series === null || f.seriesId !== series
+    const outside = likedFilms.filter(keep)
+    return {
+      keywords: keywordProfile(input, keep),
+      directors: likedBy(outside, (f) => f.directors ?? []),
+      writers: likedBy(outside, (f) => f.writers ?? []),
+    }
+  }
+  const comparedWith = (c: Candidate) => {
+    const series = likedSeriesOf(c)
+    const found = profiles.get(series) ?? profileFor(series)
+    profiles.set(series, found)
+    return found
+  }
   // Keywords: how strongly a candidate's keywords overlap your profile (negative counts as 0).
-  const keywords = keywordProfile(input)
-  const keywordRaw = (id: number) =>
-    Math.max(
+  const keywordRaw = (c: Candidate) => {
+    const { keywords } = comparedWith(c)
+    return Math.max(
       0,
-      (input.details?.get(id)?.keywordIds ?? []).reduce(
+      (input.details?.get(c.film.id)?.keywordIds ?? []).reduce(
         (sum, k) => sum + (keywords.get(k) ?? 0),
         0,
       ),
     )
-  const maxKeywordRaw = Math.max(0, ...candidates.map((c) => keywordRaw(c.film.id)))
-  // Directors, writers and series of the films you liked, each with the liked film's title.
-  const likedByDirector = likedBy(likedFilms, (f) => f.directors ?? [])
-  const likedByWriter = likedBy(likedFilms, (f) => f.writers ?? [])
-  const likedBySeries = new Map<number, string>()
-  for (const f of likedFilms) if (f.seriesId) likedBySeries.set(f.seriesId, f.title)
+  }
+  const maxKeywordRaw = Math.max(0, ...candidates.map(keywordRaw))
 
   // Step 3: score each candidate.
   const scored = candidates.map((c): Pick => {
@@ -306,11 +372,11 @@ export function recommend(
     const rating =
       (v / (v + MIN_VOTES)) * f.voteAverage + (MIN_VOTES / (v + MIN_VOTES)) * MEAN_RATING
     const decade = decadeOf(f.year)
-    const director = firstShared(details?.directors ?? [], likedByDirector)
-    const writer = firstShared(details?.writers ?? [], likedByWriter)
-    // The series comes from the collection call (series candidates) or the loaded details.
-    const seriesId = f.seriesId ?? details?.seriesId
-    const series = seriesId ? likedBySeries.get(seriesId) : undefined
+    const credits = comparedWith(c)
+    const director = firstShared(details?.directors ?? [], credits.directors)
+    const writer = firstShared(details?.writers ?? [], credits.writers)
+    const seriesId = likedSeriesOf(c)
+    const series = seriesId === null ? undefined : likedBySeries.get(seriesId)
     const parts: Record<ScorePart, number> = {
       // Relative to the best-supported candidate, so the top one always scores 1.
       support: c.support / maxSupport,
@@ -325,7 +391,7 @@ export function recommend(
       decade: decade === null ? 0 : shareOf(likedDecades, decade),
       language: f.language ? shareOf(likedLanguages, f.language) : 0,
       // Relative to the best keyword match among candidates; 0 without loaded keywords.
-      keywords: maxKeywordRaw > 0 ? keywordRaw(f.id) / maxKeywordRaw : 0,
+      keywords: maxKeywordRaw > 0 ? keywordRaw(c) / maxKeywordRaw : 0,
       // All or nothing: a director, writer or series you've already liked, or not.
       director: director ? 1 : 0,
       writer: writer ? 1 : 0,
@@ -352,8 +418,9 @@ export function recommend(
 // the genre-repeat penalty, from the first of these groups that has one:
 // - explore rounds (EXPLORE_SLOTS) first try films whose primary genre no liked film has, a new
 //   genre each time, and not one you've disliked;
-// - then films that keep the feed spread out (no third film from one series or director, and
-//   none next to a pick from the same series or director);
+// - then films that keep the feed spread out (no second film from one series, no more than
+//   SERIES_PICKS from the series you liked, no third film by one director, and none next to a
+//   pick by the same director);
 // - then anything, so the rules never leave the feed short.
 // Ties break by film id so the order is always the same.
 function rank(
@@ -373,6 +440,7 @@ function rank(
   const usedGenres = new Map<number, number>()
   const usedSeries = new Map<number, number>()
   const usedDirectors = new Map<number, number>()
+  let seriesPicks = 0
   // Explore picks always have a primary genre (see `exploring`); the type just can't say so.
   const exploredGenres = new Set<number | undefined>()
   const pool = [...scored].sort((a, b) => b.score - a.score || a.film.id - b.film.id)
@@ -381,10 +449,8 @@ function rank(
   const spreadOk = (p: Pick) => {
     const last = picks.at(-1)
     const series = seriesOf(p)
-    if (series !== null) {
-      if ((usedSeries.get(series) ?? 0) >= SPREAD_CAP) return false
-      if (last && seriesOf(last) === series) return false
-    }
+    if (series !== null && (usedSeries.get(series) ?? 0) >= SERIES_CAP) return false
+    if (p.sameSeries && seriesPicks >= SERIES_PICKS) return false
     const lastDirectors = last ? directorsOf(last) : []
     return directorsOf(p).every(
       (d) => (usedDirectors.get(d) ?? 0) < SPREAD_CAP && !lastDirectors.includes(d),
@@ -430,6 +496,7 @@ function rank(
     const series = seriesOf(pick)
     if (series !== null) usedSeries.set(series, (usedSeries.get(series) ?? 0) + 1)
     for (const d of directorsOf(pick)) usedDirectors.set(d, (usedDirectors.get(d) ?? 0) + 1)
+    if (pick.sameSeries) seriesPicks += 1
     if (explore >= 0) {
       exploredGenres.add(primary)
       pick.explore = true

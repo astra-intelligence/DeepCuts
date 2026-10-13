@@ -85,7 +85,8 @@ describe('movie detail extras', () => {
     'recommendations',
     'release_dates,recommendations',
     'release_dates,recommendations,keywords,credits',
-  ])('allows appending %s (ADR-0024, ADR-0026, ADR-0028)', (value) => {
+    'release_dates,recommendations,similar,keywords,credits',
+  ])('allows appending %s (ADR-0024, ADR-0026, ADR-0028, ADR-0037)', (value) => {
     const r = resolveTmdbRequest('movie/603', new URLSearchParams(`append_to_response=${value}`))
     expect(r.ok && r.request.params.get('append_to_response')).toBe(value)
   })

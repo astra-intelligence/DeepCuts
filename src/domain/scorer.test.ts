@@ -1,6 +1,7 @@
 // Tests for the recommendation scorer (ADR-0026, ADR-0028, ADR-0032), with small hand-made films:
 // each score part, exclusions, series candidates, ranking, spread rules, explore slots, weights
-// and determinism. The scorer must stay at 100% coverage.
+// and determinism, plus v3's similar films, next-in-series and once-only series credit
+// (ADR-0037). The scorer must stay at 100% coverage.
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_WEIGHTS,
@@ -8,6 +9,8 @@ import {
   normalizeWeights,
   recommend,
   SCORE_PARTS,
+  SERIES_PICKS,
+  SIMILAR_MIN_VOTES,
   type Pick,
   type ScorerFilm,
   type TasteInput,
@@ -332,31 +335,43 @@ describe('scorer v2 (ADR-0032)', () => {
   const carpenter = { id: 11770, name: 'John Carpenter' }
   const hill = { id: 9, name: 'Debra Hill' }
 
-  it('adds films from a liked film’s series as candidates, and scores the series part', () => {
+  it('adds the next film you haven’t tagged from a liked film’s series, and scores the series part', () => {
     const F13 = 9735
-    const original = film({ title: 'Friday the 13th', seriesId: F13 })
-    const part2 = film({ title: 'Part 2', seriesId: F13 })
-    const part3 = film({ title: 'Part III', seriesId: F13 })
+    const original = film({ title: 'Friday the 13th', seriesId: F13, year: 1980 })
+    // TMDB's order isn't release order, so the series is listed out of order on purpose.
+    const part3 = film({ title: 'Part III', seriesId: F13, year: 1982 })
+    const part2 = film({ title: 'Part 2', seriesId: F13, year: 1981 })
+    const undated = film({ title: 'Announced', seriesId: F13, year: null })
+    const undated2 = film({ title: 'Also announced', seriesId: F13, year: null })
     const unrelated = film()
-    const picks = recommend(
-      input({
-        liked: [
-          // Part 2 is both recommended and in the series: it counts once for this liked film.
-          { film: original, recommendations: [part2, unrelated], series: [original, part2, part3] },
-        ],
-        excluded: new Set([original.id]),
-      }),
-    )
-    expect(pickOf(picks, part3.id)).toMatchObject({
+    const liked = (excluded: number[]) =>
+      recommend(
+        input({
+          liked: [
+            {
+              film: original,
+              recommendations: [unrelated],
+              series: [original, undated2, undated, part3, part2],
+            },
+          ],
+          excluded: new Set(excluded),
+        }),
+      )
+    const picks = liked([original.id])
+    expect(pickOf(picks, part2.id)).toMatchObject({
       because: ['Friday the 13th'],
       sameSeries: { liked: 'Friday the 13th' },
     })
-    expect(pickOf(picks, part3.id).parts).toMatchObject({ series: 1, support: 1 })
-    expect(pickOf(picks, part2.id).parts.support).toBe(1)
+    expect(pickOf(picks, part2.id).parts).toMatchObject({ series: 1, support: 1 })
+    // Only the next film comes in: not Part III, nor the undated one, nor the liked film itself.
+    expect(picks.map((p) => p.film.id).sort()).toEqual([part2.id, unrelated.id].sort())
     expect(pickOf(picks, unrelated.id).parts.series).toBe(0)
     expect(pickOf(picks, unrelated.id).sameSeries).toBeUndefined()
-    // The liked film itself is never suggested back.
-    expect(picks.some((p) => p.film.id === original.id)).toBe(false)
+    // Tag Part 2 and Part III is next; tag that too and the undated films are last, by id.
+    expect(liked([original.id, part2.id]).some((p) => p.film.id === part3.id)).toBe(true)
+    const last = liked([original.id, part2.id, part3.id]).map((p) => p.film.id)
+    expect(last).toContain(undated.id)
+    expect(last).not.toContain(undated2.id)
   })
 
   it('knows a candidate’s series from its loaded details too', () => {
@@ -390,20 +405,128 @@ describe('scorer v2 (ADR-0032)', () => {
     expect(pickOf(picks, other.id).sameWriter).toBeUndefined()
   })
 
-  it('takes at most two films from one series, never side by side', () => {
+  it('takes one film per series, and only relaxes that when nothing else is left', () => {
     const S = 1
-    const series = Array.from({ length: 4 }, (_, i) =>
+    const series = Array.from({ length: 3 }, (_, i) =>
       film({ seriesId: S, voteAverage: 9 - i * 0.01, popularity: 1 }),
     )
-    const others = Array.from({ length: 3 }, () => film({ voteAverage: 5, popularity: 50 }))
+    const others = Array.from({ length: 2 }, () => film({ voteAverage: 5, popularity: 50 }))
     const picks = recommend(
-      input({ liked: [{ film: film(), recommendations: [], series: [...series, ...others] }] }),
+      input({ liked: [{ film: film(), recommendations: [...series, ...others] }] }),
       { diversityPenalty: 0 },
     )
     const inSeries = picks.map((p) => p.film.seriesId === S)
-    // The best two series films lead, split by another film; the other two come last.
-    expect(inSeries.slice(0, 5)).toEqual([true, false, true, false, false])
-    expect(inSeries.slice(5)).toEqual([true, true])
+    expect(inSeries).toEqual([true, false, false, true, true])
+  })
+
+  it('takes at most SERIES_PICKS films from the series you liked (ADR-0037)', () => {
+    // Five liked films from five series, each bringing its next film, which outscore the rest.
+    const liked = Array.from({ length: 5 }, (_, i) => {
+      const seriesId = 100 + i
+      const original = film({ seriesId, year: 1980 })
+      const next = film({ seriesId, year: 1981, voteAverage: 9, popularity: 1 })
+      // The first liked film also recommends four weaker films outside any series.
+      const others =
+        i === 0 ? Array.from({ length: 4 }, () => film({ voteAverage: 5, popularity: 50 })) : []
+      return { film: original, recommendations: others, series: [original, next] }
+    })
+    const picks = recommend(input({ liked, excluded: new Set(liked.map((l) => l.film.id)) }), {
+      diversityPenalty: 0,
+    })
+    const sequels = picks.map((p) => p.sameSeries !== undefined)
+    expect(SERIES_PICKS).toBe(3)
+    // Three sequels lead, then the other films, then the last two sequels as the rules relax.
+    expect(sequels).toEqual([true, true, true, false, false, false, false, true, true])
+  })
+
+  it('credits a sequel once: director, writer and keywords count only outside its series (ADR-0037)', () => {
+    const S = 7
+    const original = film({
+      title: 'Halloween',
+      seriesId: S,
+      year: 1978,
+      directors: [carpenter],
+      writers: [hill],
+      keywordIds: [1, 2],
+    })
+    const sequel = film({ seriesId: S, year: 1981 })
+    const outsider = film()
+    const details = new Map([
+      [sequel.id, { keywordIds: [1, 2], directors: [carpenter], writers: [hill], seriesId: S }],
+      [outsider.id, { keywordIds: [1], directors: [carpenter], writers: [hill] }],
+    ])
+    const picks = recommend(
+      input({
+        liked: [{ film: original, recommendations: [outsider], series: [original, sequel] }],
+        excluded: new Set([original.id]),
+        details,
+      }),
+    )
+    expect(pickOf(picks, sequel.id).parts).toMatchObject({
+      series: 1,
+      director: 0,
+      writer: 0,
+      keywords: 0,
+    })
+    expect(pickOf(picks, sequel.id).sameDirector).toBeUndefined()
+    // A film outside the series still gets credit for the same director, writer and keywords.
+    expect(pickOf(picks, outsider.id).parts).toMatchObject({
+      series: 0,
+      director: 1,
+      writer: 1,
+      keywords: 1,
+    })
+
+    // Liking another Carpenter film outside the series does credit the sequel's director.
+    const fog = film({ title: 'The Fog', directors: [carpenter] })
+    const withFog = recommend(
+      input({
+        liked: [
+          { film: original, recommendations: [], series: [original, sequel] },
+          { film: fog, recommendations: [] },
+        ],
+        excluded: new Set([original.id, fog.id]),
+        details,
+      }),
+    )
+    expect(pickOf(withFog, sequel.id).sameDirector).toEqual({
+      director: 'John Carpenter',
+      liked: 'The Fog',
+    })
+  })
+
+  it('adds the films TMDB lists as similar, counting a film once per liked film (ADR-0037)', () => {
+    const shared = film()
+    const onlySimilar = film()
+    const picks = recommend(
+      input({
+        liked: [
+          { film: film({ title: 'A' }), recommendations: [shared], similar: [shared, onlySimilar] },
+          { film: film({ title: 'B' }), recommendations: [], similar: [shared] },
+        ],
+      }),
+    )
+    expect(pickOf(picks, shared.id).because).toEqual(['A', 'B'])
+    expect(pickOf(picks, shared.id).parts.support).toBe(1)
+    expect(pickOf(picks, onlySimilar.id).parts.support).toBe(0.5)
+  })
+
+  it('skips similar films with too few votes or no genre in common (ADR-0037)', () => {
+    const kept = film({ genreIds: [DRAMA, HORROR], voteCount: SIMILAR_MIN_VOTES })
+    const fewVotes = film({ voteCount: SIMILAR_MIN_VOTES - 1 })
+    const otherGenre = film({ genreIds: [COMEDY] })
+    const picks = recommend(
+      input({
+        liked: [
+          {
+            film: film({ genreIds: [HORROR] }),
+            recommendations: [],
+            similar: [kept, fewVotes, otherGenre],
+          },
+        ],
+      }),
+    )
+    expect(picks.map((p) => p.film.id)).toEqual([kept.id])
   })
 
   it('spreads a director the same way, using loaded details', () => {

@@ -73,6 +73,12 @@ export const movieDetailSchema = z.object({
     .object({ results: z.array(movieSummary) })
     .optional()
     .catch(undefined),
+  // Appended to the same call: films TMDB finds similar by genre and keywords. More candidates
+  // that aren't from the same series, at no extra request (ADR-0037).
+  similar: z
+    .object({ results: z.array(movieSummary) })
+    .optional()
+    .catch(undefined),
   // Appended to the same call for the scorer's keyword and director parts (ADR-0028). Lenient:
   // a malformed block just means no keywords or directors for this film.
   keywords: z
@@ -165,14 +171,15 @@ export const tmdb = {
   search: (query: string, page = 1, signal?: AbortSignal) =>
     get('search/movie', searchResultsSchema, { query, page: String(page) }, signal),
   /**
-   * One film's details, plus in the same call: content ratings, recommended films, keywords and
-   * directors (one request serves Detail and the recommendation scorer, ADR-0024/0026/0028).
+   * One film's details, plus in the same call: content ratings, recommended and similar films,
+   * keywords and directors (one request serves Detail and the recommendation scorer,
+   * ADR-0024/0026/0028/0037).
    */
   movie: (id: number, signal?: AbortSignal) =>
     get(
       `movie/${id}`,
       movieDetailSchema,
-      { append_to_response: 'release_dates,recommendations,keywords,credits' },
+      { append_to_response: 'release_dates,recommendations,similar,keywords,credits' },
       signal,
     ),
   /** Popular, well-voted films (no genre filter: ADR-0032 dropped favourite genres). */
