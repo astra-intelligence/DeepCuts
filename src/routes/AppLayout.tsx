@@ -1,5 +1,5 @@
 // The app shell around Home, Search, My Lists and Account (ADR-0040): the header (logo, search and
-// the account menu) and the page, with the TMDB credit at the foot. There is no tab bar: the logo
+// the account menu), the page, and the legal footer (SiteFooter). There is no tab bar: the logo
 // goes Home and the account menu holds My Lists, at every width. (Detail and Sign in have their
 // own layouts.) Signed out, the header is just the logo and Sign in: search leads only to
 // signed-in pages (ADR-0034).
@@ -10,6 +10,7 @@ import { AccountChip } from '../components/AccountChip'
 import { Icon } from '../components/Icon'
 import { Logo } from '../components/Logo'
 import { MovieSearch } from '../components/MovieSearch'
+import { SiteFooter } from '../components/SiteFooter'
 import { useHeaderHeight } from '../hooks/useHeaderHeight'
 import { useRouteFocus } from '../hooks/useRouteFocus'
 import { useSession } from '../session/SessionContext'
@@ -41,9 +42,10 @@ export function AppLayout() {
   const signedIn = useSession().session.kind === 'account'
   return (
     // Full window width, so the header's bar and the ticker can span it; their contents and
-    // <main> are centred within the 1200px column (`max-w-300`). The bottom padding keeps the
+    // <main> are centred within the 1200px column (`max-w-300`). A column, with <main> growing, so
+    // the footer sits at the bottom of the window on short pages. The bottom padding keeps the
     // footer clear of the iPhone home bar.
-    <div className="min-h-dvh w-full overflow-x-clip pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+    <div className="flex min-h-dvh w-full flex-col overflow-x-clip pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <SkipLink />
       {/* The header stays pinned to the top while the page scrolls.
           Below `lg`: two rows (logo + account, then a full-width search). From `lg`: one row with
@@ -83,17 +85,12 @@ export function AppLayout() {
         </div>
       </header>
 
-      <main id="main" className="mx-auto w-full max-w-300 px-5 pt-5 pb-3 md:px-8 md:pt-6">
+      <main id="main" className="mx-auto w-full max-w-300 flex-1 px-5 pt-5 pb-3 md:px-8 md:pt-6">
         {/* The current page renders here. */}
         <Outlet />
       </main>
 
-      <footer className="mx-auto mt-10 w-full max-w-300 px-5 md:px-8">
-        {/* Attribution required by TMDB's terms of use. */}
-        <p className="border-t-2 border-dashed border-border pt-5 font-label text-sm text-fg-muted">
-          This product uses the TMDB API but is not endorsed or certified by TMDB.
-        </p>
-      </footer>
+      <SiteFooter className="mx-auto mt-10 w-full max-w-300 px-5 md:px-8" />
     </div>
   )
 }
