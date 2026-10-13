@@ -4,8 +4,9 @@
 //    component → semantic, themes
 // 2. In the code, components use Tailwind utilities generated from tiers 2–3. Raw `--dc-*`
 //    variables may appear only in src/index.css (the page accent) and brand variables only in
-//    the logo. Corners are square (ADR-0040) and shadows use role or component tokens
-//    (`shadow-popover`, `shadow-box`), not the raw scale (`rounded-lg`, `shadow-sm`).
+//    the logo files (Logo.tsx and the holiday logos' stylesheets). Corners are square (ADR-0040)
+//    and shadows use role or component tokens (`shadow-popover`, `shadow-box`), not the raw scale
+//    (`rounded-lg`, `shadow-sm`).
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
@@ -53,7 +54,11 @@ for (const [path, { tier, file, value }] of tokens) {
 }
 
 // ---- 2. Code ---------------------------------------------------------------------------------
-const ALLOWED = { 'src/index.css': /--dc-color-/, 'src/components/Logo.tsx': /--dc-brand-/ }
+const ALLOWED = {
+  'src/index.css': /--dc-color-/,
+  'src/components/Logo.tsx': /--dc-brand-/,
+  'src/components/HalloweenLogo.css': /--dc-brand-/,
+}
 const IGNORE = /^src\/styles\//
 const RAW_SCALE =
   /(?<![\w-])(?:[\w-]+:)*(rounded(?:-[trblse]{1,2})?-(?:xs|sm|md|lg|xl|[234]xl)|rounded|shadow-(?:2xs|xs|sm|md|lg|xl|2xl))(?![\w-])/g
