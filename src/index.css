@@ -49,6 +49,13 @@
       box-shadow: none;
     }
   }
+  /* Tailwind v4's preflight gives buttons the default arrow cursor; we want the hand, like links.
+     Disabled buttons (native `disabled` or React Aria's `aria-disabled`) keep the arrow. A
+     component can still set its own cursor, e.g. TopTenSticker's `progress` while saving. */
+  button:not(:disabled, [aria-disabled='true']),
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
+  }
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
