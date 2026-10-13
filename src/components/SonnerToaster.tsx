@@ -30,7 +30,8 @@ const CLOSE_TOP_RIGHT = {
 
 /**
  * The toast area: centered just below the header, at every screen size (owner, 2026-10-13); on
- * phones Sonner makes toasts full width with a 16px margin. Sonner's own z-index (999999999)
+ * phones Sonner makes toasts full width with a 16px margin. Several at once are listed, not
+ * stacked. Sonner's own z-index (999999999)
  * already sits above every layer in the app (highest: the film grain, z-60).
  */
 export function SonnerToaster() {
@@ -40,6 +41,11 @@ export function SonnerToaster() {
       offset={BELOW_HEADER}
       mobileOffset={BELOW_HEADER}
       theme="dark"
+      // Several toasts show as a list, newest on top, instead of a collapsed stack that only
+      // shows the newest until hovered (owner, 2026-10-13). Up to five at once; older ones wait
+      // and appear as these close.
+      expand
+      visibleToasts={5}
       closeButton
       toastOptions={{ classNames: TOAST_CLASSES, style: CLOSE_TOP_RIGHT }}
     />

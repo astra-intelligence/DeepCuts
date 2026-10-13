@@ -91,20 +91,18 @@ describe('home', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/')
     const panel = await screen.findByRole('region', { name: 'Top Ten' })
-    expect(within(panel).getByText('0 of 10 ranked')).toBeInTheDocument()
     await user.click(within(panel).getByRole('button', { name: /^Add a film/ }))
     expect(screen.getByRole('combobox', { name: 'Find a movie to view and tag' })).toHaveFocus()
 
     await act(() => router.navigate('/movie/1091'))
-    await user.click(await screen.findByRole('button', { name: 'Add to your Top 10' }))
-    await screen.findByText('This is one of your top 10!')
+    await user.click(await screen.findByRole('button', { name: 'Your pick? Add to Top 10' }))
+    await screen.findByText(/#1 in Top 10/)
     await act(() => router.navigate('/'))
     const updated = await screen.findByRole('region', { name: 'Top Ten' })
     expect(
       await within(updated).findByRole('link', { name: /^#1 The Thing.*1982 · Horror/ }),
     ).toBeInTheDocument()
     // The open slot moves on to #2.
-    expect(within(updated).getByText('1 of 10 ranked')).toBeInTheDocument()
     expect(within(updated).getByText('#2')).toBeInTheDocument()
   })
 

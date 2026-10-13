@@ -7,10 +7,14 @@ import { Link, useLocation, useNavigate } from 'react-router'
 import { Icon } from '../components/Icon'
 import { HOME } from '../config/features'
 import { Logo } from '../components/Logo'
+import { SiteFooter } from '../components/SiteFooter'
 import { useHeaderHeight } from '../hooks/useHeaderHeight'
 import { SkipLink } from './AppLayout'
 
-/** The shared frame of the account pages: skip link, Back + logo header, and a narrow `<main>`. */
+/**
+ * The shared frame of the account pages: skip link, Back + logo header, a narrow `<main>` and the
+ * legal footer.
+ */
 export function AuthLayout({ title, children }: { title: string; children: ReactNode }) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -18,7 +22,7 @@ export function AuthLayout({ title, children }: { title: string; children: React
   const header = useRef<HTMLElement>(null)
   useHeaderHeight(header)
   return (
-    <div className="mx-auto min-h-svh w-full max-w-300">
+    <div className="mx-auto flex min-h-svh w-full max-w-300 flex-col pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <title>{`${title} · Deep Cuts`}</title>
       <SkipLink />
       <header
@@ -41,9 +45,10 @@ export function AuthLayout({ title, children }: { title: string; children: React
         </Link>
       </header>
 
-      <main id="main" className="mx-auto grid w-full max-w-md gap-4 px-5 py-6">
+      <main id="main" className="mx-auto grid w-full max-w-md flex-1 content-start gap-4 px-5 py-6">
         {children}
       </main>
+      <SiteFooter className="mx-auto mt-10 w-full max-w-md px-5" />
     </div>
   )
 }

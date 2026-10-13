@@ -17,6 +17,7 @@ import { MovieSearch } from '../components/MovieSearch'
 import { SkipLink } from './AppLayout'
 import { DetailTags } from './DetailTags'
 import { DetailTopTen } from './DetailTopTen'
+import { SiteFooter } from '../components/SiteFooter'
 import './MovieDetailPage.css'
 
 // The :id in the URL is untrusted: it must be a positive whole number of sensible size.
@@ -183,6 +184,9 @@ function DetailLayout({
         <MovieSearch />
       </div>
       <main id="main">{children}</main>
+      {/* Above the backdrop, which is fixed behind the page from `md`, and in the details'
+          column there, so it sits on the solid side of the fade. */}
+      <SiteFooter className="relative z-1 mt-10 px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:ml-auto md:max-w-xl md:pr-13 md:pl-6" />
     </div>
   )
 }

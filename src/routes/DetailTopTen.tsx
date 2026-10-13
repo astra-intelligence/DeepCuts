@@ -1,17 +1,17 @@
 // The Top Ten slot on the Detail page (ADR-0036): the top-left corner of the film's details.
 //
 // It shows one of three things, depending on the person's Top Ten:
-// - the film is in it:      "This is one of your top 10!" with a small Remove button
-// - there's room for it:    the "Add to your Top 10" sticker
+// - the film is in it:      the "Your pick: #4 in Top 10" sticker, with a small Remove button
+// - there's room for it:    the "Your pick? Add to Top 10" sticker
 // - the list is full:       "Your Top Ten is full." (choosing a film to replace it comes with the
 //                           Top Ten management screen, ADR-0033)
 // Unlike the tags, a press saves at once: there's nothing to stage, and Remove undoes it.
 //
-// This file owns the behavior; TopTenSticker and TopTenNotice only draw. Replacing either design
-// later means swapping one component here.
+// This file owns the behavior; TopTenSticker, TopTenPick and TopTenNotice only draw. Replacing a
+// design later means swapping one component here.
 import { useEffect, useRef } from 'react'
 import { TopTenNotice } from '../components/TopTenNotice'
-import { TopTenSticker } from '../components/TopTenSticker'
+import { TopTenPick, TopTenSticker } from '../components/TopTenSticker'
 import { isTopTenFull, TopTenFullError } from '../domain/topTen'
 import { notify } from '../notify'
 import { useChangeTopTen, useTopTen } from '../session/topTenQueries'
@@ -36,6 +36,7 @@ export function DetailTopTen({
   // focus to the page. So remember to move focus to whatever replaces it.
   const focusNext = useRef(false)
   const stickerRef = useRef<HTMLButtonElement>(null)
+  // The "Your pick" sticker or the "full" notice, whichever is shown.
   const noticeRef = useRef<HTMLParagraphElement>(null)
 
   const list = topTen.data ?? []
@@ -51,7 +52,7 @@ export function DetailTopTen({
   useEffect(() => {
     if (!focusNext.current) return
     focusNext.current = false
-    // A notice's message gets focus, so a screen reader reads it ("This is one of your top 10!");
+    // The pick or notice gets focus, so a screen reader reads it ("Your pick: #4 in Top 10");
     // after a removal, the sticker does. Whichever is rendered now holds its ref.
     ;(noticeRef.current ?? stickerRef.current)?.focus()
   }, [shown])
@@ -84,18 +85,16 @@ export function DetailTopTen({
   // The slot keeps its height either way, so the title below never jumps.
   const content =
     shown === 'member' ? (
-      <TopTenNotice ref={noticeRef} onRemove={() => save(false)} pending={change.isPending}>
-        This is one of your top 10!
-      </TopTenNotice>
+      <TopTenPick
+        ref={noticeRef}
+        rank={list.indexOf(movieId) + 1}
+        onRemove={() => save(false)}
+        pending={change.isPending}
+      />
     ) : shown === 'full' ? (
       <TopTenNotice ref={noticeRef}>Your Top Ten is full.</TopTenNotice>
     ) : shown === 'sticker' ? (
-      <TopTenSticker
-        ref={stickerRef}
-        seed={movieId}
-        onPress={() => save(true)}
-        pending={change.isPending}
-      />
+      <TopTenSticker ref={stickerRef} onPress={() => save(true)} pending={change.isPending} />
     ) : null
 
   return (
