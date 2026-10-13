@@ -12,8 +12,8 @@ import { EmptyState } from '../components/EmptyState'
 import { Icon } from '../components/Icon'
 import { MovieLink } from '../components/MovieLink'
 import { PageHeading } from '../components/PageHeading'
-import { TagSaveError } from '../components/TagSaveError'
 import { genreTone, primaryGenreName } from '../domain/genres'
+import { notify, notifyTagged, TAG_ERROR } from '../notify'
 import { useSetTag, useTagQueries } from '../session/tagQueries'
 
 // ?q= is untrusted input: trimmed and capped before use (ADR-0014). The header search writes it.
@@ -73,14 +73,21 @@ function ResultRow({ movie }: { movie: MovieSummary }) {
       <MovieLink movie={movie} meta={meta} disliked={tags?.has('disliked') ?? false} />
       <ToggleButton
         isSelected={wanted}
-        onChange={(on) => setTag.mutate({ tmdbId: movie.id, tag: 'watchlist', on })}
+        onChange={(on) =>
+          setTag.mutate(
+            { tmdbId: movie.id, tag: 'watchlist', on },
+            {
+              onSuccess: () => notifyTagged(movie.title, 'Want to see', on),
+              onError: () => notify.error(TAG_ERROR),
+            },
+          )
+        }
         aria-label={`Want to see ${movie.title}`}
         className="inline-flex h-11 w-36 shrink-0 items-center justify-center gap-2 justify-self-end rounded-button border border-button-secondary-border bg-button-secondary-bg px-3.5 text-sm font-semibold whitespace-nowrap text-button-secondary-fg hover:border-info data-selected:border-info data-selected:bg-info data-selected:text-fg-on-accent"
       >
         <Icon name={wanted ? 'check' : 'bookmark'} />
         {wanted ? 'Added' : 'Add to list'}
       </ToggleButton>
-      {setTag.isError && <TagSaveError className="md:col-span-full" />}
     </li>
   )
 }

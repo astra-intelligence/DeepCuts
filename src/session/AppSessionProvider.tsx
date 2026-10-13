@@ -70,12 +70,14 @@ export function AppSessionProvider({
           ? createRemoteTopTen()
           : createLocalTopTen(topTenKey(session.account.id))
 
-    // Switches to the next session. Cached tag and Top Ten queries belong to the old stores, so
-    // they're all refreshed (their keys include the account id, see tagQueries.ts).
+    // Switches to the next session, and resolves with it. Cached tag and Top Ten queries belong
+    // to the old stores, so they're all refreshed (their keys include the account id, see
+    // tagQueries.ts).
     async function become(next: Session) {
       setSession(next)
       await queryClient.invalidateQueries({ queryKey: ['tags'] })
       await queryClient.invalidateQueries({ queryKey: ['topTen'] })
+      return next
     }
 
     return {
@@ -86,13 +88,17 @@ export function AppSessionProvider({
       signIn: async (method) => become(await provider.signIn(method)),
       register: async (details) => become(await provider.register(details)),
       // The account keeps its lists; this device is signed out.
-      signOut: async () => become(await provider.signOut()),
+      signOut: async () => {
+        await become(await provider.signOut())
+      },
       practiceRegistration: provider.practiceRegistration,
       rename: provider.rename
         ? async (name) => setSession((await provider.rename?.(name)) ?? session)
         : undefined,
       deleteAccount: provider.deleteAccount
-        ? async () => become((await provider.deleteAccount?.()) ?? SIGNED_OUT)
+        ? async () => {
+            await become((await provider.deleteAccount?.()) ?? SIGNED_OUT)
+          }
         : undefined,
     }
   }, [

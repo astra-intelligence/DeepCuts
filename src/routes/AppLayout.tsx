@@ -8,7 +8,6 @@ import { AccountChip } from '../components/AccountChip'
 import { Icon, type IconName } from '../components/Icon'
 import { Logo } from '../components/Logo'
 import { MovieSearch } from '../components/MovieSearch'
-import { SignedInNotice } from '../components/SignedInNotice'
 import { useRouteFocus } from '../hooks/useRouteFocus'
 import { useSession } from '../session/SessionContext'
 
@@ -95,7 +94,6 @@ export function AppLayout() {
       </header>
 
       <main id="main" className="mx-auto w-full max-w-7xl px-5 pt-5 pb-3 md:pt-6">
-        <SignedInNotice />
         {/* The current page renders here. */}
         <Outlet />
         {/* Attribution required by TMDB's terms of use. */}

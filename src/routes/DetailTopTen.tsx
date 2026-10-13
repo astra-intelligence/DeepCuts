@@ -9,21 +9,29 @@
 //
 // This file owns the behavior; TopTenSticker and TopTenNotice only draw. Replacing either design
 // later means swapping one component here.
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { TopTenNotice } from '../components/TopTenNotice'
 import { TopTenSticker } from '../components/TopTenSticker'
 import { isTopTenFull, TopTenFullError } from '../domain/topTen'
+import { notify } from '../notify'
 import { useChangeTopTen, useTopTen } from '../session/topTenQueries'
 
 /**
- * The Top Ten sticker or notice for one film.
+ * The Top Ten sticker or notice for one film. Each change is confirmed (or reported) in a toast.
  * @param movieId - The TMDB id of the film on this Detail page.
+ * @param title - The film's title, for the toasts.
  */
-export function DetailTopTen({ movieId, className = '' }: { movieId: number; className?: string }) {
+export function DetailTopTen({
+  movieId,
+  title,
+  className = '',
+}: {
+  movieId: number
+  title: string
+  className?: string
+}) {
   const topTen = useTopTen()
   const change = useChangeTopTen()
-  // A failed save other than "full" (the network, the server). Cleared by the next press.
-  const [failed, setFailed] = useState(false)
   // After a press, the pressed control is replaced by the other one, which would drop keyboard
   // focus to the page. So remember to move focus to whatever replaces it.
   const focusNext = useRef(false)
@@ -49,18 +57,24 @@ export function DetailTopTen({ movieId, className = '' }: { movieId: number; cla
   }, [shown])
 
   function save(on: boolean) {
-    setFailed(false)
     // Set before the change starts, so it's in place whenever the new list lands in the cache.
     focusNext.current = true
     change.mutate(
       { tmdbId: movieId, on },
       {
+        onSuccess: () =>
+          notify.success(
+            on ? `Added ${title} to your Top Ten.` : `Removed ${title} from your Top Ten.`,
+          ),
         onError: (error) => {
-          // A full list isn't an error to report: the re-fetched list shows the "full" notice,
-          // which then takes focus. Anything else keeps the sticker (and focus) and shows the alert.
-          if (error instanceof TopTenFullError) return
+          // A full list (filled elsewhere, e.g. another tab): the re-fetched list shows the "full"
+          // notice, which then takes focus. Anything else keeps the sticker (and focus).
+          if (error instanceof TopTenFullError) {
+            notify.error(`Your Top Ten is full, so ${title} wasn’t added.`)
+            return
+          }
           focusNext.current = false
-          setFailed(true)
+          notify.error('Couldn’t update your Top Ten. Please try again.')
         },
       },
     )
@@ -87,11 +101,6 @@ export function DetailTopTen({ movieId, className = '' }: { movieId: number; cla
   return (
     <div data-detail-top-ten="" className={`flex min-h-14 flex-col items-start ${className}`}>
       {content}
-      {failed && (
-        <p role="alert" className="mt-1 text-sm text-fg-danger">
-          Couldn’t update your Top Ten. Please try again.
-        </p>
-      )}
     </div>
   )
 }

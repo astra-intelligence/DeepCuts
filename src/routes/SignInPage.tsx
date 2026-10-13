@@ -9,6 +9,7 @@ import { Eyebrow } from '../components/Eyebrow'
 import { Icon } from '../components/Icon'
 import { useReturnPath } from '../hooks/useReturnPath'
 import { useRouteFocus } from '../hooks/useRouteFocus'
+import { notify, notifySignedIn } from '../notify'
 import { useSession } from '../session/SessionContext'
 import { AuthLayout } from './AuthLayout'
 
@@ -18,24 +19,22 @@ export function SignInPage() {
   const { session, signInMethods, signIn } = useSession()
   const navigate = useNavigate()
   const from = useReturnPath()
-  // Which method is signing in right now (disables the buttons), and whether the last try failed.
+  // Which method is signing in right now (disables the buttons).
   const [pending, setPending] = useState<SignInMethodId | null>(null)
-  const [failed, setFailed] = useState(false)
 
   // Arriving already signed in goes to the account page. (Not after signing in here: then the
   // page returns to where sign-in started, and `pending` stays set until it does.)
   if (session.kind === 'account' && pending === null) return <Navigate to="/account" replace />
 
-  // Signs in, then goes back where sign-in started, telling that page to confirm it
-  // (SignedInNotice). On failure nothing changes and an error is shown.
+  // Signs in, then goes back where sign-in started; the toast confirms who's signed in and stays
+  // up across that navigation. On failure nothing changes and an error toast says so.
   async function start(method: SignInMethodId) {
-    setFailed(false)
     setPending(method)
     try {
-      await signIn(method)
-      navigate(from, { replace: true, state: { signedIn: true } })
+      notifySignedIn(await signIn(method))
+      navigate(from, { replace: true })
     } catch {
-      setFailed(true)
+      notify.error('Sign-in didn’t finish. Nothing was changed. Try again.')
       setPending(null)
     }
   }
@@ -49,16 +48,6 @@ export function SignInPage() {
           Keep your lists in your account instead of a single browser.
         </p>
       </div>
-
-      {failed && (
-        <p
-          role="alert"
-          className="flex gap-2.5 rounded-container border border-fg-danger bg-fg-danger/10 p-3 text-sm"
-        >
-          <Icon name="ban" className="size-5 shrink-0 text-fg-danger" />
-          Sign-in didn’t finish. Nothing was changed. Try again.
-        </p>
-      )}
 
       {/* One button per sign-in method. */}
       <ul className="grid gap-3">

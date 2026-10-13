@@ -16,9 +16,9 @@ import { z } from 'zod'
 import { AccountsApiError } from '../adapters/cloudflare/AccountsApiError'
 import { registrationSchema } from '../adapters/SessionProvider'
 import { Eyebrow } from '../components/Eyebrow'
-import { Icon } from '../components/Icon'
 import { useReturnPath } from '../hooks/useReturnPath'
 import { useRouteFocus } from '../hooks/useRouteFocus'
+import { notify, notifySignedIn } from '../notify'
 import { useSession } from '../session/SessionContext'
 import { AuthLayout } from './AuthLayout'
 
@@ -46,7 +46,6 @@ export function RegisterPage() {
   // Bumped on every rejected submit, so focus moves to the first problem even if the errors match.
   const [attempt, setAttempt] = useState(0)
   const [pending, setPending] = useState(false)
-  const [failed, setFailed] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
 
   // The invite code from the link, read once on arrival (the field's starting value).
@@ -72,7 +71,6 @@ export function RegisterPage() {
   // Validates every field at once, then registers and returns to where sign-in started.
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setFailed(false)
     const result = registrationSchema.safeParse(Object.fromEntries(new FormData(e.currentTarget)))
     if (!result.success) {
       setErrors(z.flattenError(result.error).fieldErrors)
@@ -82,15 +80,15 @@ export function RegisterPage() {
     setErrors({})
     setPending(true)
     try {
-      await register(result.data)
-      navigate(from, { replace: true, state: { signedIn: true } })
+      notifySignedIn(await register(result.data), 'Account created. ')
+      navigate(from, { replace: true })
     } catch (e) {
       setPending(false)
       // The server refused the invite: say so on the field, where the person can act on it.
       if (e instanceof AccountsApiError && e.code === 'invalid_invite') {
         setErrors({ invite: [INVITE_REFUSED] })
         setAttempt((n) => n + 1)
-      } else setFailed(true)
+      } else notify.error('Registration didn’t finish. Nothing was changed. Try again.')
     }
   }
 
@@ -109,16 +107,6 @@ export function RegisterPage() {
         <p className="rounded-container border border-dashed border-border-control p-3 text-sm text-fg-muted">
           <strong className="text-fg">Practice registration.</strong> No passkey or real account is
           created yet. Your name is kept on this device; the invite code is checked, then discarded.
-        </p>
-      )}
-
-      {failed && (
-        <p
-          role="alert"
-          className="flex gap-2.5 rounded-container border border-fg-danger bg-fg-danger/10 p-3 text-sm"
-        >
-          <Icon name="ban" className="size-5 shrink-0 text-fg-danger" />
-          Registration didn’t finish. Nothing was changed. Try again.
         </p>
       )}
 

@@ -10,7 +10,7 @@ import { createCloudflareSessionProvider } from '../adapters/cloudflare/Cloudfla
 import { SIGNED_OUT, type Session } from '../adapters/SessionProvider'
 import { createFakeAccountsApi } from '../test/msw/fakeAccountsApi'
 import { server } from '../test/msw/server'
-import { renderRoute } from '../test/renderRoute'
+import { findToast, renderRoute } from '../test/renderRoute'
 
 vi.mock('@simplewebauthn/browser', () => ({
   startRegistration: vi.fn(async () => ({ id: 'cred', type: 'public-key' })),
@@ -98,7 +98,7 @@ describe('account settings (A2b)', () => {
     await user.clear(name)
     await user.type(name, 'Patricia Key')
     await user.click(screen.getByRole('button', { name: 'Save name' }))
-    expect(await screen.findByText('Name saved.')).toBeInTheDocument()
+    expect(await findToast('Name saved.')).toBeInTheDocument()
     expect(api.state.signedIn?.name).toBe('Patricia Key')
     expect(screen.getByRole('heading', { level: 1, name: 'Patricia Key' })).toBeInTheDocument()
   })
@@ -167,14 +167,14 @@ describe('a tag that fails to save', () => {
     const group = await screen.findByRole('group', { name: 'Your tags' })
     await user.click(within(group).getByRole('button', { name: 'Like' }))
     await user.click(screen.getByRole('button', { name: 'Save' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('Your changes weren’t all saved.')
+    expect(await findToast(/^Your changes weren’t all saved./)).toBeInTheDocument()
     // Nothing the person picked is lost, and Save is there to try again.
     expect(within(group).getByRole('button', { name: 'Like' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
-    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+    expect(screen.queryByText(/^Saved\./)).not.toBeInTheDocument()
   })
 
   it('says so on a Search result', async () => {
@@ -182,6 +182,6 @@ describe('a tag that fails to save', () => {
     const user = userEvent.setup()
     renderRoute('/search?q=thing', { ...asPat, features: { searchPage: true } })
     await user.click(await screen.findByRole('button', { name: 'Want to see The Thing' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('Your change wasn’t saved.')
+    expect(await findToast(/^Your change wasn’t saved./)).toBeInTheDocument()
   })
 })

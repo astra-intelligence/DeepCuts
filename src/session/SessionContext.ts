@@ -23,10 +23,13 @@ export interface SessionValue {
   topTen: TopTenRepository
   /** The sign-in options to show on the sign-in page. */
   signInMethods: readonly SignInMethod[]
-  /** Signs in with one of `signInMethods`. Rejects, changing nothing, when sign-in doesn't finish. */
-  signIn(method: SignInMethodId): Promise<void>
-  /** Creates an account from the registration form and signs it in. */
-  register(details: Registration): Promise<void>
+  /**
+   * Signs in with one of `signInMethods`, resolving with the new session (so the page can say who
+   * is signed in). Rejects, changing nothing, when sign-in doesn't finish.
+   */
+  signIn(method: SignInMethodId): Promise<Session>
+  /** Creates an account from the registration form and signs it in; resolves with the session. */
+  register(details: Registration): Promise<Session>
   /** Signs this device out; the account keeps its lists. */
   signOut(): Promise<void>
   /** True when registration only makes a practice account on this device (the local mock). */

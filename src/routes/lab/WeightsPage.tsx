@@ -1,6 +1,7 @@
 // The weights lab (/lab/weights, dev server only): sliders for the recommendation scorer's
 // weights. Like every lab it never ships: the route only exists under `npm run dev` (router.tsx).
 import { useState } from 'react'
+import { withToast } from '../../notify'
 import {
   Button,
   Label,
@@ -272,19 +273,16 @@ function WeightSlider({
 
 /** The current settings as code, ready to paste into DEFAULT_WEIGHTS (or send to the developer). */
 function Summary({ weights, diversityPenalty }: { weights: Weights; diversityPenalty: number }) {
-  const [copied, setCopied] = useState<'yes' | 'no' | null>(null)
   const text = [
     ...SCORE_PARTS.map((p) => `${p}: ${weights[p].toFixed(2)}`),
     `diversityPenalty: ${diversityPenalty.toFixed(2)}`,
   ].join('\n')
 
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopied('yes')
-    } catch {
-      setCopied('no')
-    }
+  function copy() {
+    void withToast(() => navigator.clipboard.writeText(text), {
+      success: 'Copied.',
+      error: 'Couldn’t copy. Select the settings above instead.',
+    })
   }
 
   return (
@@ -309,13 +307,6 @@ function Summary({ weights, diversityPenalty }: { weights: Weights; diversityPen
           Reset to defaults
         </Link>
       </div>
-      <p role="status" className="text-sm text-fg-muted empty:hidden">
-        {copied === 'yes'
-          ? 'Copied.'
-          : copied === 'no'
-            ? 'Couldn’t copy. Select the settings above instead.'
-            : ''}
-      </p>
       <p className="text-sm text-fg-muted">
         The page link keeps these settings, so you can bookmark or share it.
       </p>

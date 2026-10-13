@@ -11,6 +11,7 @@ import { LoadingImage } from '../../components/LoadingImage'
 import { TagToggle } from '../../components/TagToggle'
 import { TAGS } from '../../components/tags'
 import { primaryGenreName } from '../../domain/genres'
+import { notify, notifyTagged, TAG_ERROR } from '../../notify'
 import { useSetTag, useTagQueries } from '../../session/tagQueries'
 import { Prompt } from './Prompt'
 import { primary } from './styles'
@@ -102,7 +103,15 @@ export function RateStep({ state, update }: StepProps) {
               tag={t}
               detailed
               isSelected={tags?.has(t.tag) ?? false}
-              onChange={(on) => setTag.mutate({ tmdbId: pick.id, tag: t.tag, on })}
+              onChange={(on) =>
+                setTag.mutate(
+                  { tmdbId: pick.id, tag: t.tag, on },
+                  {
+                    onSuccess: () => notifyTagged(pick.title, t.label, on),
+                    onError: () => notify.error(TAG_ERROR),
+                  },
+                )
+              }
               className="min-h-15 md:min-h-21"
             />
           ))}

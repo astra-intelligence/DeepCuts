@@ -13,6 +13,7 @@ import { SIGNED_IN_WITH, type Account } from '../adapters/SessionProvider'
 import { Avatar } from '../components/AccountChip'
 import { Eyebrow } from '../components/Eyebrow'
 import { Icon } from '../components/Icon'
+import { SIGN_OUT_MESSAGES, withToast } from '../notify'
 import { useSession } from '../session/SessionContext'
 import { AccountSettings } from './AccountSettings'
 import { useTagQueries } from '../session/tagQueries'
@@ -41,9 +42,10 @@ function SignedIn({ account }: { account: Account }) {
     if (confirming) confirmRef.current?.focus()
   }, [confirming])
 
-  // Once signed out, the route guard (RequireAccount) takes this page to the landing page.
+  // Once signed out, the route guard (RequireAccount) takes this page to the landing page; the
+  // toast confirms it there.
   async function confirmSignOut() {
-    await signOut()
+    await withToast(signOut, SIGN_OUT_MESSAGES)
   }
 
   return (
