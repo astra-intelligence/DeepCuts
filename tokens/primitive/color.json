@@ -63,6 +63,25 @@
         "$value": "#f27c81",
         "$description": "Dislike only: the one red that is readable as small text on ink (ADR-0020). The hue ramps skip red for this reason"
       }
+    },
+    "heat": {
+      "$description": "The heat ramp: the match sticker's steps between blood (0%) and neon (100%), picked in OKLCH along red \u2192 orange \u2192 yellow \u2192 green at lightnesses where ink text passes 4.5:1 (owner, 2026-10-13).",
+      "20": {
+        "$value": "#ef6c05",
+        "$description": "Orange: 20\u201339%"
+      },
+      "40": {
+        "$value": "#f7a307",
+        "$description": "Amber: 40\u201359%"
+      },
+      "60": {
+        "$value": "#c6e101",
+        "$description": "Lime: 60\u201379%"
+      },
+      "80": {
+        "$value": "#39ff14",
+        "$description": "Neon green: 80\u2013100%"
+      }
     }
   }
 }

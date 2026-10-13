@@ -84,6 +84,54 @@
       "$value": "{color.mustard.default}",
       "$description": "Favourite films: the Top Ten (ADR-0035). Decorative; always next to its label"
     },
+    "match": {
+      "$description": "The match sticker's fill and text, in five steps from red to neon green by the pick's match (owner, 2026-10-13). Each step's text passes 4.5:1 on its fill (scripts/contrast-pairs.json); the match is always written on the sticker too.",
+      "0": {
+        "default": {
+          "$value": "{color.blood}",
+          "$description": "0\u201319%"
+        },
+        "fg": {
+          "$value": "{color.fg.on-danger}"
+        }
+      },
+      "20": {
+        "default": {
+          "$value": "{color.heat.20}",
+          "$description": "20\u201339%"
+        },
+        "fg": {
+          "$value": "{color.fg.on-accent}"
+        }
+      },
+      "40": {
+        "default": {
+          "$value": "{color.heat.40}",
+          "$description": "40\u201359%"
+        },
+        "fg": {
+          "$value": "{color.fg.on-accent}"
+        }
+      },
+      "60": {
+        "default": {
+          "$value": "{color.heat.60}",
+          "$description": "60\u201379%"
+        },
+        "fg": {
+          "$value": "{color.fg.on-accent}"
+        }
+      },
+      "80": {
+        "default": {
+          "$value": "{color.heat.80}",
+          "$description": "80\u2013100%"
+        },
+        "fg": {
+          "$value": "{color.fg.on-accent}"
+        }
+      }
+    },
     "shadow": {
       "$value": "{color.black}",
       "$description": "Hard offset shadows (ADR-0040)"

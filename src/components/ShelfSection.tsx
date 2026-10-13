@@ -2,6 +2,7 @@
 // Nº n" label over the heading, a mustard dashed rule, and something on the right), then the
 // films in a grid that fills the row with VHS boxes and wraps as the list grows.
 import type { ReactNode } from 'react'
+import { Link } from 'react-router'
 import { Eyebrow } from './Eyebrow'
 
 /**
@@ -15,19 +16,23 @@ export const SHELF_GRID =
 /**
  * A shelf on Home: a labelled `<section>` with the header pattern, then its content.
  * @param feature - Its number on the bill, shown as "Feature Nº 1".
- * @param meta - What sits at the right of the header: a count, a link or a line of copy. Below
- *   `sm` it wraps under the heading and the dashed rule hides.
+ * @param to - Where the heading leads, when the shelf previews a longer list (the watchlist):
+ *   the heading itself is the link (owner, 2026-10-13), not a separate "See all".
+ * @param meta - What sits at the right of the header: a count or a line of copy. Below `sm` it
+ *   wraps under the heading and the dashed rule hides.
  */
 export function ShelfSection({
   id,
   feature,
   title,
+  to,
   meta,
   children,
 }: {
   id: string
   feature: number
   title: string
+  to?: string
   meta?: ReactNode
   children: ReactNode
 }) {
@@ -38,7 +43,13 @@ export function ShelfSection({
         <div>
           <Eyebrow className="mb-1">Feature Nº {feature}</Eyebrow>
           <h2 id={headingId} className="font-display text-5xl leading-none tracking-wide uppercase">
-            {title}
+            {to ? (
+              <Link to={to} className="underline-offset-8 hover:text-accent hover:underline">
+                {title}
+              </Link>
+            ) : (
+              title
+            )}
           </h2>
         </div>
         {/* Decorative: the rule only fills the row between the heading and the meta. */}

@@ -28,16 +28,17 @@ function renderInLink(movie = film) {
 describe('VhsBox', () => {
   it('is decorative: hidden from screen readers, so the link keeps its own name', () => {
     const { box } = renderInLink()
-    expect(box.parentElement).toHaveAttribute('aria-hidden', 'true')
+    expect(box).toHaveAttribute('aria-hidden', 'true')
     expect(box.querySelector('img')).toHaveAttribute('alt', '')
   })
 
-  it('carries one flat badge outside the turning box: rank, ticket or match (ADR-0040)', () => {
+  it('carries one badge on its cover, so it turns with the box: rank, ticket or match', () => {
     const badge = (b: Parameters<typeof VhsBox>[0]['badge']) => {
       const { container } = render(<VhsBox movie={film} badge={b} />)
-      const outer = container.firstElementChild as HTMLElement
-      // The badge is the stage's sibling, so it never turns with the box.
-      return outer.lastElementChild?.classList.contains('vhs-scene') ? null : outer.lastElementChild
+      // After the poster and the genre sticker, on the front face.
+      const front = container.querySelector('.vhs-front')
+      const last = front?.lastElementChild
+      return last?.hasAttribute('data-genre-sticker') ? null : last
     }
     expect(badge({ kind: 'rank', rank: 3 })).toHaveTextContent('#3')
     expect(badge({ kind: 'ticket' })).toHaveTextContent('Admit one')

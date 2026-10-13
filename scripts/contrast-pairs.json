@@ -285,5 +285,10 @@
   ["color-fg-on-accent", "color-tag-seen", 4.5],
   ["color-fg-on-accent", "color-tag-watchlist", 4.5],
   ["color-fg-on-accent", "color-tag-liked", 4.5],
-  ["color-fg-on-accent", "color-tag-disliked", 4.5]
+  ["color-fg-on-accent", "color-tag-disliked", 4.5],
+  ["color-match-0-fg", "color-match-0-default", 4.5],
+  ["color-match-20-fg", "color-match-20-default", 4.5],
+  ["color-match-40-fg", "color-match-40-default", 4.5],
+  ["color-match-60-fg", "color-match-60-default", 4.5],
+  ["color-match-80-fg", "color-match-80-default", 4.5]
 ]

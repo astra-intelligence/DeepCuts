@@ -30,7 +30,7 @@
                 their depth (owner's call, 2026-10-09) and tilt ±8° as they scroll past, like
                 walking along a shelf: a scroll-driven animation, no JavaScript; browsers
                 without it hold the pose
-   With a mouse, boxes rest turned 6° so a sliver of spine always shows. Reduced motion keeps
+   With a mouse, boxes rest straight on until hovered (owner, 2026-10-13). Reduced motion keeps
    every box still in its resting pose.
 
    Design system. Colors: the vhs-box component tokens and the film's genre tone (`--tone`, set
@@ -43,14 +43,14 @@
 
 @layer components {
   /* ---- Tuning knobs -------------------------------------------------------------------------
-     On :root so the lab can override them on any ancestor. Proportions are a real cardboard
-     sleeve, 104 × 190 × 25 mm (W × H × D; Pacdora's VHS box template, checked 2026-10-09).
-     Posters are 2:3, so the art is cropped a little at the sides, as on real covers. */
+     On :root so the lab can override them on any ancestor. The box's shape is not a knob: it
+     is the poster's own 2:3, so the art fills the cover without cropping (owner, 2026-10-13;
+     a real sleeve's 0.547 cut off the sides). Depth is a real cardboard sleeve's, 25 mm on a
+     104 mm face (Pacdora's VHS box template, checked 2026-10-09). */
   :root {
-    --vhs-aspect: 0.547; /* width / height */
     --vhs-depth: 0.24; /* depth as a share of the width */
-    --vhs-rest-y: 6deg; /* turn at rest (positive shows the spine) */
-    --vhs-rest-x: -2deg; /* tilt at rest (negative = top toward you) */
+    --vhs-rest-y: 0deg; /* turn at rest: straight on (positive shows the spine) */
+    --vhs-rest-x: 0deg; /* tilt at rest: level (negative = top toward you) */
     --vhs-lean-y: 24deg; /* mouse: turn with the pointer at a side edge */
     --vhs-lean-x: 12deg; /* mouse: tilt with the pointer at the top or bottom edge */
     --vhs-focus-y: 18deg; /* keyboard focus (and touch at rest): turn */
@@ -58,8 +58,6 @@
     --vhs-scroll-x: 8deg; /* touch: tilt at the top and bottom of the screen */
     --vhs-lift: -4px; /* how far the box rises on hover and focus */
     --vhs-perspective: 1100px;
-    --vhs-art-fit: cover; /* the poster fills the front, cropped at the sides */
-    --vhs-art-position: 50% 50%; /* which part of the poster the crop keeps */
   }
 
   /* ---- Stage and box ------------------------------------------------------------------------ */
@@ -88,7 +86,7 @@
      noise as a data URI, which the CSP allows) and --print (the genre color bleached a quarter
      toward the paper, so dark ink on it reads at 4.8:1 or more for every genre). */
   .vhs-box {
-    --h: calc(100cqw / var(--vhs-aspect));
+    --h: calc(100cqw * 3 / 2);
     --d: calc(100cqw * var(--vhs-depth));
     --still-y: var(--vhs-rest-y);
     --still-x: var(--vhs-rest-x);
@@ -190,8 +188,9 @@
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: var(--vhs-art-fit);
-    object-position: var(--vhs-art-position);
+    /* The cover is the poster's 2:3, so nothing is cut off; `cover` only absorbs the odd poster
+       that's a pixel off that ratio. */
+    object-fit: cover;
   }
   /* The fold along the spine: a pale strip down the cover's left edge, 7px on a 190px box
      (ADR-0040's clamshell hinge). */

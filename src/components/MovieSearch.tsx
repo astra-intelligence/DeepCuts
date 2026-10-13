@@ -110,7 +110,7 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
               </p>
             )}
           >
-            {/* One row per suggestion: poster, title, year · genre, and a "View details" cue. */}
+            {/* One row per suggestion: poster, title and year · genre. Choosing it opens the film. */}
             {(movie: MovieSummary) => {
               const poster = imageUrl(movie.poster_path, 'w92')
               const meta = [releaseYear(movie.release_date), primaryGenreName(movie.genre_ids)]
@@ -134,9 +134,6 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
                         <span className="ml-2 text-tag-disliked">Disliked</span>
                       )}
                     </small>
-                  </span>
-                  <span className="flex shrink-0 items-center gap-1.5 font-display text-sm tracking-wider whitespace-nowrap text-accent uppercase">
-                    View details <span aria-hidden="true">→</span>
                   </span>
                 </ListBoxItem>
               )

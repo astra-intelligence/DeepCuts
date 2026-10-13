@@ -1,6 +1,7 @@
 // One film as a cassette tile: the VHS box (design approved 2026-10-09) with its badge, then the
-// caption (ADR-0040 §8): title, the first reason, year · genre, director and writer, and "View
-// details". Used by Home's three shelves and, from `md` up, by My Lists.
+// caption (ADR-0040 §8): title, the first reason, year · genre, director and writer. The whole
+// tile is the link (no separate "View details", owner 2026-10-13); its title lights up on hover.
+// Used by Home's shelves and My Lists.
 import { Link } from 'react-router'
 import { releaseYear, type Credits, type MovieSummary } from '../api/tmdb'
 import { genreTone, primaryGenreName } from '../domain/genres'
@@ -53,16 +54,16 @@ export function CassetteCard({ item }: { item: CassetteItem }) {
         {item.rank !== undefined && <span className="sr-only">#{item.rank} </span>}
         {/* Two lines at most, then an ellipsis. The clamp is visual only: the full title stays
             in the page, so it's still the link's accessible name, and `title` shows it on hover. */}
-        <h3 title={movie.title} className="line-clamp-2 min-h-14 text-lg font-bold">
+        <h3
+          title={movie.title}
+          className="line-clamp-2 min-h-14 text-lg font-bold underline-offset-4 group-hover:text-accent group-hover:underline"
+        >
           {movie.title}
         </h3>
         {item.match !== undefined && <span className="sr-only">{item.match}% match</span>}
         <Because titles={item.because?.slice(0, 1)} />
         <p className="mt-1 min-h-5 text-sm text-fg-muted">{meta.join(' · ')}</p>
         <CreditLines credits={item.credits} />
-        <span className="mt-auto pt-2.5 font-display text-base tracking-widest text-accent uppercase underline underline-offset-4 group-hover:text-accent-hover">
-          View details <span aria-hidden="true">→</span>
-        </span>
       </div>
     </Link>
   )
