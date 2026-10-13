@@ -1,5 +1,5 @@
-// Tests for Home (signed in): its three panels in order and in one grid (ADR-0035), the Top Ten
-// in its ranked order (ADR-0036), and the
+// Tests for Home (signed in): its three shelves in order (ADR-0040), the Top Ten in its ranked
+// order with the next open slot (ADR-0036), the ticker, and the
 // Discovery panel: popular films without likes, scored picks with a match and the reason with
 // likes.
 import { screen, waitFor, within } from '@testing-library/react'
@@ -22,19 +22,24 @@ async function firstPick() {
 }
 
 describe('home', () => {
-  it('shows Top Ten, the watchlist and Discovery as panels, in that order, in one grid', async () => {
+  it('stacks Top Ten, the watchlist and Discovery as three shelves, features 1 to 3', async () => {
     renderRoute('/')
-    const topTen = await screen.findByRole('heading', { level: 2, name: 'Top Ten' })
-    const watchlist = screen.getByRole('heading', { level: 2, name: 'Movies I want to watch' })
-    const recommendations = screen.getByRole('heading', { level: 2, name: 'Discovery' })
-    expect(topTen.compareDocumentPosition(watchlist)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
-    expect(watchlist.compareDocumentPosition(recommendations)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    )
-    // One list of three panels: stacked on phones, three columns from `lg` (ADR-0035).
-    const grid = topTen.closest('ul')
-    expect(grid).toHaveClass('lg:grid-cols-3')
-    expect(grid?.children).toHaveLength(3)
+    await screen.findByRole('heading', { level: 2, name: 'Top Ten' })
+    const shelves = screen.getAllByRole('region')
+    expect(shelves.map((r) => r.getAttribute('aria-labelledby'))).toEqual([
+      'shelf-top-ten',
+      'shelf-watchlist',
+      'shelf-discovery',
+    ])
+    expect(shelves.map((r) => within(r).getByText(/^Feature Nº/).textContent)).toEqual([
+      'Feature Nº 1',
+      'Feature Nº 2',
+      'Feature Nº 3',
+    ])
+    // The headline ends in the blood-red highlight, but still reads as one sentence.
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Your movies, close at hand' }),
+    ).toBeInTheDocument()
   })
 
   it('returns a retired Discover URL to Home', async () => {
@@ -66,7 +71,7 @@ describe('home', () => {
     // The big featured card is gone (owner, 2026-10-09): the top pick is the first cassette.
     expect(screen.queryByText(/featured deep cut/i)).not.toBeInTheDocument()
     const panel = screen.getByRole('region', { name: 'Discovery' })
-    expect(within(panel).getByRole('list')).toHaveClass('grid-cols-2')
+    expect(within(panel).getByText('Deep cuts, picked for your taste')).toBeInTheDocument()
     const alien = within(panel).getByRole('link', { name: /Alien.*1979 · Horror/ })
     // Each box wears its VHS genre sticker, which stays out of the link's accessible name.
     expect(alien.querySelector('[data-genre-sticker="horror"]')).toHaveTextContent('Horror')
@@ -79,11 +84,13 @@ describe('home', () => {
     expect(title).toHaveAttribute('title', 'Alien')
   })
 
-  it('the Top Ten starts with a hint, and shows a film added from Detail', async () => {
+  it('the Top Ten starts with an open slot that sends you to search, and shows a film added from Detail', async () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/')
     const panel = await screen.findByRole('region', { name: 'Top Ten' })
-    expect(within(panel).getByText(/Add a film from its details page/)).toBeInTheDocument()
+    expect(within(panel).getByText('0 of 10 ranked')).toBeInTheDocument()
+    await user.click(within(panel).getByRole('button', { name: /^Add a film/ }))
+    expect(screen.getByRole('combobox', { name: 'Find a movie to view and tag' })).toHaveFocus()
 
     await act(() => router.navigate('/movie/1091'))
     await user.click(await screen.findByRole('button', { name: 'Add to your Top 10' }))
@@ -93,7 +100,9 @@ describe('home', () => {
     expect(
       await within(updated).findByRole('link', { name: /^#1 The Thing.*1982 · Horror/ }),
     ).toBeInTheDocument()
-    expect(within(updated).queryByText(/Add a film from its details page/)).not.toBeInTheDocument()
+    // The open slot moves on to #2.
+    expect(within(updated).getByText('1 of 10 ranked')).toBeInTheDocument()
+    expect(within(updated).getByText('#2')).toBeInTheDocument()
   })
 
   it('shows the Top Ten in its ranked order, numbered, as an ordered list', async () => {
@@ -106,10 +115,19 @@ describe('home', () => {
     const links = within(panel).getAllByRole('link')
     expect(links.map((l) => l.getAttribute('href'))).toEqual(['/movie/348', '/movie/1091'])
     expect(links[0]).toHaveAccessibleName(/^#1 Alien/)
-    expect(links[0]?.closest('ol')).toHaveClass('grid-cols-2')
+    // The rank is also the box's mustard tab (decorative; the caption says it to screen readers).
+    expect(links[0]?.querySelector('[aria-hidden="true"]')).toHaveTextContent('#1')
   })
 
-  it('shows up to four watchlist films as cassettes, with See all', async () => {
+  it('starts the watchlist shelf with an empty slot that sends you to search', async () => {
+    const user = userEvent.setup()
+    renderRoute('/')
+    const panel = await screen.findByRole('region', { name: 'Movies I want to watch' })
+    await user.click(within(panel).getByRole('button', { name: /^Nothing on the bill yet/ }))
+    expect(screen.getByRole('combobox', { name: 'Find a movie to view and tag' })).toHaveFocus()
+  })
+
+  it('shows the latest watchlist films with their ADMIT ONE tickets, and See all', async () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
@@ -120,6 +138,7 @@ describe('home', () => {
     const panel = await screen.findByRole('region', { name: 'Movies I want to watch' })
     const thing = await within(panel).findByRole('link', { name: /The Thing.*1982 · Horror/ })
     expect(thing.querySelector('[data-genre-sticker="horror"]')).toBeInTheDocument()
+    expect(within(thing).getByText('Admit one')).toBeInTheDocument()
     expect(within(panel).getByRole('link', { name: 'See all' })).toHaveAttribute(
       'href',
       '/lists?tag=watchlist',
@@ -167,6 +186,8 @@ describe('home with likes (ADR-0026)', () => {
       screen.queryByText('Like a few films to tune these picks to you.'),
     ).not.toBeInTheDocument()
     expect(feature).toHaveTextContent(/\d+% match/)
+    // The match is also the box's blood-red stamp.
+    expect(within(feature).getByText(/^\d+%$/)).toBeInTheDocument()
     expect(feature).toHaveTextContent('Because you liked The Thing')
     // The re-rank loaded the top candidates' directors (ADR-0028): The Fog shares John Carpenter
     // with The Thing, which lifts it to the top spot.

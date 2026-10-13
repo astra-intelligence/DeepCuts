@@ -1,6 +1,6 @@
 // Tests for the VHS genre sticker: it shows the first known genre's short label, stays hidden from
-// screen readers, gives each film a stable tilt and its own wear filter, and renders nothing
-// without a known genre.
+// screen readers, is 54px at the same −10° slant on every film (ADR-0040), gives each film its
+// own wear filter, and renders nothing without a known genre.
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { GenreSticker } from './GenreSticker'
@@ -22,12 +22,12 @@ describe('GenreSticker', () => {
     expect(sticker(container)).toBeNull()
   })
 
-  it('tilts the same way for the same film, and sizes up for the featured card', () => {
+  it('is 54px, at the same −10° slant for every film', () => {
     const a = sticker(render(<GenreSticker genreIds={[27]} seed={1091} />).container)
-    const b = sticker(render(<GenreSticker genreIds={[27]} seed={1091} size="lg" />).container)
-    expect(a?.style.rotate).toBe(b?.style.rotate)
-    expect(a?.style.width).toBe('48px')
-    expect(b?.style.width).toBe('72px')
+    const b = sticker(render(<GenreSticker genreIds={[27]} seed={348} />).container)
+    expect(a?.style.width).toBe('54px')
+    expect(a?.style.rotate).toBe('-10deg')
+    expect(b?.style.rotate).toBe('-10deg')
   })
 
   it('gives each sticker its own wear filter, seeded by the film', () => {

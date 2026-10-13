@@ -162,6 +162,11 @@
   background-size: 7px 7px;
 }
 
+/* The hard black text shadow under blood-red headline words (ADR-0040). */
+@utility text-shadow-hard {
+  text-shadow: 4px 4px 0 var(--color-shadow);
+}
+
 /* The mustard dashed rule in section headers: grows to fill the row between title and meta. */
 @utility dashed-rule {
   height: 6px;

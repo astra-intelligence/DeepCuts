@@ -9,24 +9,25 @@
 import { useId } from 'react'
 import { primaryGenre } from '../domain/genres'
 
-// Diameter in pixels: 48 on cassettes; 72 (`lg`) was for the retired featured card and is
-// unused on pages for now.
-const SIZES = { sm: 48, lg: 72 } as const
+// Diameter in pixels (ADR-0040).
+const SIZE = 54
+// Stuck on at the same slant on every box, like a price gun's dots (ADR-0040).
+const TILT = -10
+// The printed label: the display face at 11px at most, smaller for long genre names.
+const MAX_FONT = 11
 
 /**
  * The genre sticker for a film, or nothing when TMDB gives no genre we know.
  * Position it from the parent with `className` (e.g. `absolute top-1.5 right-1.5`).
- * @param seed - The film's id. Each film gets its own (stable) tilt and edge wear.
+ * @param seed - The film's id. Each film gets its own (stable) edge wear.
  */
 export function GenreSticker({
   genreIds,
   seed,
-  size = 'sm',
   className = '',
 }: {
   genreIds: readonly number[]
   seed: number
-  size?: keyof typeof SIZES
   className?: string
 }) {
   // A unique id for this sticker's wear filter. React's ids contain characters that CSS url()
@@ -35,18 +36,15 @@ export function GenreSticker({
   const genre = primaryGenre(genreIds)
   if (!genre) return null
 
-  const px = SIZES[size]
-  // Stuck on by hand: a slight tilt between -9° and +5°, always the same for a given film.
-  const tilt = (seed % 15) - 9
-  // Shrink the text for long labels so it fits well inside the circle (at most 26% of the size).
-  const fontSize = Math.min(px * 0.26, (px * 0.66) / (genre.label.length * 0.66))
+  // Shrink the text for long labels so it fits well inside the circle.
+  const fontSize = Math.min(MAX_FONT, (SIZE * 0.66) / (genre.label.length * 0.5))
 
   return (
     <span
       aria-hidden="true"
       data-genre-sticker={genre.slug}
       className={`pointer-events-none grid place-items-center rounded-full shadow-sticker ${className}`}
-      style={{ width: px, height: px, rotate: `${tilt}deg` }}
+      style={{ width: SIZE, height: SIZE, rotate: `${TILT}deg` }}
     >
       {/* Rough, worn edges: noise displaces the face's outline by a couple of pixels. The noise
           seed comes from the film, so no two stickers wear the same way. */}
@@ -75,7 +73,7 @@ export function GenreSticker({
         style={{ filter: `url(#${filterId})` }}
       />
       <span
-        className="relative col-start-1 row-start-1 font-display leading-none tracking-wide whitespace-nowrap text-sticker-ink/80 uppercase mix-blend-multiply"
+        className="relative col-start-1 row-start-1 font-display leading-none tracking-wider whitespace-nowrap text-sticker-ink/80 uppercase mix-blend-multiply"
         style={{ fontSize }}
       >
         {genre.label}

@@ -24,3 +24,13 @@ export const LongTitle: Story = {
     title: 'Results for “Dr. Strangelove or: How I Learned to Stop Worrying”',
   },
 }
+/** Home: the larger headline, ending in blood red with a hard shadow. */
+export const Hero: Story = {
+  args: {
+    eyebrow: '',
+    size: 'hero',
+    title: 'Your movies,',
+    highlight: 'close at hand',
+    lede: 'The films you love, want to see, and a few worth going deeper for.',
+  },
+}
