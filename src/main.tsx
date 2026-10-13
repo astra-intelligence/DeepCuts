@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router'
+import { AppToaster } from './components/AppToaster'
 import { createMockSessionProvider } from './adapters/local/MockSessionProvider'
 import { shouldRetry } from './api/retry'
 import { AppSessionProvider } from './session/AppSessionProvider'
@@ -40,6 +41,8 @@ createRoot(root).render(
     <QueryClientProvider client={queryClient}>
       <AppSessionProvider provider={sessionProvider} initialSession={initialSession}>
         <RouterProvider router={router} />
+        {/* Outside the router, so toasts stay up across route changes (src/notify.ts). */}
+        <AppToaster />
       </AppSessionProvider>
     </QueryClientProvider>
   </StrictMode>,

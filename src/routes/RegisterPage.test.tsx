@@ -7,7 +7,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { createMockSessionProvider } from '../adapters/local/MockSessionProvider'
 import { SIGNED_OUT, type SessionProvider } from '../adapters/SessionProvider'
-import { renderRoute } from '../test/renderRoute'
+import { findToast, renderRoute } from '../test/renderRoute'
 
 const INVITE = 'AAAAAAAAAAAAAAAAAAAAAA'
 
@@ -55,7 +55,9 @@ describe('registration (ADR-0031)', () => {
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/lists'))
     expect(router.state.location.search).toBe('?tag=liked')
-    expect(await screen.findByText('Signed in as Ada.')).toBeInTheDocument()
+    expect(await findToast('Account created. Signed in as Ada.')).toBeInTheDocument()
+    // The toast can show before the lazy /lists page has loaded, so wait for the header.
+    await screen.findByRole('heading', { level: 1, name: 'My Lists' })
     expect(
       within(screen.getByRole('banner')).getByRole('link', { name: 'Ada, open your account' }),
     ).toBeInTheDocument()
@@ -79,9 +81,7 @@ describe('registration (ADR-0031)', () => {
     })
     await fill(user)
     await user.click(screen.getByRole('button', { name: 'Create passkey' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Registration didn’t finish. Nothing was changed.',
-    )
+    expect(await findToast(/^Registration didn’t finish. Nothing was changed./)).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/register')
   })
 

@@ -229,7 +229,7 @@ function MovieDetail({ id, onDismiss }: { id: number; onDismiss: () => void }) {
       <div className="relative z-1 -mt-12 flex flex-col px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:mt-0 md:ml-auto md:min-h-svh md:w-full md:max-w-xl md:justify-center md:pt-24 md:pr-13 md:pb-10 md:pl-6">
         {/* Top Ten (ADR-0036): a sticker in the top-left corner of the details, set apart from
             the tags below. Pressing it saves at once; it then becomes a short notice. */}
-        <DetailTopTen movieId={m.id} className="mb-4" />
+        <DetailTopTen movieId={m.id} title={m.title} className="mb-4" />
         <h1
           className={`font-display tracking-tight text-balance wrap-anywhere ${titleSize(m.title)}`}
         >

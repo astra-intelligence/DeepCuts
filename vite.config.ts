@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { defineConfig, loadEnv } from 'vite'
 import { baseHeaders, contentSecurityPolicy } from './server/securityHeaders.ts'
+import { sonnerStyles } from './server/sonnerStyles.ts'
 import { tmdbProxy } from './server/tmdbProxy.ts'
 
 // Security headers (ADR-0008), defined once in server/securityHeaders.ts. CSP is applied to
@@ -20,6 +21,8 @@ export default defineConfig(({ mode }) => ({
     react(),
     tailwindcss(),
     tmdbProxy(loadEnv(mode, process.cwd(), '').TMDB_READ_TOKEN),
+    // Keeps Sonner's inline <style> tag out of the build, which the CSP would block.
+    sonnerStyles(),
     // `npm run analyze` only: a treemap of what's in the bundle, at build/bundle-report.html.
     mode === 'analyze' &&
       visualizer({ filename: 'build/bundle-report.html', gzipSize: true, template: 'treemap' }),

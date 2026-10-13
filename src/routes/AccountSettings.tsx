@@ -9,6 +9,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Button, FieldError, Form, Input, Label, TextField } from 'react-aria-components'
 import { z } from 'zod'
 import { registrationSchema } from '../adapters/SessionProvider'
+import { withToast } from '../notify'
 import { useSession } from '../session/SessionContext'
 
 // Same field styles as the registration form.
@@ -36,12 +37,9 @@ export function AccountSettings({ name }: { name: string }) {
 function ChangeName({ name, rename }: { name: string; rename: (name: string) => Promise<void> }) {
   const [errors, setErrors] = useState<Record<string, string[]>>({})
   const [pending, setPending] = useState(false)
-  // What the status line says after a save: '' (nothing yet), saved, or failed.
-  const [status, setStatus] = useState<'' | 'saved' | 'failed'>('')
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setStatus('')
     const result = registrationSchema.shape.name.safeParse(
       new FormData(e.currentTarget).get('name'),
     )
@@ -51,14 +49,11 @@ function ChangeName({ name, rename }: { name: string; rename: (name: string) => 
     }
     setErrors({})
     setPending(true)
-    try {
-      await rename(result.data)
-      setStatus('saved')
-    } catch {
-      setStatus('failed')
-    } finally {
-      setPending(false)
-    }
+    await withToast(() => rename(result.data), {
+      success: 'Name saved.',
+      error: 'Your name wasn’t saved. Try again.',
+    })
+    setPending(false)
   }
 
   return (
@@ -89,13 +84,6 @@ function ChangeName({ name, rename }: { name: string; rename: (name: string) => 
           Save name
         </Button>
       </Form>
-      <p role="status" className="text-sm text-fg-muted empty:hidden">
-        {status === 'saved'
-          ? 'Name saved.'
-          : status === 'failed'
-            ? 'Your name wasn’t saved. Try again.'
-            : ''}
-      </p>
     </section>
   )
 }
@@ -104,7 +92,6 @@ function ChangeName({ name, rename }: { name: string; rename: (name: string) => 
 function DeleteAccount({ deleteAccount }: { deleteAccount: () => Promise<void> }) {
   const [confirming, setConfirming] = useState(false)
   const [pending, setPending] = useState(false)
-  const [failed, setFailed] = useState(false)
   const confirmRef = useRef<HTMLButtonElement>(null)
   const askRef = useRef<HTMLButtonElement>(null)
   // After "Delete account", focus moves to the confirm button the press revealed.
@@ -113,15 +100,14 @@ function DeleteAccount({ deleteAccount }: { deleteAccount: () => Promise<void> }
   }, [confirming])
 
   async function confirmDelete() {
-    setFailed(false)
     setPending(true)
-    try {
-      // Once it's gone, the route guard (RequireAccount) takes this page to the landing page.
-      await deleteAccount()
-    } catch {
-      setFailed(true)
-      setPending(false)
-    }
+    // Once it's gone, the route guard (RequireAccount) takes this page to the landing page, where
+    // the toast confirms it. If it fails, the page stays so they can try again.
+    const deleted = await withToast(deleteAccount, {
+      success: 'Your account was deleted.',
+      error: 'Your account wasn’t deleted. Try again.',
+    })
+    if (!deleted) setPending(false)
   }
 
   return (
@@ -133,11 +119,6 @@ function DeleteAccount({ deleteAccount }: { deleteAccount: () => Promise<void> }
         Deletes your account and every list in it. This can’t be undone. Your passkey stays in your
         password manager; you can remove it there.
       </p>
-      {failed && (
-        <p role="alert" className="text-sm text-fg-danger">
-          Your account wasn’t deleted. Try again.
-        </p>
-      )}
       {confirming ? (
         <div className="flex flex-wrap items-center gap-2">
           <Button

@@ -4,6 +4,9 @@
 import type { Page } from '@playwright/test'
 import { expect, expectNoA11yViolations, expectNoHorizontalOverflow, test } from './fixtures'
 
+// Sonner's toast area (src/notify.ts): action outcomes ("Saved.", "Signed in as Mike.") show here.
+const toasts = (page: Page) => page.getByRole('region', { name: /^Notifications/ })
+
 for (const path of ['/', '/movie/1091', '/lists', '/account']) {
   test(`${path} has no axe violations and no horizontal overflow`, async ({ page }) => {
     await page.goto(path)
@@ -54,7 +57,7 @@ test.describe('signed out (ADR-0034)', () => {
     await expect(page).toHaveURL(/\/sign-in$/)
     await page.getByRole('button', { name: /Continue with a demo account/ }).click()
     await expect(page).toHaveURL(/\/lists\?tag=liked$/)
-    await expect(page.getByText('Signed in as Mike.')).toBeVisible()
+    await expect(toasts(page).getByText('Signed in as Mike.')).toBeVisible()
   })
 })
 
@@ -77,8 +80,8 @@ async function wantToSeeTheThing(page: Page) {
     .getByRole('button', { name: 'Want to see' })
     .click()
   await page.getByRole('button', { name: 'Save' }).click()
-  // Save briefly announces success, then closes Detail through its exit transition.
-  await expect(page.getByRole('status')).toContainText('Saved.')
+  // Save confirms it in a toast, then closes Detail through its exit transition.
+  await expect(toasts(page).getByText(/^Saved\./)).toBeVisible()
   await expect(page).toHaveURL(/\/$/)
 }
 
@@ -191,7 +194,7 @@ test('detail tags toggle and save by keyboard, all at 44px or more', async ({ pa
   for (let i = 0; i < 4; i++) await page.keyboard.press('Tab')
   await expect(save).toBeFocused()
   await page.keyboard.press('Enter')
-  await expect(page.getByRole('status')).toHaveText('Saved. The Thing: Seen it.')
+  await expect(toasts(page).getByText('Saved. The Thing: Seen it.')).toBeVisible()
   await expect(page).toHaveURL(/\/$/)
   await expect(
     page.getByRole('heading', { level: 1, name: 'Your movies, close at hand' }),
@@ -208,7 +211,7 @@ test('a disliked film appears only on the Disliked list, with the tag accent', a
   await expect(dislike).toHaveAttribute('aria-pressed', 'true')
   // Detail stages tag changes until Save.
   await page.getByRole('button', { name: 'Save' }).click()
-  await expect(page.getByRole('status')).toContainText('Saved.')
+  await expect(toasts(page).getByText(/^Saved\./)).toBeVisible()
   await expect(page).toHaveURL(/\/$/)
   await openMyLists(page)
   const lists = page.getByRole('navigation', { name: 'Lists' })
@@ -239,7 +242,7 @@ test.describe('signing in and registering', () => {
     await page.keyboard.press('Enter')
 
     await expect(page).toHaveURL(/\/$/)
-    await expect(page.getByText('Signed in as Mike.')).toBeVisible()
+    await expect(toasts(page).getByText('Signed in as Mike.')).toBeVisible()
     // A link to Account on phones; the account menu's button from `md`.
     const chip = page
       .getByRole('banner')
@@ -267,6 +270,7 @@ test.describe('signing in and registering', () => {
     }
     // Signing out lands on the landing page, and stays signed out after a reload.
     await expect(page).toHaveURL(/\/$/)
+    await expect(toasts(page).getByText('Signed out.')).toBeVisible()
     await expect(page.getByRole('banner').getByRole('link', { name: 'Sign in' })).toBeVisible()
     await expectNoHorizontalOverflow(page)
     await page.reload()
@@ -297,7 +301,7 @@ test.describe('signing in and registering', () => {
     await page.keyboard.press('Enter')
 
     await expect(page).toHaveURL(/\/$/)
-    await expect(page.getByText('Signed in as Ada.')).toBeVisible()
+    await expect(toasts(page).getByText('Account created. Signed in as Ada.')).toBeVisible()
     await page.reload()
     const chip = page
       .getByRole('banner')
@@ -318,7 +322,7 @@ test('liking a film tunes Home’s recommendations, with a match and the reason 
   await expect(like).toHaveAttribute('aria-pressed', 'true')
   // Detail stages tag changes until Save.
   await page.getByRole('button', { name: 'Save' }).click()
-  await expect(page.getByRole('status')).toContainText('Saved.')
+  await expect(toasts(page).getByText(/^Saved\./)).toBeVisible()
   await page.getByRole('link', { name: 'Deep Cuts, go to Home' }).click()
   // The top pick is the first row in Discovery (no featured card).
   const feature = page

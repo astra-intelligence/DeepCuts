@@ -6,7 +6,7 @@ import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { createLocalTopTenRepository } from '../adapters/local/LocalTopTenRepository'
-import { renderRoute } from '../test/renderRoute'
+import { findToast, renderRoute } from '../test/renderRoute'
 
 // The demo account's Top Ten in this browser (renderRoute signs in as the demo account), read and
 // seeded through its real store.
@@ -71,11 +71,11 @@ describe('movie detail', () => {
     await user.click(btn('Like'))
     expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
 
-    // Save writes both tags, announces it, then closes the Detail overlay.
+    // Save writes both tags, confirms it in a toast, then closes the Detail overlay.
     await user.click(btn('Seen it'))
     await user.click(btn('Like'))
     await user.click(screen.getByRole('button', { name: 'Save' }))
-    expect(await screen.findByRole('status')).toHaveTextContent('Saved. The Thing: Seen it, Like.')
+    expect(await findToast('Saved. The Thing: Seen it, Like.')).toBeInTheDocument()
     // The action row stays in place for the fade and disappears only when Detail unmounts.
     expect(screen.getByRole('button', { name: 'Saving…' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
@@ -154,6 +154,7 @@ describe('movie detail', () => {
       await waitFor(() => expect(notice).toHaveFocus())
       expect(screen.queryByRole('button', { name: 'Add to your Top 10' })).not.toBeInTheDocument()
       expect(await demoTopTen().list()).toEqual([1091])
+      expect(await findToast('Added The Thing to your Top Ten.')).toBeInTheDocument()
       // A Top Ten is not a tag: no tag was turned on.
       const group = screen.getByRole('group', { name: 'Your tags' })
       for (const button of within(group).getAllByRole('button'))
@@ -172,6 +173,7 @@ describe('movie detail', () => {
       const sticker = await screen.findByRole('button', { name: 'Add to your Top 10' })
       await waitFor(() => expect(sticker).toHaveFocus())
       expect(await demoTopTen().list()).toEqual([5, 7])
+      expect(await findToast('Removed The Thing from your Top Ten.')).toBeInTheDocument()
     })
 
     it('a full Top Ten shows a note instead of the sticker', async () => {
@@ -190,10 +192,13 @@ describe('movie detail', () => {
       const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
         throw new Error('QuotaExceededError')
       })
-      await user.click(sticker)
-      expect(await screen.findByRole('alert')).toHaveTextContent('Couldn’t update your Top Ten')
-      expect(sticker).toBeInTheDocument()
-      setItem.mockRestore()
+      try {
+        await user.click(sticker)
+        expect(await findToast(/^Couldn’t update your Top Ten/)).toBeInTheDocument()
+        expect(sticker).toBeInTheDocument()
+      } finally {
+        setItem.mockRestore()
+      }
     })
 
     it('a film in a full Top Ten can still be removed', async () => {

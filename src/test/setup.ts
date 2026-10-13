@@ -3,6 +3,7 @@
 // tests so they can't affect each other.
 import '@testing-library/jest-dom/vitest'
 import { cleanup, configure } from '@testing-library/react'
+import { toast } from 'sonner'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 import { createLocalTagRepository } from '../adapters/local/LocalTagRepository'
 import { createLocalTopTenRepository } from '../adapters/local/LocalTopTenRepository'
@@ -17,6 +18,9 @@ configure({ asyncUtilTimeout: 3000 })
 // Any request without a fake handler fails the test, so tests can never reach the real TMDB.
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(async () => {
+  // Toasts live in Sonner's global store, and a new <Toaster> replays every one still active, so
+  // dismiss them or the next test would see this test's toasts.
+  toast.dismiss()
   cleanup()
   server.resetHandlers()
   // Accounts, their tags and their Top Ten must not leak between tests (reset through the adapters, ADR-0013).

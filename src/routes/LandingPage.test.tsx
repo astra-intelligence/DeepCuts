@@ -4,7 +4,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { SIGNED_OUT } from '../adapters/SessionProvider'
-import { renderRoute } from '../test/renderRoute'
+import { findToast, renderRoute } from '../test/renderRoute'
 
 const PANEL_HEADINGS = ['Top Ten', 'Movies I want to watch', 'Discovery']
 
@@ -44,7 +44,7 @@ describe('landing page (signed out)', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
     // Home's real panels, with the tab bar back.
     expect(await screen.findByRole('navigation', { name: 'Main' })).toBeInTheDocument()
-    expect(await screen.findByText('Signed in as Mike.')).toBeInTheDocument()
+    expect(await findToast('Signed in as Mike.')).toBeInTheDocument()
     expect(
       within(screen.getByRole('region', { name: 'Movies I want to watch' })).getByRole('link', {
         name: 'See all',

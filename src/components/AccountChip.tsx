@@ -15,6 +15,7 @@ import {
 } from 'react-aria-components'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { firstName, SIGNED_IN_WITH, type Account } from '../adapters/SessionProvider'
+import { SIGN_OUT_MESSAGES, withToast } from '../notify'
 import { useSession } from '../session/SessionContext'
 import { useTagQueries } from '../session/tagQueries'
 import { Icon } from './Icon'
@@ -108,7 +109,7 @@ function AccountMenuItems({ account }: { account: Account }) {
         // Sign out is one press here: opening the menu is already a deliberate step, and the lists
         // stay in the account (owner decision 2026-10-12). Once signed out, `/` shows the landing
         // page, and RequireAccount sends any signed-in-only page there.
-        if (key === 'sign-out') void signOut()
+        if (key === 'sign-out') void withToast(signOut, SIGN_OUT_MESSAGES)
         else navigate(String(key))
       }}
     >

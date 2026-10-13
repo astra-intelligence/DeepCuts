@@ -2,16 +2,15 @@
 //
 // Changes are staged: tapping a tag only changes what's shown (following the ADR-0017 rules
 // through `applyTag`), and Save and Cancel appear as soon as anything differs from what's saved.
-// Save writes the changes and confirms them in a message ("Saved. The Thing: Seen it, Like."),
-// announced to screen readers; it then closes Detail. Cancel discards the draft and closes Detail.
+// Save writes the changes, confirms them in a toast ("Saved. The Thing: Seen it, Like.") and
+// closes Detail; the toast stays up on the page underneath. Cancel discards the draft and closes Detail.
 // Search keeps one-tap tagging that saves at once (owner's choice, 2026-10-07).
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Button } from 'react-aria-components'
-import { Icon } from '../components/Icon'
-import { TagSaveError } from '../components/TagSaveError'
 import { TagToggle } from '../components/TagToggle'
 import { TAGS } from '../components/tags'
+import { notify } from '../notify'
 import { applyTag, SYSTEM_TAGS, type SystemTag, type TagSet } from '../domain/tagRules'
 import { useSetTag, useTagQueries } from '../session/tagQueries'
 
@@ -48,26 +47,21 @@ export function DetailTags({
   // The unsaved selection, or null when the toggles simply show what's saved.
   const [draft, setDraft] = useState<TagSet | null>(null)
   const [saving, setSaving] = useState(false)
-  const [failed, setFailed] = useState(false)
-  // The confirmation after a save. Cleared by the next change, so it never describes old tags.
-  const [message, setMessage] = useState('')
 
   const shown = draft ?? saved
-  // Saving and the final confirmation keep the action row mounted even after the query cache
-  // catches up with the draft. It disappears only when the closing Detail route unmounts.
-  const dirty = draft !== null && (!sameTags(draft, saved) || saving || message !== '')
+  // Saving keeps the action row mounted even after the query cache catches up with the draft
+  // (after a successful save it stays set), so the row never collapses during the exit transition.
+  // It disappears only when the closing Detail route unmounts.
+  const dirty = draft !== null && (!sameTags(draft, saved) || saving)
 
   function toggle(tag: SystemTag, on: boolean) {
     if (saving) return
     setDraft(applyTag(shown, tag, on))
-    setMessage('')
-    setFailed(false)
   }
 
   async function save() {
     if (!draft || saving) return
     setSaving(true)
-    setFailed(false)
     let succeeded = false
     try {
       // The repository changes one tag at a time. Removals go first, then additions, which lands
@@ -82,15 +76,14 @@ export function DetailTags({
         if (!saved.has(tag) && draft.has(tag))
           await setTag.mutateAsync({ tmdbId: movieId, tag, on: true })
       }
-      setMessage(savedMessage(title, draft))
+      notify.success(savedMessage(title, draft))
       succeeded = true
-      // Commit the live-region text before starting the fade, so it has a real DOM update to
-      // announce even though this route leaves straight afterwards. Keep the draft and Saving…
-      // state mounted until then, so the action row cannot collapse during the exit transition.
-      requestAnimationFrame(() => onDismiss())
+      onDismiss()
     } catch {
-      // The draft stays selected, so nothing the person picked is lost; the alert says to retry.
-      setFailed(true)
+      // The draft stays selected, so nothing the person picked is lost; the toast says to retry.
+      notify.error(
+        'Your changes weren’t all saved. Your picks are still selected, so try Save again.',
+      )
     } finally {
       // A successful save immediately starts dismissal; unmount owns the final cleanup. On an
       // error the page stays open, so restore the controls for a retry.
@@ -143,18 +136,6 @@ export function DetailTags({
           </>
         )}
       </div>
-      {failed && <TagSaveError staged className="mt-2" />}
-      {/* Always in the page, and never display:none (empty until a save takes no space), so
-          screen readers announce the message when it appears. A live region added or unhidden at
-          the same moment as its text is often missed. */}
-      <p role="status" className="mt-3 flex min-h-5 items-center gap-2 text-sm">
-        {message && (
-          <>
-            <Icon name="check" className="size-5 shrink-0 text-accent" />
-            {message}
-          </>
-        )}
-      </p>
     </>
   )
 }

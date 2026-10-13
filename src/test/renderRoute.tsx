@@ -4,9 +4,10 @@
 // Tests start signed in to the demo account, because almost every page needs an account
 // (ADR-0034). Pass `initialSession: SIGNED_OUT` for the landing page and the sign-in flows.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import type { Account, Session, SessionProvider } from '../adapters/SessionProvider'
+import { AppToaster } from '../components/AppToaster'
 import { AppSessionProvider } from '../session/AppSessionProvider'
 import { FEATURES, type Features } from '../config/features'
 import { createRoutes } from '../router'
@@ -36,8 +37,19 @@ export function renderRoute(path: string, options: Options = {}) {
           initialSession={options.initialSession ?? SIGNED_IN}
         >
           <RouterProvider router={router} />
+          {/* Toasts (src/notify.ts), as in main.tsx, so tests can find them by their text. */}
+          <AppToaster />
         </AppSessionProvider>
       </QueryClientProvider>,
     ),
   }
+}
+
+/**
+ * Waits for a toast (src/notify.ts) with this text, inside Sonner's "Notifications" region, so a
+ * test checks it was shown as a toast and not anywhere else on the page.
+ */
+export async function findToast(text: string | RegExp) {
+  const region = await screen.findByRole('region', { name: /^Notifications/ })
+  return within(region).findByText(text)
 }

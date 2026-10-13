@@ -7,7 +7,7 @@ import { act } from 'react'
 import { describe, expect, it } from 'vitest'
 import { createMockSessionProvider } from '../adapters/local/MockSessionProvider'
 import { SIGNED_OUT, type SessionProvider } from '../adapters/SessionProvider'
-import { renderRoute } from '../test/renderRoute'
+import { findToast, renderRoute } from '../test/renderRoute'
 
 const header = () => screen.getByRole('banner')
 
@@ -23,8 +23,9 @@ describe('sign in (ADR-0025)', () => {
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/lists'))
     expect(router.state.location.search).toBe('?tag=watchlist')
-    const notice = await screen.findByText('Signed in as Mike.')
-    expect(notice).toHaveAttribute('role', 'status')
+    expect(await findToast('Signed in as Mike.')).toBeInTheDocument()
+    // The toast can show before the lazy /lists page has loaded, so wait for the header.
+    await screen.findByRole('heading', { level: 1, name: 'My Lists' })
     expect(
       within(header()).getByRole('link', { name: 'Mike, open your account' }),
     ).toBeInTheDocument()
@@ -58,9 +59,7 @@ describe('sign in (ADR-0025)', () => {
       initialSession: SIGNED_OUT,
     })
     await user.click(await screen.findByRole('button', { name: /Continue with a demo account/ }))
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Sign-in didn’t finish. Nothing was changed.',
-    )
+    expect(await findToast(/^Sign-in didn’t finish. Nothing was changed./)).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/sign-in')
   })
 
