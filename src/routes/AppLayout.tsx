@@ -1,5 +1,5 @@
 // The app shell around Home, Search, My Lists and Account: header, search band, the page,
-// and the tab bar. (Detail and Sign in have their own layouts.) Signed out, the shell around the
+// and (on phones) the tab bar; from `md` the account menu in the header replaces it. (Detail and Sign in have their own layouts.) Signed out, the shell around the
 // landing page is just the logo and Sign in: search and the tabs lead only to signed-in pages
 // (ADR-0034).
 import { Link, NavLink, Outlet } from 'react-router'
@@ -35,18 +35,19 @@ export function SkipLink() {
 
 /**
  * Shell (ADR-0021, ADR-0033): sticky header + persistent search band; a bottom tab bar on
- * phones that becomes a floating pill from `md`.
+ * phones. From `md` there's no tab bar: the logo goes Home and the account menu (AccountChip)
+ * holds My Lists (owner decision 2026-10-12).
  */
 export function AppLayout() {
   useRouteFocus()
   const signedIn = useSession().session.kind === 'account'
   return (
     // Bottom padding keeps the last content clear of the fixed tab bar (and the iPhone home bar).
-    // Signed out there's no tab bar, so only the safe area is kept clear.
+    // Signed out, and from `md`, there's no tab bar, so only the safe area is kept clear.
     <div
       className={`mx-auto min-h-dvh w-full max-w-360 overflow-x-clip ${
         signedIn
-          ? 'pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-28'
+          ? 'pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-[max(1.5rem,env(safe-area-inset-bottom))]'
           : 'pb-[max(1.5rem,env(safe-area-inset-bottom))]'
       }`}
     >
@@ -103,12 +104,12 @@ export function AppLayout() {
         </p>
       </main>
 
-      {/* The tab bar, signed in only. NavLink marks the current tab (and gives it
+      {/* The tab bar, signed in and on phones only. NavLink marks the current tab (and gives it
           aria-current="page"). */}
       {signedIn && (
         <nav
           aria-label="Main"
-          className="fixed bottom-0 left-1/2 z-20 w-full max-w-360 -translate-x-1/2 border-t border-nav-border bg-nav-bg/95 px-3.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:bottom-4 md:w-md md:rounded-nav md:border md:p-1 md:shadow-nav md:shadow-surface/80"
+          className="fixed bottom-0 left-1/2 z-20 w-full max-w-360 -translate-x-1/2 border-t border-nav-border bg-nav-bg/95 px-3.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden"
         >
           <ul className="grid grid-cols-2">
             {NAV.map((item) => (
@@ -116,7 +117,7 @@ export function AppLayout() {
                 <NavLink
                   to={item.to}
                   className={({ isActive }) =>
-                    `flex min-h-14 flex-col items-center justify-center gap-1 rounded-nav-item text-sm md:flex-row md:gap-2 ${
+                    `flex min-h-14 flex-col items-center justify-center gap-1 rounded-nav-item text-sm ${
                       isActive
                         ? 'text-nav-item-fg-current'
                         : 'text-nav-item-fg hover:text-nav-item-fg-hover'

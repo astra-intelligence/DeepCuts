@@ -1,11 +1,15 @@
 // The Account page (/account), signed in only (ADR-0034): the account, its tagged-film count, and
 // sign out (with a confirm step). A passkey account can also change its name and delete itself
 // (AccountSettings.tsx, ADR-0031).
+//
+// Phones reach it from the header chip. From `md` the header's account menu covers the lists and
+// sign out, so there this page is just "Account settings" (who you are, change name, delete), and
+// the menu links it for passkey accounts only (owner decision 2026-10-12).
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from 'react-aria-components'
 import { Link } from 'react-router'
-import type { Account } from '../adapters/SessionProvider'
+import { SIGNED_IN_WITH, type Account } from '../adapters/SessionProvider'
 import { Avatar } from '../components/AccountChip'
 import { Eyebrow } from '../components/Eyebrow'
 import { Icon } from '../components/Icon'
@@ -21,13 +25,6 @@ export function AccountPage() {
   const { session } = useSession()
   // The route guard (RequireAccount) sends signed-out visitors to sign in before this renders.
   return session.kind === 'account' ? <SignedIn account={session.account} /> : null
-}
-
-// The line under the account name, per kind of account.
-const SIGNED_IN_WITH: Record<Account['method'], string> = {
-  passkey: 'Signed in with a passkey',
-  demo: 'Signed in with the demo account',
-  practice: 'Practice account, made on this device',
 }
 
 // Signed in: who you are, how many films you've tagged, and sign out.
@@ -62,9 +59,10 @@ function SignedIn({ account }: { account: Account }) {
       </div>
 
       <div className="grid items-stretch gap-3 md:grid-cols-2">
+        {/* Phones only: from `md` the account menu shows the count and links My Lists. */}
         <section
           aria-labelledby="lists-heading"
-          className="grid content-start gap-2.5 rounded-card border border-card-border bg-card-bg p-4 shadow-card"
+          className="grid content-start gap-2.5 rounded-card border border-card-border bg-card-bg p-4 shadow-card md:hidden"
         >
           <h2 id="lists-heading" className="font-display text-2xl">
             Your lists
@@ -88,9 +86,10 @@ function SignedIn({ account }: { account: Account }) {
           </Link>
         </section>
 
+        {/* Phones only: from `md` Sign out is in the account menu. */}
         <section
           aria-labelledby="signout-heading"
-          className="grid content-start gap-2.5 rounded-card border border-card-border bg-card-bg p-4 shadow-card"
+          className="grid content-start gap-2.5 rounded-card border border-card-border bg-card-bg p-4 shadow-card md:hidden"
         >
           <h2 id="signout-heading" className="font-display text-2xl">
             Sign out

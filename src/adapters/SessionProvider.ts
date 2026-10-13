@@ -79,3 +79,10 @@ export interface SessionProvider {
 
 /** The first word of a name, for the header ("Mike Curts" → "Mike"). */
 export const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? ''
+
+/** The line under the account's name (header account menu, Account page), per kind of account. */
+export const SIGNED_IN_WITH: Record<Account['method'], string> = {
+  passkey: 'Signed in with a passkey',
+  demo: 'Signed in with the demo account',
+  practice: 'Practice account, made on this device',
+}

@@ -111,9 +111,47 @@ test('header search → detail → back, keyboard only', async ({ page }) => {
   ).toBeVisible()
 })
 
+// From `md` (768px) the header's account menu replaces the tab bar (owner, 2026-10-12).
+const isWide = (page: Page) => (page.viewportSize()?.width ?? 0) >= 768
+
+/** Goes to My Lists the way a person would at this width: the tab bar, or the account menu. */
+async function openMyLists(page: Page) {
+  if (isWide(page)) {
+    await page
+      .getByRole('banner')
+      .getByRole('button', { name: /account menu/ })
+      .click()
+    await page.getByRole('menuitem', { name: 'My Lists' }).click()
+  } else {
+    await page
+      .getByRole('navigation', { name: 'Main' })
+      .getByRole('link', { name: 'My Lists' })
+      .click()
+  }
+}
+
 test('main navigation is reachable and marks the current page', async ({ page }) => {
   await page.goto('/')
   const nav = page.getByRole('navigation', { name: 'Main' })
+  if (isWide(page)) {
+    // No tab bar; the account menu opens by keyboard and passes axe while open.
+    await expect(nav).toBeHidden()
+    const chip = page.getByRole('banner').getByRole('button', { name: 'Mike, account menu' })
+    expect((await chip.boundingBox())?.height).toBeGreaterThanOrEqual(44)
+    await chip.focus()
+    await page.keyboard.press('Enter')
+    const menu = page.getByRole('menu', { name: 'Mike, account menu' })
+    await expect(menu.getByRole('menuitem')).toHaveText(['My Lists', 'Sign out'])
+    await expect(menu.getByText('Signed in with the demo account')).toBeVisible()
+    await expectNoA11yViolations(page)
+    // Escape closes it and puts focus back on the chip.
+    await page.keyboard.press('Escape')
+    await expect(menu).toHaveCount(0)
+    await expect(chip).toBeFocused()
+    await openMyLists(page)
+    await expect(page).toHaveURL(/\/lists$/)
+    return
+  }
   // Two tabs while the Search page is hidden.
   await expect(nav.getByRole('link')).toHaveText(['Home', 'My Lists'])
   await nav.getByRole('link', { name: 'My Lists' }).click()
@@ -172,10 +210,7 @@ test('a disliked film appears only on the Disliked list, with the tag accent', a
   await page.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByRole('status')).toContainText('Saved.')
   await expect(page).toHaveURL(/\/$/)
-  await page
-    .getByRole('navigation', { name: 'Main' })
-    .getByRole('link', { name: 'My Lists' })
-    .click()
+  await openMyLists(page)
   const lists = page.getByRole('navigation', { name: 'Lists' })
   await lists.getByRole('link', { name: /Dislike/ }).click()
   await expect(page.getByRole('link', { name: /The Thing/ })).toBeVisible()
@@ -205,7 +240,10 @@ test.describe('signing in and registering', () => {
 
     await expect(page).toHaveURL(/\/$/)
     await expect(page.getByText('Signed in as Mike.')).toBeVisible()
-    const chip = page.getByRole('banner').getByRole('link', { name: 'Mike, open your account' })
+    // A link to Account on phones; the account menu's button from `md`.
+    const chip = page
+      .getByRole('banner')
+      .getByRole(isWide(page) ? 'button' : 'link', { name: /^Mike, / })
     await expect(chip).toBeVisible()
     expect((await chip.boundingBox())?.height).toBeGreaterThanOrEqual(44)
 
@@ -218,10 +256,15 @@ test.describe('signing in and registering', () => {
     await expect(page.getByRole('link', { name: /The Thing/ })).toBeVisible()
 
     await chip.click()
-    await expect(page.getByRole('heading', { level: 1, name: 'Mike Curts' })).toBeVisible()
-    await expectNoA11yViolations(page)
-    await page.getByRole('button', { name: 'Sign out' }).click()
-    await page.getByRole('button', { name: 'Yes, sign out' }).click()
+    if (isWide(page)) {
+      // One press in the menu.
+      await page.getByRole('menuitem', { name: 'Sign out' }).click()
+    } else {
+      await expect(page.getByRole('heading', { level: 1, name: 'Mike Curts' })).toBeVisible()
+      await expectNoA11yViolations(page)
+      await page.getByRole('button', { name: 'Sign out' }).click()
+      await page.getByRole('button', { name: 'Yes, sign out' }).click()
+    }
     // Signing out lands on the landing page, and stays signed out after a reload.
     await expect(page).toHaveURL(/\/$/)
     await expect(page.getByRole('banner').getByRole('link', { name: 'Sign in' })).toBeVisible()
@@ -256,7 +299,9 @@ test.describe('signing in and registering', () => {
     await expect(page).toHaveURL(/\/$/)
     await expect(page.getByText('Signed in as Ada.')).toBeVisible()
     await page.reload()
-    const chip = page.getByRole('banner').getByRole('link', { name: 'Ada, open your account' })
+    const chip = page
+      .getByRole('banner')
+      .getByRole(isWide(page) ? 'button' : 'link', { name: /^Ada, / })
     await chip.click()
     await expect(page.getByText('Practice account, made on this device')).toBeVisible()
   })
