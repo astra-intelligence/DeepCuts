@@ -85,12 +85,51 @@
       "$description": "Favourite films: the Top Ten (ADR-0035). Decorative; always next to its label"
     },
     "match": {
-      "$description": "The match sticker's color blends from low (0%) to high (100%) in OKLCH, through orange and yellow (owner, 2026-10-13). Its number is large text, and MATCH sits on an ink band; contrast for every value is checked in src/domain/matchColor.test.ts",
-      "low": {
-        "$value": "{color.blood}"
+      "$description": "The match sticker's fill and text, in five steps from red to neon green by the pick's match (owner, 2026-10-13). Each step's text passes 4.5:1 on its fill (scripts/contrast-pairs.json); the match is always written on the sticker too.",
+      "0": {
+        "default": {
+          "$value": "{color.blood}",
+          "$description": "0\u201319%"
+        },
+        "fg": {
+          "$value": "{color.fg.on-danger}"
+        }
       },
-      "high": {
-        "$value": "{color.neon}"
+      "20": {
+        "default": {
+          "$value": "{color.heat.20}",
+          "$description": "20\u201339%"
+        },
+        "fg": {
+          "$value": "{color.fg.on-accent}"
+        }
+      },
+      "40": {
+        "default": {
+          "$value": "{color.heat.40}",
+          "$description": "40\u201359%"
+        },
+        "fg": {
+          "$value": "{color.fg.on-accent}"
+        }
+      },
+      "60": {
+        "default": {
+          "$value": "{color.heat.60}",
+          "$description": "60\u201379%"
+        },
+        "fg": {
+          "$value": "{color.fg.on-accent}"
+        }
+      },
+      "80": {
+        "default": {
+          "$value": "{color.heat.80}",
+          "$description": "80\u2013100%"
+        },
+        "fg": {
+          "$value": "{color.fg.on-accent}"
+        }
       }
     },
     "shadow": {

@@ -11,9 +11,9 @@
 // A box can carry one badge (ADR-0040), stuck on its cover so it turns with the box (owner,
 // 2026-10-13): a mustard rank tab (Top Ten), an ADMIT ONE ticket (the watchlist) or a blood-red
 // match sticker (Discovery). Badges are decoration too: the caption under the box says the same.
-import { useEffect, useRef, type CSSProperties } from 'react'
+import { useEffect, useRef } from 'react'
 import { imageUrl, releaseYear, type MovieSummary } from '../api/tmdb'
-import { inkOnMatch, matchBlend } from '../domain/matchColor'
+import { MATCH_CLASSES, matchStep } from '../domain/matchColor'
 import { GenreSticker } from './GenreSticker'
 import { LoadingImage } from './LoadingImage'
 import './VhsBox.css'
@@ -202,17 +202,13 @@ function Badge({ badge }: { badge: VhsBadge }) {
         </span>
       )
     case 'match': {
-      // A starburst price sticker stuck on the cover's bottom-left corner, slightly crooked, its
-      // fill blending from blood red (0%) to neon green (100%) by the match (owner, 2026-10-13;
-      // matchColor.ts). The number is large text in whichever of ink and bone reads on the fill;
-      // MATCH sits on an ink band, so it reads at any color.
-      const ink = inkOnMatch(badge.match)
+      // A starburst price sticker stuck on the cover's bottom-left corner, slightly crooked. Its
+      // color steps from blood red to neon green with the match (owner, 2026-10-13; the
+      // color.match tokens, each with text that passes 4.5:1).
+      const colors = MATCH_CLASSES[matchStep(badge.match)]
       return (
         <span
-          style={matchBlend(badge.match) as CSSProperties}
-          className={`absolute bottom-3 left-2 z-2 grid size-18 -rotate-12 place-content-center justify-items-center text-center font-display leading-none uppercase sm:size-22 ${
-            ink ? 'text-fg-on-accent' : 'text-fg-on-danger'
-          }`}
+          className={`absolute bottom-3 left-2 z-2 grid size-18 -rotate-12 place-content-center text-center font-display leading-none uppercase sm:size-22 ${colors.text}`}
         >
           <svg viewBox="-4 -4 108 108" className="absolute inset-0 size-full overflow-visible">
             {/* The hard shadow: the same burst, offset down and right (elevation.stamp). */}
@@ -221,11 +217,11 @@ function Badge({ badge }: { badge: VhsBadge }) {
               points={STARBURST}
               strokeWidth="4"
               strokeLinejoin="round"
-              className="vhs-match-burst stroke-fg"
+              className={`${colors.fill} stroke-fg`}
             />
           </svg>
-          <span className="relative text-2xl">{badge.match}%</span>
-          <span className="relative mt-0.5 bg-surface px-1 py-0.5 text-xs text-fg">Match</span>
+          <span className="relative text-xl sm:text-2xl">{badge.match}%</span>
+          <span className="relative text-xs">Match</span>
         </span>
       )
     }
