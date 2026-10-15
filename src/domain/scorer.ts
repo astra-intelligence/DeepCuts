@@ -1,5 +1,5 @@
-// Recommendation scorer v3 (ADR-0026, ADR-0028, ADR-0032, ADR-0037, ADR-0038): turns a person's
-// tags into ranked film picks.
+// Recommendation scorer v3 (ADR-0026, ADR-0028, ADR-0032, ADR-0037, ADR-0038, ADR-0043): turns a
+// person's tags and Top Ten into ranked film picks.
 //
 // How it works, in four steps:
 // 1. Candidates: every film TMDB recommends for any film you liked, the well-voted films in a
@@ -9,7 +9,8 @@
 //    several of your likes, or searches, is a stronger candidate.
 // 2. Taste profile: a weight per genre and per keyword, built from your tags (liked +1, Want to
 //    see +0.5, disliked −1), plus the decades, languages, directors, writers, actors, studios and
-//    series of the films you liked.
+//    series of the films you liked. Your Top Ten films count as likes that weigh TOP_TEN_WEIGHT
+//    (ADR-0043), so a favourite pulls a little harder than an ordinary like.
 // 3. Score: each candidate gets twelve part scores between 0 and 1 (see DEFAULT_WEIGHTS), which
 //    are combined with the weights into one score. "% match" is that score × 100.
 //    Keywords, credits and studios need one extra details call per candidate, so the caller
@@ -90,12 +91,17 @@ export interface TasteInput {
     recommendations: readonly ScorerFilm[]
     similar?: readonly ScorerFilm[]
     series?: readonly ScorerFilm[]
+    /**
+     * How much this like counts: 1 for a liked tag (the default), TOP_TEN_WEIGHT for a Top Ten
+     * film (ADR-0043). Scales its genres, keywords, suggestions, decade and language.
+     */
+    weight?: number
   }[]
   /** Want to see: a mild positive genre signal. */
   wanted: readonly ScorerFilm[]
   /** Disliked: a negative genre signal. Disliked films themselves are excluded via `excluded`. */
   disliked: readonly ScorerFilm[]
-  /** Every film the person has tagged. None of them is ever recommended. */
+  /** Every film the person has tagged or put in their Top Ten. None of them is ever recommended. */
   excluded: ReadonlySet<number>
   /** The results of searching `keywordsToSearch(input)`, one entry per keyword (ADR-0038). */
   keywordSearches?: readonly KeywordSearch[]
@@ -156,6 +162,13 @@ export const DIVERSITY_PENALTY = 0.03
  * candidate (ADR-0037).
  */
 export const SIMILAR_MIN_VOTES = 50
+
+/**
+ * How much a Top Ten film counts compared with an ordinary like (ADR-0043, owner 2026-10-15).
+ * A Top Ten is "the ten films you'd defend", so it says a bit more about taste than one liked
+ * tag, but not so much that ten favourites drown out twenty likes.
+ */
+export const TOP_TEN_WEIGHT = 1.25
 
 /** How many of your likes' shared keywords are searched for candidates (ADR-0038). */
 export const KEYWORD_SEARCHES = 3
@@ -234,7 +247,7 @@ export interface Pick {
   score: number
   /** Whole-number percentage shown to the user: score × 100, no inflation. */
   match: number
-  /** Titles of liked films that recommended it, at most two. */
+  /** Titles of liked (or Top Ten) films that recommended it, at most two. */
   because: string[]
   /** Set when it shares a director with a film you liked: "John Carpenter", "The Thing". */
   sameDirector?: { director: string; liked: string }
@@ -258,6 +271,9 @@ interface Candidate {
   support: number
   because: string[]
 }
+
+// How much one liked entry counts (ADR-0043): 1 unless it says otherwise.
+const weightOf = (l: TasteInput['liked'][number]) => l.weight ?? 1
 
 // Keeps a number between 0 and 1.
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n))
@@ -298,13 +314,16 @@ export function keywordsToSearch(input: TasteTags): number[] {
 // explore slots would lift those.
 function collectCandidates(input: TasteInput): Map<number, Candidate> {
   const candidates = new Map<number, Candidate>()
-  const suggest = (film: ScorerFilm, because: readonly string[]) => {
+  // `weight` is how much the suggestion counts: a Top Ten film's suggestions count TOP_TEN_WEIGHT
+  // (ADR-0043), every other suggestion 1.
+  const suggest = (film: ScorerFilm, because: readonly string[], weight = 1) => {
     const c = candidates.get(film.id) ?? { film, support: 0, because: [] }
-    c.support += 1
+    c.support += weight
     for (const title of because) if (!c.because.includes(title)) c.because.push(title)
     candidates.set(film.id, c)
   }
-  for (const { film: source, recommendations, similar = [], series = [] } of input.liked) {
+  for (const like of input.liked) {
+    const { film: source, recommendations, similar = [], series = [] } = like
     const next = nextInSeries(series, source, input.excluded)
     const alike = similar.filter(
       (f) =>
@@ -313,7 +332,7 @@ function collectCandidates(input: TasteInput): Map<number, Candidate> {
     const suggested = new Map([...recommendations, ...alike, ...next].map((f) => [f.id, f]))
     for (const film of suggested.values()) {
       if (input.excluded.has(film.id) || film.id === source.id) continue
-      suggest(film, [source.title])
+      suggest(film, [source.title], weightOf(like))
     }
   }
   const likedGenres = new Set(input.liked.flatMap((l) => l.film.genreIds))
@@ -331,16 +350,16 @@ function collectCandidates(input: TasteInput): Map<number, Candidate> {
   return candidates
 }
 
-/** Genre weights in [-1, 1]: liked +1, Want to see +0.5, disliked −1, scaled by the largest. */
+/**
+ * Genre weights in [-1, 1]: liked +1 (a Top Ten film +TOP_TEN_WEIGHT), Want to see +0.5,
+ * disliked −1, scaled by the largest.
+ */
 function genreProfile(input: TasteInput): Map<number, number> {
   const raw = new Map<number, number>()
   const add = (films: readonly ScorerFilm[], weight: number) => {
     for (const f of films) for (const g of f.genreIds) raw.set(g, (raw.get(g) ?? 0) + weight)
   }
-  add(
-    input.liked.map((l) => l.film),
-    1,
-  )
+  for (const l of input.liked) add([l.film], weightOf(l))
   add(input.wanted, 0.5)
   add(input.disliked, -1)
   // Scale so the strongest genre is ±1 and the others are relative to it.
@@ -349,8 +368,9 @@ function genreProfile(input: TasteInput): Map<number, number> {
 }
 
 /**
- * Keyword weights, unscaled: liked +1, Want to see +0.5, disliked −1, from loaded keywords.
- * `keep` leaves films out, so a sequel isn't matched against its own series (ADR-0037).
+ * Keyword weights, unscaled: liked +1 (a Top Ten film +TOP_TEN_WEIGHT), Want to see +0.5,
+ * disliked −1, from loaded keywords. `keep` leaves films out, so a sequel isn't matched against
+ * its own series (ADR-0037).
  */
 function keywordProfile(input: TasteTags, keep: (f: ScorerFilm) => boolean): Map<number, number> {
   const weights = new Map<number, number>()
@@ -358,18 +378,20 @@ function keywordProfile(input: TasteTags, keep: (f: ScorerFilm) => boolean): Map
     for (const f of films.filter(keep))
       for (const k of f.keywordIds ?? []) weights.set(k, (weights.get(k) ?? 0) + weight)
   }
-  add(
-    input.liked.map((l) => l.film),
-    1,
-  )
+  for (const l of input.liked) add([l.film], weightOf(l))
   add(input.wanted, 0.5)
   add(input.disliked, -1)
   return weights
 }
 
-/** Share of `values` equal to `value`. Only called with likes present (no likes, no candidates). */
-function shareOf<T>(values: readonly T[], value: T): number {
-  return values.filter((v) => v === value).length / values.length
+/**
+ * The weighted share of `values` equal to `value`: a Top Ten film's decade or language counts
+ * TOP_TEN_WEIGHT, a like's 1 (ADR-0043). Only called with likes present (no likes, no candidates).
+ */
+function shareOf<T>(values: readonly { value: T; weight: number }[], value: T): number {
+  const total = values.reduce((sum, v) => sum + v.weight, 0)
+  const matching = values.filter((v) => v.value === value).reduce((sum, v) => sum + v.weight, 0)
+  return matching / total
 }
 
 // A film's companies without the majors (MAJOR_STUDIOS), which say little about taste.
@@ -409,8 +431,11 @@ export function recommend(
   // Step 2: the taste profile, and the highest values used to scale parts to 0–1.
   const profile = genreProfile(input)
   const likedFilms = input.liked.map((l) => l.film)
-  const likedDecades = likedFilms.map((f) => decadeOf(f.year))
-  const likedLanguages = likedFilms.map((f) => f.language)
+  const likedDecades = input.liked.map((l) => ({
+    value: decadeOf(l.film.year),
+    weight: weightOf(l),
+  }))
+  const likedLanguages = input.liked.map((l) => ({ value: l.film.language, weight: weightOf(l) }))
   const maxSupport = Math.max(...candidates.map((c) => c.support))
   const maxPopularity = Math.max(...candidates.map((c) => c.film.popularity))
   // The series of the films you liked, each with the liked film's title.

@@ -1,7 +1,8 @@
 // Tests for the recommendation scorer (ADR-0026, ADR-0028, ADR-0032), with small hand-made films:
 // each score part, exclusions, series candidates, ranking, spread rules, explore slots, weights
 // and determinism, plus v3's similar films, next-in-series and once-only series credit
-// (ADR-0037). The scorer must stay at 100% coverage.
+// (ADR-0037), and Top Ten films weighing more than likes (ADR-0043). The scorer must stay at 100%
+// coverage.
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_WEIGHTS,
@@ -16,6 +17,7 @@ import {
   SCORE_PARTS,
   SERIES_PICKS,
   SIMILAR_MIN_VOTES,
+  TOP_TEN_WEIGHT,
   type Pick,
   type ScorerFilm,
   type TasteInput,
@@ -713,5 +715,94 @@ describe('cast, studio and keyword searches (ADR-0038)', () => {
       parts: { support: 1 },
     })
     expect(picks.map((p) => p.film.id)).toEqual([blackChristmas.id])
+  })
+})
+
+describe('Top Ten films weigh more than likes (ADR-0043)', () => {
+  it('counts a Top Ten film as 1.25 likes', () => {
+    expect(TOP_TEN_WEIGHT).toBe(1.25)
+  })
+
+  it("lifts the Top Ten film's genre above an ordinary like's", () => {
+    const horror = film({ genreIds: [HORROR] })
+    const comedy = film({ genreIds: [COMEDY] })
+    const picks = recommend(
+      input({
+        liked: [
+          { film: film({ genreIds: [HORROR] }), recommendations: [horror] },
+          { film: film({ genreIds: [COMEDY] }), recommendations: [comedy], weight: TOP_TEN_WEIGHT },
+        ],
+      }),
+    )
+    // Comedy is the strongest genre (1.25), so it scores 1; horror is 1 / 1.25 = 0.8 → 0.9.
+    expect(pickOf(picks, comedy.id).parts.genre).toBe(1)
+    expect(pickOf(picks, horror.id).parts.genre).toBeCloseTo(0.9, 10)
+  })
+
+  it("counts a Top Ten film's suggestions 1.25 times", () => {
+    const fromLike = film()
+    const fromTopTen = film()
+    const picks = recommend(
+      input({
+        liked: [
+          { film: film(), recommendations: [fromLike] },
+          { film: film(), recommendations: [fromTopTen], weight: TOP_TEN_WEIGHT },
+        ],
+      }),
+    )
+    expect(pickOf(picks, fromTopTen.id).parts.support).toBe(1)
+    expect(pickOf(picks, fromLike.id).parts.support).toBeCloseTo(1 / 1.25, 10)
+  })
+
+  it("weights the decade and language shares toward the Top Ten film's", () => {
+    const eighties = film({ year: 1984, language: 'en' })
+    const nineties = film({ year: 1995, language: 'ja' })
+    const picks = recommend(
+      input({
+        liked: [
+          { film: film({ year: 1982, language: 'en' }), recommendations: [eighties] },
+          {
+            film: film({ year: 1997, language: 'ja' }),
+            recommendations: [nineties],
+            weight: TOP_TEN_WEIGHT,
+          },
+        ],
+      }),
+    )
+    // 1.25 of the 2.25 total weight is the Top Ten film's.
+    expect(pickOf(picks, nineties.id).parts.decade).toBeCloseTo(1.25 / 2.25, 10)
+    expect(pickOf(picks, nineties.id).parts.language).toBeCloseTo(1.25 / 2.25, 10)
+    expect(pickOf(picks, eighties.id).parts.decade).toBeCloseTo(1 / 2.25, 10)
+  })
+
+  it("weights the Top Ten film's keywords, so two favourites can choose a search", () => {
+    const SLASHER = 12339
+    // Two keywords with two likes each tie at 2; two Top Ten films make 2.5 and come first.
+    const keywordsOf = (keywordIds: number[], weight?: number) => ({
+      film: film({ keywordIds }),
+      recommendations: [],
+      ...(weight && { weight }),
+    })
+    const tags = {
+      liked: [
+        keywordsOf([SLASHER], TOP_TEN_WEIGHT),
+        keywordsOf([SLASHER], TOP_TEN_WEIGHT),
+        keywordsOf([1]),
+        keywordsOf([1]),
+      ],
+      wanted: [],
+      disliked: [],
+    }
+    expect(keywordsToSearch(tags)).toEqual([SLASHER, 1])
+  })
+
+  it('treats a like without a weight as 1, so tags alone score as before', () => {
+    const candidate = film()
+    const source = film()
+    const plain = recommend(input({ liked: [{ film: source, recommendations: [candidate] }] }))
+    const explicit = recommend(
+      input({ liked: [{ film: source, recommendations: [candidate], weight: 1 }] }),
+    )
+    expect(plain).toEqual(explicit)
   })
 })
