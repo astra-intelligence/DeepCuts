@@ -87,10 +87,10 @@
        shows it closer to centred: the spine's outer edge then shows plain spine, and the same
        amount is trimmed from the art's right edge. Owner's choice (2026-10-15): wrapped, tint
        0.6, a slight shift, on a 1.87 box, which with full stretch leaves the poster at about
-       96% of its width, with about 6% trimmed from its right edge. */
+       96% of its width, with about 7.5% trimmed from its right edge. */
     --vhs-wrap: 1;
     --vhs-spine-tint: 0.6;
-    --vhs-art-shift: 0.07;
+    --vhs-art-shift: 0.09;
     --vhs-band-order: 1;
     --vhs-band-text: 0.16;
 

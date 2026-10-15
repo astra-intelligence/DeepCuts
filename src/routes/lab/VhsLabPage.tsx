@@ -100,7 +100,7 @@ const DEFAULTS: Settings = {
   band: 0,
   wrap: true,
   spineTint: 0.6,
-  artShift: 0.07,
+  artShift: 0.09,
   bandPos: 'bottom',
   bandColor: 'genre',
   bandText: 0.16,
