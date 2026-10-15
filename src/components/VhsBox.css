@@ -63,11 +63,11 @@
     /* Shape: the cover's height as a multiple of its width. Posters are 2:3 (1.5) and a real
        sleeve is 1.83 (190 mm on 104 mm); the owner chose a taller 2.0 (2026-10-15). On a cover
        taller than the poster, --vhs-stretch says how much of the difference the art stretches
-       (1 = all of it, squashed sideways) and the rest is cropped evenly from the sides. At 2.0
-       and 0.3, faces are about 8% thinner and about 9.5% of the art is cut
-       from each side. */
+       (1 = all of it, squashed sideways) and the rest is cropped evenly from the sides. The owner
+       chose 1 (2026-10-15): the whole poster always shows, nothing cut off, at the cost of
+       squashing it to 75% of its width (TMDB has no taller artwork to use instead). */
     --vhs-aspect: 2;
-    --vhs-stretch: 0.3;
+    --vhs-stretch: 1;
 
     /* Finish. The grain is SVG noise as a data URI (the CSP allows data: images): fractal noise
        at baseFrequency 0.45 (coarse), 3 octaves, warm tan at 19% alpha, tiled every

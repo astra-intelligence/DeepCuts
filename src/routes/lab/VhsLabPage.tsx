@@ -67,7 +67,7 @@ interface Settings {
 // Starting values: the approved design (src/components/VhsBox.css).
 const DEFAULTS: Settings = {
   aspect: 2,
-  stretch: 0.3,
+  stretch: 1,
   grainAlpha: 0.19,
   grainFreq: 0.45,
   grainOctaves: 3,
