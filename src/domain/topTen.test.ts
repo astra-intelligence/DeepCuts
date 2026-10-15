@@ -60,7 +60,13 @@ describe('Top Ten rules', () => {
     expect(reorderTopTen(list, [1, 2, 3])).toBe(list)
     expect(isSameFilms(list, [2, 3, 1])).toBe(true)
     // Adding, dropping, swapping in or repeating a film all mean the list changed elsewhere.
-    for (const order of [[1, 2, 3, 4], [1, 2], [1, 2, 4], [1, 1, 2], [1, 2, 2]])
+    for (const order of [
+      [1, 2, 3, 4],
+      [1, 2],
+      [1, 2, 4],
+      [1, 1, 2],
+      [1, 2, 2],
+    ])
       expect(() => reorderTopTen(list, order)).toThrow(TopTenChangedError)
   })
 })

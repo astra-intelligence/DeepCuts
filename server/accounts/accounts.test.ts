@@ -561,7 +561,11 @@ describe('Top Ten (ADR-0036)', () => {
   it('refuses an order that adds, drops or swaps in a film with 409 top_ten_changed', async () => {
     const client = await signedIn()
     for (const id of [1, 2, 3]) await client.call('PUT', '/api/top-ten', { tmdbId: id })
-    for (const ids of [[1, 2, 3, 4], [1, 2], [1, 2, 9]]) {
+    for (const ids of [
+      [1, 2, 3, 4],
+      [1, 2],
+      [1, 2, 9],
+    ]) {
       const res = await client.call('PATCH', '/api/top-ten', { ids })
       expect(res.status).toBe(409)
       expect(res.body).toEqual({ error: 'top_ten_changed' })

@@ -58,7 +58,12 @@ export function topTenRepositoryContract(name: string, make: () => TopTenReposit
 
     it('refuses an order that adds, drops or repeats a film, and keeps the list', async () => {
       for (const id of [1, 2, 3]) await repo.add(id)
-      for (const order of [[1, 2, 3, 4], [1, 2], [1, 2, 9], [1, 1, 2]])
+      for (const order of [
+        [1, 2, 3, 4],
+        [1, 2],
+        [1, 2, 9],
+        [1, 1, 2],
+      ])
         await expect(repo.reorder(order)).rejects.toBeInstanceOf(TopTenChangedError)
       expect(await repo.list()).toEqual([1, 2, 3])
     })
