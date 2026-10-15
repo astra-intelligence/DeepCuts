@@ -31,10 +31,10 @@ export function EmptySlot({
       {note && <span className="font-label text-sm text-fg-muted">{note}</span>}
     </>
   )
-  // The VHS box's own proportions (1:2, --vhs-aspect in VhsBox.css), so the slot lines up with
+  // The VHS box's own proportions (1:1.87, --vhs-aspect in VhsBox.css), so the slot lines up with
   // its row.
   const shape =
-    'flex aspect-1/2 w-full flex-col items-center justify-center gap-2 border-3 border-dashed border-border-strong p-3 text-center'
+    'flex aspect-[1/1.87] w-full flex-col items-center justify-center gap-2 border-3 border-dashed border-border-strong p-3 text-center'
   return onPress ? (
     <button type="button" onClick={onPress} className={`${shape} text-fg hover:border-accent`}>
       {body}

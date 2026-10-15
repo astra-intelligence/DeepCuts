@@ -52,6 +52,8 @@ interface Settings {
   /** Wrap the poster around the spine, and how dark the art on the spine is (0 to 1). */
   wrap: boolean
   spineTint: number
+  /** Slide the wrapped art right, as a share of the box's width (trims its right edge). */
+  artShift: number
   bandPos: BandPos
   bandColor: BandColor
   bandText: number
@@ -93,15 +95,16 @@ interface Settings {
 
 // Starting values: the approved design (src/components/VhsBox.css).
 const DEFAULTS: Settings = {
-  aspect: 2,
+  aspect: 1.87,
   stretch: 1,
   band: 0,
-  wrap: false,
-  spineTint: 0.5,
+  wrap: true,
+  spineTint: 0.6,
+  artShift: 0.07,
   bandPos: 'bottom',
   bandColor: 'genre',
-  bandText: 0.15,
-  grainAlpha: 0.19,
+  bandText: 0.16,
+  grainAlpha: 0.17,
   grainFreq: 0.45,
   grainOctaves: 3,
   grainSize: 80,
@@ -120,7 +123,7 @@ const DEFAULTS: Settings = {
   lift: 2,
   perspective: 1100,
   radius: 3,
-  scroll: true,
+  scroll: false,
   scrollPreview: false,
   freeze: false,
 }
@@ -172,6 +175,8 @@ export function VhsLabPage() {
     '--vhs-band': s.band,
     '--vhs-wrap': s.wrap ? 1 : 0,
     '--vhs-spine-tint': s.spineTint,
+    '--vhs-art-shift': s.artShift,
+    '--vhs-scroll-anim': s.scroll ? 'vhs-shelf' : 'none',
     '--vhs-band-order': s.bandPos === 'top' ? -1 : 1,
     '--vhs-band-text': s.bandText,
     ...BAND_COLORS[s.bandColor],
@@ -260,6 +265,7 @@ const SLIDERS: Record<Section, Slider[]> = {
     ['stretch', 'Stretch (the rest is cropped)', 0, 1, 0.05, ''],
     ['bandText', 'Band title size', 0.06, 0.3, 0.01, ''],
     ['spineTint', 'Spine darkening (when wrapped)', 0, 1, 0.05, ''],
+    ['artShift', 'Shift the art right (when wrapped)', 0, 0.2, 0.01, ''],
   ],
   finish: [
     ['grainAlpha', 'Grain strength', 0, 1, 0.01, ''],
@@ -332,7 +338,7 @@ function Controls({
     }
   }, [onTuning])
 
-  const summary = `shape=${s.aspect} band=${s.band}/${s.bandPos}/${s.bandColor}/${s.bandText} wrap=${s.wrap ? `on/${s.spineTint}` : 'off'} stretch=${s.stretch} grain=${s.grainAlpha}/${s.grainFreq}/${s.grainOctaves}oct/${s.grainSize}px/${s.grainBlend}/${s.grainTint} matte=${s.matte} wear=${s.wear} depth=${s.depth} rest=${s.restY}°/${s.restX}° mouse=${s.leanY}°/${s.leanX}° focus=${s.focusY}°/${s.focusX}° scroll=${s.scroll ? `${s.scrollX}°` : 'off'} lift=${s.lift}px perspective=${s.perspective}px radius=${s.radius}px`
+  const summary = `shape=${s.aspect} band=${s.band}/${s.bandPos}/${s.bandColor}/${s.bandText} wrap=${s.wrap ? `on/${s.spineTint}/shift ${s.artShift}` : 'off'} stretch=${s.stretch} grain=${s.grainAlpha}/${s.grainFreq}/${s.grainOctaves}oct/${s.grainSize}px/${s.grainBlend}/${s.grainTint} matte=${s.matte} wear=${s.wear} depth=${s.depth} rest=${s.restY}°/${s.restX}° mouse=${s.leanY}°/${s.leanX}° focus=${s.focusY}°/${s.focusX}° scroll=${s.scroll ? `${s.scrollX}°` : 'off'} lift=${s.lift}px perspective=${s.perspective}px radius=${s.radius}px`
 
   // One section of the panel. Its `data-section` tells the listeners above which motion you're
   // tuning.

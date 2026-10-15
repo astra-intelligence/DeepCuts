@@ -27,9 +27,9 @@
                 glide instead of snapping
      keyboard - focus turns the box to a fixed pose that shows the spine (24°, level)
      touch    - phones can't hover or focus a box, so boxes rest in the keyboard pose to show
-                their depth (owner's call, 2026-10-09) and tilt ±8° as they scroll past, like
-                walking along a shelf: a scroll-driven animation, no JavaScript; browsers
-                without it hold the pose
+                their depth (owner's call, 2026-10-09). They can also tilt as they scroll past,
+                like walking along a shelf (a scroll-driven animation, --vhs-scroll-anim), but
+                that's off since 2026-10-15 (owner): the boxes hold the pose
    With a mouse, boxes rest straight on until hovered (owner, 2026-10-13). Reduced motion keeps
    every box still in its resting pose.
 
@@ -53,7 +53,9 @@
     --vhs-lean-x: 10deg; /* mouse: tilt with the pointer at the top or bottom edge */
     --vhs-focus-y: 24deg; /* keyboard focus (and touch at rest): turn */
     --vhs-focus-x: 0deg; /* keyboard focus (and touch at rest): tilt */
-    --vhs-scroll-x: 8deg; /* touch: tilt at the top and bottom of the screen */
+    --vhs-scroll-x: 8deg; /* touch: tilt at the top and bottom of the screen, when on */
+    /* touch: the scroll tilt's animation, `vhs-shelf` to turn it on (off, owner 2026-10-15) */
+    --vhs-scroll-anim: none;
     --vhs-lift: -2px; /* how far the box rises on hover and focus */
     --vhs-perspective: 1100px;
     /* Rounded corners on every visible face, to soften the box's hard edges (owner, 2026-10-15;
@@ -66,7 +68,7 @@
        (1 = all of it, squashed sideways) and the rest is cropped evenly from the sides. The owner
        chose 1 (2026-10-15): the whole poster always shows, nothing cut off, at the cost of
        squashing it to 75% of its width (TMDB has no taller artwork to use instead). */
-    --vhs-aspect: 2;
+    --vhs-aspect: 1.87;
     --vhs-stretch: 1;
 
     /* The cover band: a printed strip with the film's title, like a real sleeve's, that takes
@@ -80,19 +82,25 @@
     /* Wrap: 1 lays the poster across the spine and the cover as one printed surface, like many
        real sleeves, so on a tall cover it needs far less stretch (the spine adds its depth to
        the width). The strip on the spine only shows when the box turns. --vhs-spine-tint darks
-       the art on the spine (0 = none, 1 = the plain dark spine) so its printing stays legible. */
-    --vhs-wrap: 0;
-    --vhs-spine-tint: 0.5;
+       the art on the spine (0 = none, 1 = the plain dark spine) so its printing stays legible.
+       --vhs-art-shift slides the wrapped art right (a share of the box's width) so the front
+       shows it closer to centred: the spine's outer edge then shows plain spine, and the same
+       amount is trimmed from the art's right edge. Owner's choice (2026-10-15): wrapped, tint
+       0.6, a slight shift, on a 1.87 box, which with full stretch leaves the poster at about
+       96% of its width, with about 6% trimmed from its right edge. */
+    --vhs-wrap: 1;
+    --vhs-spine-tint: 0.6;
+    --vhs-art-shift: 0.07;
     --vhs-band-order: 1;
-    --vhs-band-text: 0.15;
+    --vhs-band-text: 0.16;
 
     /* Finish. The grain is SVG noise as a data URI (the CSP allows data: images): fractal noise
-       at baseFrequency 0.45 (coarse), 3 octaves, warm tan at 19% alpha, tiled every
+       at baseFrequency 0.45 (coarse), 3 octaves, warm tan at 17% alpha, tiled every
        --vhs-grain-size. The lab rebuilds it from its sliders. --vhs-grain-blend is how the grain
        mixes with the poster on the cover (the spine keeps plain grain). --vhs-matte scales the
        soft light falloff over the cover (1 = the 2026-10-09 strength, 0 = none), and --vhs-wear
        the pale rubbed edges (0 = none). */
-    --vhs-grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.45' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0 0.42 0 0 0 0.19 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+    --vhs-grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.45' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0 0.42 0 0 0 0.17 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
     --vhs-grain-size: 80px;
     --vhs-grain-blend: normal;
     --vhs-matte: 0.3;
@@ -142,6 +150,8 @@
       calc(var(--surface-w) + (1 - var(--vhs-stretch)) * (var(--art-h) / 1.5 - var(--surface-w)))
     );
     --art-left: calc((var(--surface-w) - var(--art-w)) / 2);
+    /* The wrapped art's slide to the right (--vhs-art-shift; no slide unless wrapped). */
+    --art-shift: calc(100cqw * var(--vhs-art-shift) * var(--vhs-wrap));
     --still-y: var(--vhs-rest-y);
     --still-x: var(--vhs-rest-x);
     --turn-y: var(--still-y);
@@ -192,7 +202,7 @@
   }
 
   /* Touch: no hover or focus to reveal the depth, so the box rests in the keyboard pose, and
-     tilts as it scrolls past. The tilt reaches its full angle while the box is wholly on screen
+     can tilt as it scrolls past (--vhs-scroll-anim, off by default). The tilt reaches its full angle while the box is wholly on screen
      (`contain`): entering at the bottom it shows its top edge (you look down at it), leaving at
      the top its bottom edge. */
   @media (hover: none) {
@@ -202,7 +212,7 @@
     }
     @supports (animation-timeline: view()) {
       .vhs-box {
-        animation: vhs-shelf linear both;
+        animation: var(--vhs-scroll-anim) linear both;
         animation-timeline: view();
         animation-range: contain;
       }
@@ -244,7 +254,7 @@
      would undo the stretch by cropping back to the poster's ratio. */
   .vhs-art {
     position: relative;
-    left: calc(var(--art-left) - var(--wrap-d));
+    left: calc(var(--art-left) - var(--wrap-d) + var(--art-shift));
     display: block;
     flex: none;
     align-self: flex-start;
@@ -337,7 +347,7 @@
   .vhs-spine-art {
     position: absolute;
     top: calc(var(--band-h) * (1 - var(--vhs-band-order)) / 2);
-    left: var(--art-left);
+    left: calc(var(--d) - var(--wrap-d) + var(--art-left) + var(--art-shift));
     width: var(--art-w);
     max-width: none;
     height: var(--art-h);
