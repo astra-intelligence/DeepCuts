@@ -6,6 +6,7 @@
 // a small illustration and a line of copy. The sign-in page also offers the demo account for
 // visitors without an invite (ADR-0025).
 import { Link } from 'react-router'
+import { TAGLINE } from '../config/brand'
 import { FeaturePanel } from '../components/FeaturePanel'
 import { PanelArt } from '../components/PanelArt'
 import { PANELS, type PanelId } from '../components/panels'
@@ -33,7 +34,7 @@ const cta = 'inline-flex min-h-12 items-center px-6 font-display text-xl trackin
 export function LandingPage() {
   return (
     <>
-      <title>Deep Cuts</title>
+      <title>{`Deep Cuts · ${TAGLINE}`}</title>
       <Ticker items={TICKER} />
       <PageHeading
         size="poster"

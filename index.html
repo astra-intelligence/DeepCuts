@@ -10,8 +10,21 @@
     <link rel="preconnect" href="https://image.tmdb.org" crossorigin />
     <meta name="theme-color" content="#120d0a" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Deep Cuts</title>
-    <meta name="description" content="A fast, one-thumb movie tracker that surfaces deep cuts." />
+    <!-- The tagline is src/config/brand.ts's TAGLINE; keep the copies in step. The Landing page
+         sets the same title once React loads; other pages set their own. -->
+    <title>Deep Cuts · The B-sides of cinema</title>
+    <meta
+      name="description"
+      content="The B-sides of cinema: a fast, one-thumb movie tracker for finding films you didn't know existed."
+    />
+    <!-- Link previews (Slack, iMessage, LinkedIn) read these when the site is shared. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Deep Cuts" />
+    <meta property="og:title" content="Deep Cuts · The B-sides of cinema" />
+    <meta
+      property="og:description"
+      content="A fast, one-thumb movie tracker for finding films you didn't know existed."
+    />
     <!-- Not for search engines yet (owner, 2026-10-07); the X-Robots-Tag header says the same. -->
     <meta name="robots" content="noindex, nofollow" />
   </head>

@@ -97,7 +97,8 @@ writeFileSync(
     {
       name: 'Deep Cuts',
       short_name: 'Deep Cuts',
-      description: 'A fast, one-thumb movie tracker that surfaces deep cuts.',
+      description:
+        "The B-sides of cinema: a fast, one-thumb movie tracker for finding films you didn't know existed.",
       start_url: '/',
       display: 'standalone',
       background_color: color.surface,

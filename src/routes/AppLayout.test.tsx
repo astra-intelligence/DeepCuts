@@ -1,5 +1,5 @@
-// Tests for the app shell: the logo goes Home, there is no tab bar, the account menu leads to
-// My Lists and signs out, and unknown URLs show the error page.
+// Tests for the app shell: the logo goes Home and carries the tagline, there is no tab bar, the
+// account menu leads to My Lists and signs out, and unknown URLs show the error page.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
@@ -13,6 +13,13 @@ describe('navigation', () => {
     expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('link', { name: 'Deep Cuts, go to Home' }))
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+  })
+
+  it('shows the tagline under the logo, inside the Home link', async () => {
+    renderRoute('/lists')
+    const home = await screen.findByRole('link', { name: 'Deep Cuts, go to Home' })
+    // Visible from `md` only (a CSS class jsdom doesn't apply); the link's name stays "Deep Cuts".
+    expect(within(home).getByText('The B-sides of cinema')).toBeInTheDocument()
   })
 
   it('shows the error page for unknown routes', async () => {

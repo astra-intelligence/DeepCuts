@@ -1,6 +1,6 @@
 // Tests for the logo: one accessible image named "Deep Cuts", or nothing for assistive tech when
 // it's decorative (a link around it carries the name), in every seasonal costume; and the
-// Halloween costume appears in October only.
+// Halloween costume appears in October only; the tagline comes with any costume when asked for.
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { Logo } from './Logo'
@@ -47,5 +47,18 @@ describe('Logo', () => {
     expect(ids).toHaveLength(4)
     expect(new Set(ids).size).toBe(4)
     for (const id of ids) expect(id).toMatch(/^[\w-]+$/)
+  })
+
+  it.each([
+    ['standard', JULY],
+    ['Halloween', OCTOBER],
+  ])('shows the tagline under the artwork only when asked (%s)', (_, date) => {
+    const { container, rerender } = render(<Logo date={date} />)
+    expect(screen.queryByText('The B-sides of cinema')).toBeNull()
+    rerender(<Logo date={date} tagline taglineClassName="hidden md:block" />)
+    const tagline = screen.getByText('The B-sides of cinema')
+    // Right after the artwork, so the costume's stylesheet can space and light it.
+    expect(container.querySelector('svg')?.nextElementSibling).toBe(tagline)
+    expect(tagline).toHaveClass('logo-tagline', 'hidden', 'md:block')
   })
 })
