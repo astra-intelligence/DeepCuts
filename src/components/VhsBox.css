@@ -56,6 +56,9 @@
     --vhs-scroll-x: 8deg; /* touch: tilt at the top and bottom of the screen */
     --vhs-lift: -2px; /* how far the box rises on hover and focus */
     --vhs-perspective: 1100px;
+    /* Rounded corners on every visible face, to soften the box's hard edges (owner, 2026-10-15;
+       the dossier drew square ones). */
+    --vhs-radius: 3px;
 
     /* Shape: the cover's height as a multiple of its width. Posters are 2:3 (1.5) and a real
        sleeve is 1.83 (190 mm on 104 mm); the owner chose a taller 2.0 (2026-10-15). On a cover
@@ -67,12 +70,12 @@
     --vhs-stretch: 0.3;
 
     /* Finish. The grain is SVG noise as a data URI (the CSP allows data: images): fractal noise
-       at baseFrequency 0.45 (coarse), 3 octaves, mid grey at 35% alpha, tiled every
+       at baseFrequency 0.45 (coarse), 3 octaves, warm tan at 19% alpha, tiled every
        --vhs-grain-size. The lab rebuilds it from its sliders. --vhs-grain-blend is how the grain
        mixes with the poster on the cover (the spine keeps plain grain). --vhs-matte scales the
        soft light falloff over the cover (1 = the 2026-10-09 strength, 0 = none), and --vhs-wear
        the pale rubbed edges (0 = none). */
-    --vhs-grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.45' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+    --vhs-grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.45' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0 0.42 0 0 0 0.19 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
     --vhs-grain-size: 80px;
     --vhs-grain-blend: normal;
     --vhs-matte: 0.3;
@@ -190,10 +193,12 @@
 
   .vhs-face {
     position: absolute;
+    border-radius: var(--vhs-radius);
     backface-visibility: hidden;
   }
 
-  /* Front: the poster, printed edge to edge on matte card. Square corners (ADR-0040). */
+  /* Front: the poster, printed edge to edge on matte card, its corners slightly rounded
+     (--vhs-radius). */
   .vhs-front {
     inset: 0;
     overflow: hidden;

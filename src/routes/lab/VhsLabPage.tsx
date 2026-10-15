@@ -19,7 +19,7 @@ import './vhs-lab.css'
 
 /** How the grain mixes with the poster (CSS mix-blend-mode). */
 type GrainBlend = 'normal' | 'multiply' | 'overlay' | 'soft-light' | 'screen'
-/** The grain's color: warm tan, or plain grey (approved), black or white specks. */
+/** The grain's color: warm tan (approved), or plain grey, black or white specks. */
 type GrainTint = 'warm' | 'grey' | 'black' | 'white'
 
 /** Every knob on the control panel. Angles in degrees, lift in px. */
@@ -54,6 +54,8 @@ interface Settings {
   scrollX: number
   lift: number
   perspective: number
+  /** Corner radius on the box's faces, in px. */
+  radius: number
   /** Touch: tilt the boxes as they scroll past (phones only). */
   scroll: boolean
   /** Show the scroll tilt on this screen too, to try it with a mouse wheel. */
@@ -66,12 +68,12 @@ interface Settings {
 const DEFAULTS: Settings = {
   aspect: 2,
   stretch: 0.3,
-  grainAlpha: 0.35,
+  grainAlpha: 0.19,
   grainFreq: 0.45,
   grainOctaves: 3,
   grainSize: 80,
   grainBlend: 'normal',
-  grainTint: 'grey',
+  grainTint: 'warm',
   matte: 0.3,
   wear: 1.25,
   depth: 0.195,
@@ -84,6 +86,7 @@ const DEFAULTS: Settings = {
   scrollX: 8,
   lift: 2,
   perspective: 1100,
+  radius: 3,
   scroll: true,
   scrollPreview: false,
   freeze: false,
@@ -92,7 +95,7 @@ const DEFAULTS: Settings = {
 /** The real proportions of a VHS sleeve: 190 mm tall on a 104 mm face. */
 const SLEEVE = 1.83
 
-/** Each grain tint's RGB, 0 to 1, for the SVG's color matrix ('grey' is the approved one). */
+/** Each grain tint's RGB, 0 to 1, for the SVG's color matrix ('warm' is the approved tan). */
 const TINTS: Record<GrainTint, [number, number, number]> = {
   warm: [0.55, 0.5, 0.42],
   grey: [0.5, 0.5, 0.5],
@@ -148,6 +151,7 @@ export function VhsLabPage() {
     '--vhs-scroll-x': `${s.scrollX}deg`,
     '--vhs-lift': `${-s.lift}px`,
     '--vhs-perspective': `${s.perspective}px`,
+    '--vhs-radius': `${s.radius}px`,
   } as CSSProperties
   const freeze = s.freeze || tuning === 'keyboard'
   const scrollPreview = s.scroll && (s.scrollPreview || tuning === 'touch')
@@ -228,6 +232,7 @@ const SLIDERS: Record<Section, Slider[]> = {
     ['restY', 'Turn at rest', 0, 20, 1, '°'],
     ['restX', 'Tilt at rest', -10, 10, 1, '°'],
     ['perspective', 'Perspective', 500, 2500, 50, 'px'],
+    ['radius', 'Corner radius', 0, 10, 0.5, 'px'],
   ],
   mouse: [
     ['leanY', 'Turn at the sides', 0, 40, 1, '°'],
@@ -285,7 +290,7 @@ function Controls({
     }
   }, [onTuning])
 
-  const summary = `shape=${s.aspect} stretch=${s.stretch} grain=${s.grainAlpha}/${s.grainFreq}/${s.grainOctaves}oct/${s.grainSize}px/${s.grainBlend}/${s.grainTint} matte=${s.matte} wear=${s.wear} depth=${s.depth} rest=${s.restY}°/${s.restX}° mouse=${s.leanY}°/${s.leanX}° focus=${s.focusY}°/${s.focusX}° scroll=${s.scroll ? `${s.scrollX}°` : 'off'} lift=${s.lift}px perspective=${s.perspective}px`
+  const summary = `shape=${s.aspect} stretch=${s.stretch} grain=${s.grainAlpha}/${s.grainFreq}/${s.grainOctaves}oct/${s.grainSize}px/${s.grainBlend}/${s.grainTint} matte=${s.matte} wear=${s.wear} depth=${s.depth} rest=${s.restY}°/${s.restX}° mouse=${s.leanY}°/${s.leanX}° focus=${s.focusY}°/${s.focusX}° scroll=${s.scroll ? `${s.scrollX}°` : 'off'} lift=${s.lift}px perspective=${s.perspective}px radius=${s.radius}px`
 
   // One section of the panel. Its `data-section` tells the listeners above which motion you're
   // tuning.
