@@ -1,8 +1,8 @@
 // Tests for Home (signed in): its three shelves in order (ADR-0040), the Top Ten in its ranked
 // order with the next open slot (ADR-0036) and its reorder mode (ADR-0041), the ticker, and the
 // Discovery panel: popular films without likes, scored picks with a match and the reason with
-// likes.
-import { screen, waitFor, within } from '@testing-library/react'
+// likes, and the quick actions on each pick (issue #76).
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { delay, http, HttpResponse } from 'msw'
@@ -302,6 +302,87 @@ describe('home', () => {
     await act(() => router.navigate('/'))
     expect(await firstPick()).toHaveAccessibleName(/^Alien/)
     expect(screen.queryByRole('link', { name: /The Thing/ })).not.toBeInTheDocument()
+  })
+
+  describe('quick actions on the picks (issue #76)', () => {
+    /** The Discovery tile (its list item) for a film, once the picks have loaded. */
+    async function pickTile(title: RegExp) {
+      const panel = await screen.findByRole('region', { name: 'Discover Some Deep Cuts' })
+      const link = await within(panel).findByRole('link', { name: title })
+      const tile = link.closest('li')
+      if (!tile) throw new Error('no tile')
+      return tile
+    }
+
+    it('saves a pick in one tap, stamps it in place, and undoes it from the tile', async () => {
+      const user = userEvent.setup()
+      renderRoute('/')
+      const tile = await pickTile(/^The Thing/)
+      // Three actions after the tile's link, named in full with the film.
+      const actions = within(tile).getByRole('group', { name: 'Quick actions for The Thing' })
+      expect(
+        within(actions)
+          .getAllByRole('button')
+          .map((b) => b.getAttribute('aria-label')),
+      ).toEqual(['Want to see The Thing', 'Seen it The Thing', 'Not for me The Thing'])
+      await user.click(within(actions).getByRole('button', { name: 'Want to see The Thing' }))
+
+      await findToast('Added The Thing to your watchlist.')
+      // The pick stays where it was, stamped, and focus moves to its Undo.
+      expect(within(tile).getByRole('link')).toHaveAccessibleName(/On your watchlist\./)
+      // It keeps its credit lines, though it has left the live picks.
+      await waitFor(() => expect(within(tile).getByRole('link')).toHaveTextContent('Director:'))
+      const undo = within(tile).getByRole('button', { name: 'Undo Want to see for The Thing' })
+      expect(undo).toHaveFocus()
+      // It's on the watchlist shelf now.
+      const watchlist = screen.getByRole('region', { name: 'My Watchlist' })
+      expect(await within(watchlist).findByRole('link', { name: /^The Thing/ })).toBeInTheDocument()
+
+      await user.click(undo)
+      // Back as it was: off the watchlist, the strip back, focus on the button that was pressed.
+      await waitFor(() =>
+        expect(
+          within(watchlist).queryByRole('link', { name: /^The Thing/ }),
+        ).not.toBeInTheDocument(),
+      )
+      expect(within(tile).getByRole('button', { name: 'Want to see The Thing' })).toHaveFocus()
+      expect(within(tile).getByRole('link')).not.toHaveAccessibleName(/On your watchlist/)
+    })
+
+    it('undoes from the toast too, putting back the tags the film had', async () => {
+      const user = userEvent.setup()
+      // Alien is already marked seen, so it stays out of the popular picks (it's tagged).
+      const tags = createLocalTagRepository(undefined, undefined, 'account-demo-tags')
+      await tags.setTag(348, 'seen', true)
+      renderRoute('/')
+      // Tagged films leave the popular picks, so seen Alien isn't offered; use The Thing.
+      expect(screen.queryByRole('link', { name: /^Alien/ })).not.toBeInTheDocument()
+      const tile = await pickTile(/^The Thing/)
+      await user.click(within(tile).getByRole('button', { name: 'Not for me The Thing' }))
+      const toast = await findToast('The Thing won’t be picked again.')
+      const region = toast.closest('section') ?? document.body
+      // A plain click: a pointer press on a toast starts Sonner's swipe, which calls
+      // setPointerCapture, missing in jsdom.
+      fireEvent.click(within(region).getByRole('button', { name: 'Undo' }))
+      await waitFor(() =>
+        expect(within(tile).getByRole('link')).not.toHaveAccessibleName(/Not for me/),
+      )
+      // The Thing is back to no tags; Alien still has its own.
+      expect(await tags.getTags(1091)).toEqual(new Set())
+      expect(await tags.getTags(348)).toEqual(new Set(['seen']))
+    })
+
+    it('a picked film is gone the next time Home opens', async () => {
+      const user = userEvent.setup()
+      const { router } = renderRoute('/')
+      const tile = await pickTile(/^The Thing/)
+      await user.click(within(tile).getByRole('button', { name: 'Seen it The Thing' }))
+      await findToast('Marked The Thing as seen.')
+      await act(() => router.navigate('/lists'))
+      await act(() => router.navigate('/'))
+      expect(await firstPick()).toHaveAccessibleName(/^Alien/)
+      expect(screen.queryByRole('link', { name: /^The Thing/ })).not.toBeInTheDocument()
+    })
   })
 
   it.each(['?genres=27,53', '?genres=27;DROP', '?genres='])(

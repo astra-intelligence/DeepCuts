@@ -9,13 +9,15 @@
 // tokens and the film's genre tone (`--tone`, set by genreTone() on a parent).
 //
 // A box can carry one badge (ADR-0040), stuck on its cover so it turns with the box (owner,
-// 2026-10-13): a mustard rank tab (Top Ten), an ADMIT ONE ticket (the watchlist) or a blood-red
-// match sticker (Discovery). Badges are decoration too: the caption under the box says the same.
-import { useEffect, useRef } from 'react'
+// 2026-10-13): a mustard rank tab (Top Ten), an ADMIT ONE ticket (the watchlist), a blood-red
+// match sticker (Discovery), or the stamp a Discovery quick action leaves (issue #76). Badges are decoration too: the caption under the box says the same.
+import { useEffect, useRef, type CSSProperties } from 'react'
 import { imageUrl, releaseYear, type MovieSummary } from '../api/tmdb'
 import { MATCH_CLASSES, matchStep } from '../domain/matchColor'
+import type { SystemTag } from '../domain/tagRules'
 import { GenreSticker } from './GenreSticker'
 import { LoadingImage } from './LoadingImage'
+import { tagColor } from './tags'
 import './VhsBox.css'
 
 /**
@@ -27,7 +29,10 @@ const SMOOTHING = 180
 
 /** The one badge a box can carry: its Top Ten rank, a watchlist ticket, or a pick's match. */
 export type VhsBadge =
-  { kind: 'rank'; rank: number } | { kind: 'ticket' } | { kind: 'match'; match: number }
+  | { kind: 'rank'; rank: number }
+  | { kind: 'ticket' }
+  | { kind: 'match'; match: number }
+  | { kind: 'stamp'; tag: SystemTag; label: string }
 
 /**
  * A film as a 3D VHS box, as wide as its container.
@@ -194,6 +199,20 @@ const STARBURST = Array.from({ length: POINTS * 2 }, (_, i) => {
 /** The badge in front of the box (see VhsBadge). */
 function Badge({ badge }: { badge: VhsBadge }) {
   switch (badge.kind) {
+    case 'stamp':
+      // A quick action's result, stamped across the dimmed cover in the tag's color: "On your
+      // watchlist", "Seen it", "Not for me". Ink on the tag colors passes 4.5:1 (they're the
+      // pressed tag buttons' fills).
+      return (
+        <span
+          className="absolute inset-0 z-2 grid place-content-center bg-surface/60 p-3"
+          style={tagColor(badge.tag) as CSSProperties}
+        >
+          <span className="-rotate-8 border-2 border-shadow bg-(--tag) px-2 py-1 text-center font-display text-xl leading-none text-fg-on-accent uppercase shadow-stamp">
+            {badge.label}
+          </span>
+        </span>
+      )
     case 'rank':
       // A mustard tab against the cover's right edge, near the bottom (owner, 2026-10-13): clear
       // of the genre sticker at the top right.

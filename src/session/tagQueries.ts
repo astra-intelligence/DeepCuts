@@ -4,9 +4,10 @@
 // invalidated. Keys include a scope (signed out, or which account), so switching accounts never
 // shows the other store's cached tags.
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useCallback } from 'react'
 import type { Session } from '../adapters/SessionProvider'
 import type { TagRepository } from '../adapters/TagRepository'
-import type { SystemTag } from '../domain/tagRules'
+import { restoreSteps, type SystemTag } from '../domain/tagRules'
 import { useSession } from './SessionContext'
 import { useOrderMutation } from './useOrderMutation'
 
@@ -76,4 +77,40 @@ export function useReorderWatchlist() {
   const { tags } = useSession()
   const { queryKey } = useTagQueries().list('watchlist')
   return useOrderMutation(queryKey, (order) => tags.reorder('watchlist', order), 'Your watchlist')
+}
+
+/**
+ * One-tap tagging with undo, for Discovery's quick actions: `const undo = await quickTag(id, tag)`
+ * turns the tag on (with the usual rules) and returns a function that puts back exactly the tags
+ * the film had before (restoreSteps), once; calling it again does nothing (unless the last try
+ * failed, so it can be retried). Both refresh every tag
+ * query, like useSetTag. Either rejects if the store does, leaving the film's tags as they were.
+ */
+export function useQuickTag() {
+  const { tags, session } = useSession()
+  const queryClient = useQueryClient()
+  const scope = tagScope(session)
+  return useCallback(
+    async (tmdbId: number, tag: SystemTag): Promise<() => Promise<void>> => {
+      const refresh = () => queryClient.invalidateQueries({ queryKey: ['tags', scope] })
+      const before = await tags.getTags(tmdbId)
+      const after = await tags.setTag(tmdbId, tag, true)
+      await refresh()
+      let undone = false
+      return async () => {
+        if (undone) return
+        undone = true
+        try {
+          for (const step of restoreSteps(after, before)) {
+            await tags.setTag(tmdbId, step.tag, step.on)
+          }
+        } catch (error) {
+          undone = false
+          throw error
+        }
+        await refresh()
+      }
+    },
+    [tags, scope, queryClient],
+  )
 }

@@ -34,6 +34,22 @@ export const notify = {
 }
 
 /**
+ * A confirmation with an Undo button, for a change made in one tap (Discovery's quick actions).
+ * Stays up as long as any confirmation; the change can also be undone where it was made.
+ * @returns A function that closes the toast, e.g. once the change was undone some other way.
+ */
+export function notifyWithUndo(message: string, onUndo: () => void): () => void {
+  const id = loadToast().then((toast) =>
+    toast.success(message, {
+      duration: SUCCESS_DURATION,
+      action: { label: 'Undo', onClick: onUndo },
+    }),
+  )
+  return () =>
+    void Promise.all([loadToast(), id]).then(([toast, toastId]) => toast.dismiss(toastId))
+}
+
+/**
  * "Signed in as Mike." after signing in or registering (which signs the new account in).
  * @param prefix - Goes before it, e.g. "Account created. "
  */

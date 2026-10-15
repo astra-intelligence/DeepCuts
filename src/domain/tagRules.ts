@@ -52,3 +52,15 @@ export function isInFeeds(tags: TagSet): boolean {
 export function isOnList(tags: TagSet, list: SystemTag): boolean {
   return tags.has(list) && (list === 'disliked' || isInFeeds(tags))
 }
+
+/**
+ * The tag changes that take a film from `current` back to `previous` (an undo), in an order
+ * that's safe under the rules above: removals first, then additions. `previous` was a valid set,
+ * so none of its tags conflict and re-adding them never removes another of them.
+ * Feed each step to `applyTag` (or a repository's `setTag`) in turn.
+ */
+export function restoreSteps(current: TagSet, previous: TagSet): { tag: SystemTag; on: boolean }[] {
+  const off = SYSTEM_TAGS.filter((t) => current.has(t) && !previous.has(t))
+  const on = SYSTEM_TAGS.filter((t) => previous.has(t) && !current.has(t))
+  return [...off.map((tag) => ({ tag, on: false })), ...on.map((tag) => ({ tag, on: true }))]
+}

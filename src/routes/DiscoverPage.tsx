@@ -4,11 +4,12 @@
 // Each shelf is a row of VHS boxes that wraps as its list grows: the whole Top Ten (ADR-0036)
 // with each box's rank on a tab and the next open slot, the first watchlist films, and
 // Discovery's picks. With likes, the picks come from the recommendation scorer (ADR-0026) with a
-// match stamp and the reason why. Without likes, they are popular films (minus disliked ones),
-// with a hint to like a few films. Every box names the film's director and writer, from its
-// details (the same cached call Detail makes). The Top Ten shelf has a reorder mode (ADR-0041).
+// match stamp and the reason why. Without likes, they are popular films (minus any you've
+// tagged), with a hint to like a few films. Each pick has quick actions under it (issue #76):
+// Want to see, Seen it, Not for me, saved at once with Undo. Every box names the film's director
+// and writer, from its details (the same cached call Detail makes). The Top Ten shelf has a reorder mode (ADR-0041).
 import { useQueries, useQuery } from '@tanstack/react-query'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { movieQueries } from '../api/queries'
 import { creditsOf, summaryOf } from '../api/tmdb'
@@ -21,9 +22,12 @@ import { PageHeading } from '../components/PageHeading'
 import { ReorderStatus, ReorderToggle } from '../components/ReorderToggle'
 import { useReorderMode } from '../components/useReorderMode'
 import { PANELS } from '../components/panels'
+import { PickActions } from '../components/PickActions'
+import { quickAction, type QuickAction } from '../components/quickActions'
 import { SHELF_GRID, ShelfSection } from '../components/ShelfSection'
 import { Ticker } from '../components/Ticker'
-import { useTagQueries } from '../session/tagQueries'
+import { notify, notifyWithUndo, TAG_ERROR } from '../notify'
+import { useQuickTag, useTagQueries } from '../session/tagQueries'
 import { useReorderTopTen, useTopTen } from '../session/topTenQueries'
 import { HOME_PICKS, LIMITS, useRecommendations } from '../session/useRecommendations'
 
@@ -196,7 +200,11 @@ type DiscoveryPicks = ReturnType<typeof useDiscoveryPicks>
 function useDiscoveryPicks() {
   const tuned = useRecommendations(HOME_PICKS)
   const popular = useQuery(movieQueries.discover())
-  const excluded = useQuery(useTagQueries().feedExclusions()).data
+  // Every film you've tagged stays out of the popular picks, not just disliked ones (owner,
+  // 2026-10-15): a film you saved or marked seen with a quick action shouldn't come back. The
+  // scorer's picks already leave out every tagged film.
+  const tagged = useQuery(useTagQueries().all()).data
+  const excluded = tagged && new Set(tagged.map((r) => r.tmdbId))
 
   // Use the scorer's picks when there are likes and the scorer has (or is still finding) picks;
   // otherwise fall back to popular films so the panel is never empty.
@@ -233,6 +241,7 @@ function useDiscoveryPicks() {
 /** The Discovery shelf: the picks, a loading placeholder, or what went wrong. */
 function DiscoveryShelf({ discovery }: { discovery: DiscoveryPicks }) {
   const { picks, usePicks, loading, failed } = discovery
+  const shelf = useHeldPicks(picks, !loading && !failed && picks.length > 0)
   return (
     <ShelfSection id="discovery" feature={3} title={PANELS.discovery.title}>
       {/* Only the untuned feed explains itself: it's the one line that tells you what to do. */}
@@ -241,7 +250,22 @@ function DiscoveryShelf({ discovery }: { discovery: DiscoveryPicks }) {
           Like a few films to tune these picks to you.
         </p>
       )}
-      {loading ? (
+      {shelf.items ? (
+        <ul className={SHELF_GRID}>
+          {shelf.items.map((pick) => (
+            <li key={pick.movie.id} className="flex flex-col">
+              <CassetteCard item={pick} />
+              <PickActions
+                title={pick.movie.title}
+                stamped={pick.stamp}
+                busy={shelf.busy === pick.movie.id}
+                onAct={(tag) => shelf.act(pick.movie, tag)}
+                onUndo={() => shelf.undo(pick.movie.id)}
+              />
+            </li>
+          ))}
+        </ul>
+      ) : loading ? (
         <>
           <p role="status" className="sr-only">
             Finding films…
@@ -256,7 +280,7 @@ function DiscoveryShelf({ discovery }: { discovery: DiscoveryPicks }) {
         >
           Discovery is unavailable right now. Try again in a moment.
         </p>
-      ) : picks.length === 0 ? (
+      ) : (
         <ul className={SHELF_GRID}>
           <li>
             <EmptySlot
@@ -264,14 +288,6 @@ function DiscoveryShelf({ discovery }: { discovery: DiscoveryPicks }) {
               note="Films you dislike stay on the Disliked list in My Lists."
             />
           </li>
-        </ul>
-      ) : (
-        <ul className={SHELF_GRID}>
-          {picks.map((pick) => (
-            <li key={pick.movie.id} className="flex">
-              <CassetteCard item={pick} />
-            </li>
-          ))}
         </ul>
       )}
       {/* The weights lab is a dev-server tool, so the link only shows there (FEATURES.labs). */}
@@ -285,6 +301,84 @@ function DiscoveryShelf({ discovery }: { discovery: DiscoveryPicks }) {
       )}
     </ShelfSection>
   )
+}
+
+/**
+ * Discovery's picks, held still while you work through them with the quick actions (issue #76,
+ * the owner's "stamp in place"). Each action re-runs the scorer, which drops the tagged film and
+ * can reorder the rest; instead, the first full set of picks is kept for as long as Home is open,
+ * a tagged pick stays in its place with a stamp and Undo, and new picks arrive the next time
+ * Home opens. Credit lines that load later still fill in, from the details cache.
+ * @param ready - The picks are complete (not loading, not failed, not empty): hold them.
+ */
+function useHeldPicks(picks: CassetteItem[], ready: boolean) {
+  const quickTag = useQuickTag()
+  const [held, setHeld] = useState<CassetteItem[]>()
+  // Hold the first complete set (state set during render: React re-renders at once with it).
+  if (ready && !held) setHeld(picks)
+  // What each pick was stamped with, and the film saving right now.
+  const [stamps, setStamps] = useState<ReadonlyMap<number, QuickAction['tag']>>(new Map())
+  const [busy, setBusy] = useState<number>()
+  // Each stamped pick's undo and its toast's close, kept outside state so the toast's Undo
+  // (created once) always finds the current one.
+  const undos = useRef(
+    new Map<number, { tag: QuickAction['tag']; undo: () => Promise<void>; dismiss: () => void }>(),
+  )
+
+  const stamp = (id: number, tag: QuickAction['tag'] | undefined) =>
+    setStamps((prev) => {
+      const next = new Map(prev)
+      if (tag) next.set(id, tag)
+      else next.delete(id)
+      return next
+    })
+
+  const undo = async (id: number) => {
+    const entry = undos.current.get(id)
+    if (!entry) return
+    undos.current.delete(id)
+    entry.dismiss()
+    stamp(id, undefined)
+    setBusy(id)
+    try {
+      await entry.undo()
+    } catch {
+      // Nothing changed: keep the stamp and the way back.
+      undos.current.set(id, entry)
+      stamp(id, entry.tag)
+      notify.error(TAG_ERROR)
+    } finally {
+      setBusy(undefined)
+    }
+  }
+
+  const act = async (movie: CassetteItem['movie'], tag: QuickAction['tag']) => {
+    setBusy(movie.id)
+    try {
+      const undoTag = await quickTag(movie.id, tag)
+      stamp(movie.id, tag)
+      const dismiss = notifyWithUndo(quickAction(tag).done(movie.title), () => void undo(movie.id))
+      undos.current.set(movie.id, { tag, undo: undoTag, dismiss })
+    } catch {
+      notify.error(TAG_ERROR)
+    } finally {
+      setBusy(undefined)
+    }
+  }
+
+  // Credit lines for every held pick, from the same cached details calls the picks make (so no
+  // extra requests): a stamped pick drops out of the live picks but keeps its credits, even ones
+  // that loaded after the shelf was held.
+  const details = useQueries({
+    queries: (held ?? []).map((h) => movieQueries.detail(h.movie.id)),
+  })
+  const items = held?.map((h, i) => {
+    const data = details[i]?.data
+    const item = data ? { ...h, credits: creditsOf(data) } : h
+    const tag = stamps.get(h.movie.id)
+    return tag ? { ...item, stamp: tag } : item
+  })
+  return { items, busy, act, undo }
 }
 
 /**
