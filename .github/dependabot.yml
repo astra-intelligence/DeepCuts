@@ -1,21 +1,34 @@
-# Dependabot opens weekly pull requests to update dependencies and the pinned GitHub Actions.
+# Dependabot opens monthly pull requests to update dependencies and the pinned GitHub Actions.
 # Each one goes through CI like any other change; the owner merges them.
+#
+# Monthly and grouped to save GitHub Actions minutes on this private repo: every Dependabot PR
+# (and every rebase of one) runs the full CI workflow. Security updates for known
+# vulnerabilities are a separate repo setting and still open as soon as an alert appears.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
-    schedule: { interval: weekly }
+    schedule: { interval: monthly }
     groups:
-      # Minor and patch updates are batched. Each major update gets its own PR, so an
-      # incompatible major fails CI on its own instead of breaking the whole batch.
-      dev-dependencies:
-        dependency-type: development
+      # All minor and patch updates (runtime and dev) arrive as one PR. Each major update still
+      # gets its own PR, so an incompatible major fails CI on its own instead of breaking the batch.
+      npm-minor-and-patch:
+        patterns: ['*']
         update-types: [minor, patch]
     ignore:
       # Node's type definitions follow the runtime major in .nvmrc (24). Raise this together
       # with .nvmrc and `engines` when the project moves to the next Node LTS.
       - dependency-name: '@types/node'
         versions: ['>=25']
+      # typescript-eslint 8.x only accepts TypeScript <6.1, so TypeScript 7 can't install
+      # (closed #71). Remove this once a typescript-eslint release supports TypeScript 7;
+      # minor and patch updates to 6.x still come through.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
-    schedule: { interval: weekly }
+    schedule: { interval: monthly }
+    groups:
+      # All action bumps in one PR (CodeQL init and analyze must move together anyway).
+      github-actions:
+        patterns: ['*']
