@@ -6,7 +6,8 @@
 // Discovery's picks. With likes, the picks come from the recommendation scorer (ADR-0026) with a
 // match stamp and the reason why. Without likes, they are a starter shelf of acclaimed,
 // lesser-known older films (ADR-0042, minus any you've tagged), with a hint to like a few films. Each pick has quick actions under it (issue #76):
-// Want to see, Seen it, Not for me, saved at once with Undo. Every box names the film's director
+// Want to see, Seen it, Not for me, saved at once with Undo. On tuned picks a press is also saved
+// with the pick's scores, for the weights lab to learn from (ADR-0045). Every box names the film's director
 // and writer, from its details (the same cached call Detail makes). The Top Ten shelf has a reorder mode (ADR-0041).
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { lazy, Suspense, useRef, useState } from 'react'
@@ -14,6 +15,8 @@ import { Link } from 'react-router'
 import { movieQueries } from '../api/queries'
 import { creditsOf, summaryOf } from '../api/tmdb'
 import { FEATURES } from '../config/features'
+import type { FeedbackEntry } from '../domain/learnWeights'
+import { SCORER_VERSION } from '../domain/scorer'
 import { TOP_TEN_SIZE } from '../domain/topTen'
 import { CassetteCard, type CassetteItem } from '../components/CassetteCard'
 import { EmptySlot } from '../components/EmptySlot'
@@ -29,6 +32,7 @@ import { Ticker } from '../components/Ticker'
 import { notify, notifyWithUndo, TAG_ERROR } from '../notify'
 import { useQuickTag, useTagQueries } from '../session/tagQueries'
 import { useReorderTopTen, useTopTen } from '../session/topTenQueries'
+import { useFeedbackLog } from '../session/useFeedbackLog'
 import { HOME_PICKS, LIMITS, useRecommendations } from '../session/useRecommendations'
 
 // Reorder mode's tiles and drag and drop load the first time someone presses "Reorder".
@@ -190,6 +194,9 @@ function tickerItems(topTen: number, watchlist: number, discovery: DiscoveryPick
   ].filter((item): item is string => item !== false)
 }
 
+/** How the scorer saw a pick: what's saved with a quick-action press (ADR-0045). */
+type Scores = Pick<FeedbackEntry, 'parts' | 'penalty'>
+
 /** Discovery's picks and their state, from `useDiscoveryPicks`. */
 type DiscoveryPicks = ReturnType<typeof useDiscoveryPicks>
 
@@ -225,6 +232,13 @@ function useDiscoveryPicks() {
           .filter((m) => !excluded?.has(m.id))
           .map((movie) => ({ movie }))
   ).slice(0, HOME_PICKS)
+  // How the scorer saw each tuned pick, saved with a quick-action press so the weights lab can
+  // learn from it (ADR-0045). Starter picks aren't scored, so they have none.
+  const scores = new Map<number, Scores>(
+    usePicks
+      ? tuned.recommendations.map((r) => [r.movie.id, { parts: r.parts, penalty: r.penalty }])
+      : [],
+  )
   // Director and writer for each tile: one details call per film, cached for a day and shared
   // with Detail (and with the scorer's re-rank, so most picks are already loaded). A tile shows
   // its film at once, and its credit lines fill in when the details arrive.
@@ -235,6 +249,7 @@ function useDiscoveryPicks() {
   })
   return {
     picks,
+    scores,
     usePicks,
     loading: usePicks ? tuned.loading : starter.isPending,
     failed: !usePicks && starter.isError,
@@ -243,8 +258,8 @@ function useDiscoveryPicks() {
 
 /** The Discovery shelf: the picks, a loading placeholder, or what went wrong. */
 function DiscoveryShelf({ discovery }: { discovery: DiscoveryPicks }) {
-  const { picks, usePicks, loading, failed } = discovery
-  const shelf = useHeldPicks(picks, !loading && !failed && picks.length > 0)
+  const { picks, scores, usePicks, loading, failed } = discovery
+  const shelf = useHeldPicks(picks, scores, !loading && !failed && picks.length > 0)
   return (
     <ShelfSection id="discovery" feature={3} title={PANELS.discovery.title}>
       {/* Only the untuned feed explains itself: it's the one line that tells you what to do. */}
@@ -312,13 +327,22 @@ function DiscoveryShelf({ discovery }: { discovery: DiscoveryPicks }) {
  * can reorder the rest; instead, the first full set of picks is kept for as long as Home is open,
  * a tagged pick stays in its place with a stamp and Undo, and new picks arrive the next time
  * Home opens. Credit lines that load later still fill in, from the details cache.
+ * Each press is also saved with the pick's scores, and Undo takes it back out (ADR-0045).
+ * @param scores - How the scorer saw each tuned pick, by film id (none for starter picks).
  * @param ready - The picks are complete (not loading, not failed, not empty): hold them.
  */
-function useHeldPicks(picks: CassetteItem[], ready: boolean) {
+function useHeldPicks(picks: CassetteItem[], scores: ReadonlyMap<number, Scores>, ready: boolean) {
   const quickTag = useQuickTag()
+  const feedback = useFeedbackLog()
   const [held, setHeld] = useState<CassetteItem[]>()
+  // The scores as they were when the picks were held: a tagged pick leaves the live picks, but
+  // its press should be saved with the scores it was shown with.
+  const [heldScores, setHeldScores] = useState<ReadonlyMap<number, Scores>>(new Map())
   // Hold the first complete set (state set during render: React re-renders at once with it).
-  if (ready && !held) setHeld(picks)
+  if (ready && !held) {
+    setHeld(picks)
+    setHeldScores(scores)
+  }
   // What each pick was stamped with, and the film saving right now.
   const [stamps, setStamps] = useState<ReadonlyMap<number, QuickAction['tag']>>(new Map())
   const [busy, setBusy] = useState<number>()
@@ -345,6 +369,7 @@ function useHeldPicks(picks: CassetteItem[], ready: boolean) {
     setBusy(id)
     try {
       await entry.undo()
+      feedback?.remove(id)
     } catch {
       // Nothing changed: keep the stamp and the way back.
       undos.current.set(id, entry)
@@ -359,6 +384,15 @@ function useHeldPicks(picks: CassetteItem[], ready: boolean) {
     setBusy(movie.id)
     try {
       const undoTag = await quickTag(movie.id, tag)
+      const seen = heldScores.get(movie.id)
+      if (seen)
+        feedback?.add({
+          tmdbId: movie.id,
+          action: tag,
+          ...seen,
+          scorerVersion: SCORER_VERSION,
+          at: new Date().toISOString(),
+        })
       stamp(movie.id, tag)
       const dismiss = notifyWithUndo(quickAction(tag).done(movie.title), () => void undo(movie.id))
       undos.current.set(movie.id, { tag, undo: undoTag, dismiss })

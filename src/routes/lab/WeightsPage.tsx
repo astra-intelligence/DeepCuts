@@ -1,8 +1,9 @@
 // The weights lab (/lab/weights, dev server only): sliders for the recommendation scorer's
 // weights. Like every lab it never ships: the route only exists under `npm run dev` (router.tsx).
 // Scorer v4 (ADR-0044) adds the dislike penalty slider, an "Avoid" column and the "Score spread"
-// panel, which shows which parts actually tell your candidates apart.
-import { useState } from 'react'
+// panel, which shows which parts actually tell your candidates apart. "Learn from your presses"
+// (ADR-0045) suggests weights fitted to your Want / Nope presses on Home's Discovery picks.
+import { useMemo, useState } from 'react'
 import { withToast } from '../../notify'
 import {
   Button,
@@ -18,16 +19,19 @@ import { releaseYear } from '../../api/tmdb'
 import { EmptyState } from '../../components/EmptyState'
 import { HOME } from '../../config/features'
 import { PageHeading } from '../../components/PageHeading'
+import { learnWeights, MIN_EACH, MIN_PRESSES } from '../../domain/learnWeights'
 import { matchRange, partSpreads, type PartSpread } from '../../domain/scoreSpread'
 import {
   DEFAULT_WEIGHTS,
   DISLIKE_PENALTY,
   DIVERSITY_PENALTY,
   normalizeWeights,
+  SCORER_VERSION,
   SCORE_PARTS,
   type ScorePart,
   type Weights,
 } from '../../domain/scorer'
+import { useFeedbackLog } from '../../session/useFeedbackLog'
 import { useTaste, type Recommendation } from '../../session/useRecommendations'
 
 // The weights lab (ADR-0026 follow-up): the owner tunes the scorer against their own tags and
@@ -197,6 +201,7 @@ export function WeightsPage() {
               diversityPenalty={diversityPenalty}
               dislikePenalty={dislikePenalty}
             />
+            <LearnedPanel params={params} />
           </section>
 
           <section aria-labelledby="picks" className="min-w-0">
@@ -514,6 +519,81 @@ function SpreadPanel({
           </tbody>
         </table>
       </div>
+    </section>
+  )
+}
+
+/**
+ * "Learn from your presses" (ADR-0045): weights fitted to the Want / Nope presses on Home's
+ * Discovery picks, with how well they fit and a link that puts them on the sliders. The presses
+ * are read once when the lab opens; the fit runs once for them, not on every slider move.
+ */
+function LearnedPanel({ params }: { params: URLSearchParams }) {
+  const feedback = useFeedbackLog()
+  const [entries] = useState(() => feedback?.list() ?? [])
+  const { counts, learned } = useMemo(() => learnWeights(entries, SCORER_VERSION), [entries])
+  const presses = counts.want + counts.nope
+  const enough = presses >= MIN_PRESSES && counts.want >= MIN_EACH && counts.nope >= MIN_EACH
+
+  // The lab's own URL with the suggestion on the sliders, keeping genre variety as it is.
+  const apply = new URLSearchParams(params)
+  if (learned) {
+    for (const p of SCORE_PARTS) apply.set(p, String(toPercent(learned.weights[p])))
+    apply.set(PENALTY_KEY, String(toPercent(learned.dislikePenalty)))
+  }
+
+  return (
+    <section
+      aria-labelledby="learned"
+      className="grid gap-2.5 border-2 border-card-border bg-card-bg p-4"
+    >
+      <h3 id="learned" className="text-sm font-bold">
+        Learn from your presses
+      </h3>
+      <p className="text-sm text-fg-muted">
+        Want {counts.want} · Nope {counts.nope} · Seen {counts.seen}. Seen doesn’t count: it says
+        you know the film, not whether you want it.
+        {counts.older > 0 &&
+          ` ${counts.older} older presses were scored differently and don’t count.`}
+      </p>
+      {!enough ? (
+        <p className="text-sm">
+          Press Want or Nope on Home’s Discovery picks: {MIN_PRESSES} presses, at least {MIN_EACH}{' '}
+          of each, are needed to suggest weights. {presses} so far.
+        </p>
+      ) : !learned ? (
+        <p className="text-sm">
+          No part made a Want more likely yet, so there’s nothing to suggest. Keep pressing.
+        </p>
+      ) : (
+        <>
+          <ul className="grid gap-1 text-sm tabular-nums">
+            {SCORE_PARTS.map((p) => (
+              <li key={p} className="flex justify-between gap-3">
+                <span>{PARTS[p].label}</span>
+                <span className="text-fg-muted">{toPercent(learned.weights[p])}%</span>
+              </li>
+            ))}
+            <li className="flex justify-between gap-3">
+              <span>Dislike penalty</span>
+              <span className="text-fg-muted">{toPercent(learned.dislikePenalty)}</span>
+            </li>
+          </ul>
+          <p className="text-sm text-fg-muted">
+            These call {toPercent(learned.accuracy)}% of your presses right; always guessing the
+            more common one would get {toPercent(learned.baseline)}%. It learned from the same
+            presses, so treat it as a starting point.
+          </p>
+          <Link
+            to={`/lab/weights?${apply.toString()}`}
+            replace
+            preventScrollReset
+            className="inline-flex min-h-11 w-fit items-center border-2 border-button-secondary-border px-3.5 font-display text-base tracking-widest uppercase hover:border-accent"
+          >
+            Use these weights
+          </Link>
+        </>
+      )}
     </section>
   )
 }

@@ -7,7 +7,9 @@ import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { delay, http, HttpResponse } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
+import { createLocalFeedbackLog } from '../adapters/local/LocalFeedbackLog'
 import { createLocalTagRepository } from '../adapters/local/LocalTagRepository'
+import { SCORE_PARTS, SCORER_VERSION } from '../domain/scorer'
 import { createLocalTopTenRepository } from '../adapters/local/LocalTopTenRepository'
 import { findToast, renderRoute } from '../test/renderRoute'
 import { searchFixture } from '../test/msw/fixtures'
@@ -387,6 +389,37 @@ describe('home', () => {
       // The Thing is back to no tags; Alien still has its own.
       expect(await tags.getTags(1091)).toEqual(new Set())
       expect(await tags.getTags(348)).toEqual(new Set(['seen']))
+    })
+
+    it('saves a press on a tuned pick with its scores, and Undo takes it back (ADR-0045)', async () => {
+      const user = userEvent.setup()
+      const tags = createLocalTagRepository(undefined, undefined, 'account-demo-tags')
+      await tags.setTag(1091, 'liked', true)
+      const log = createLocalFeedbackLog('feedback-demo:demo')
+      renderRoute('/')
+      const tile = await pickTile(/^The Fog/)
+      await user.click(within(tile).getByRole('button', { name: 'Not for me The Fog' }))
+      await findToast('The Fog won’t be picked again.')
+      const [entry] = log.list()
+      expect(entry).toMatchObject({
+        tmdbId: 790,
+        action: 'disliked',
+        scorerVersion: SCORER_VERSION,
+      })
+      expect(Object.keys(entry?.parts ?? {})).toEqual([...SCORE_PARTS])
+      expect(entry?.penalty).toBe(0)
+
+      await user.click(within(tile).getByRole('button', { name: 'Undo Not for me for The Fog' }))
+      await waitFor(() => expect(log.list()).toEqual([]))
+    })
+
+    it('saves no press on a starter pick: it was never scored', async () => {
+      const user = userEvent.setup()
+      renderRoute('/')
+      const tile = await pickTile(/^The Thing/)
+      await user.click(within(tile).getByRole('button', { name: 'Seen it The Thing' }))
+      await findToast('Marked The Thing as seen.')
+      expect(createLocalFeedbackLog('feedback-demo:demo').list()).toEqual([])
     })
 
     it('a picked film is gone the next time Home opens', async () => {

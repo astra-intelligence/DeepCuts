@@ -32,6 +32,13 @@
 // Pure and deterministic: no network, no randomness, so the same tags always give the same
 // picks, every pick can say why it was chosen ("because you liked …"), and it is fully testable.
 
+/**
+ * Which version of the scoring math this is (ADR-0044: v4). Saved with every quick-action press
+ * (ADR-0045), so weights are only learned from parts computed the same way. Bump it whenever a
+ * part's formula changes.
+ */
+export const SCORER_VERSION = 4
+
 /** The facts about a film the scorer uses. Mapped from TMDB data outside the domain. */
 export interface ScorerFilm {
   id: number
