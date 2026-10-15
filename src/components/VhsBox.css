@@ -22,10 +22,10 @@
 
    How it moves, by input. The interactive parent (the tile's link) carries `data-vhs-target`:
      mouse    - look around the box: face-on with the pointer in the middle; the side under the
-                pointer presses away and the far side swings toward you (up to 24° turn, 12°
+                pointer presses away and the far side swings toward you (up to 31° turn, 10°
                 tilt). VhsBox smooths it frame by frame, so entering, following and leaving
                 glide instead of snapping
-     keyboard - focus turns the box to a fixed pose that shows the spine (18°, −4° tilt)
+     keyboard - focus turns the box to a fixed pose that shows the spine (24°, level)
      touch    - phones can't hover or focus a box, so boxes rest in the keyboard pose to show
                 their depth (owner's call, 2026-10-09) and tilt ±8° as they scroll past, like
                 walking along a shelf: a scroll-driven animation, no JavaScript; browsers
@@ -43,21 +43,43 @@
 
 @layer components {
   /* ---- Tuning knobs -------------------------------------------------------------------------
-     On :root so the lab can override them on any ancestor. The box's shape is not a knob: it
-     is the poster's own 2:3, so the art fills the cover without cropping (owner, 2026-10-13;
-     a real sleeve's 0.547 cut off the sides). Depth is a real cardboard sleeve's, 25 mm on a
-     104 mm face (Pacdora's VHS box template, checked 2026-10-09). */
+     On :root so the lab can override them on any ancestor. Tuned by the owner in the lab
+     (2026-10-09, then 2026-10-15 for the shape, finish and current angles). */
   :root {
-    --vhs-depth: 0.24; /* depth as a share of the width */
+    --vhs-depth: 0.195; /* depth as a share of the width */
     --vhs-rest-y: 0deg; /* turn at rest: straight on (positive shows the spine) */
     --vhs-rest-x: 0deg; /* tilt at rest: level (negative = top toward you) */
-    --vhs-lean-y: 24deg; /* mouse: turn with the pointer at a side edge */
-    --vhs-lean-x: 12deg; /* mouse: tilt with the pointer at the top or bottom edge */
-    --vhs-focus-y: 18deg; /* keyboard focus (and touch at rest): turn */
-    --vhs-focus-x: -4deg; /* keyboard focus (and touch at rest): tilt */
+    --vhs-lean-y: 31deg; /* mouse: turn with the pointer at a side edge */
+    --vhs-lean-x: 10deg; /* mouse: tilt with the pointer at the top or bottom edge */
+    --vhs-focus-y: 24deg; /* keyboard focus (and touch at rest): turn */
+    --vhs-focus-x: 0deg; /* keyboard focus (and touch at rest): tilt */
     --vhs-scroll-x: 8deg; /* touch: tilt at the top and bottom of the screen */
-    --vhs-lift: -4px; /* how far the box rises on hover and focus */
+    --vhs-lift: -2px; /* how far the box rises on hover and focus */
     --vhs-perspective: 1100px;
+    /* Rounded corners on every visible face, to soften the box's hard edges (owner, 2026-10-15;
+       the dossier drew square ones). */
+    --vhs-radius: 3px;
+
+    /* Shape: the cover's height as a multiple of its width. Posters are 2:3 (1.5) and a real
+       sleeve is 1.83 (190 mm on 104 mm); the owner chose a taller 2.0 (2026-10-15). On a cover
+       taller than the poster, --vhs-stretch says how much of the difference the art stretches
+       (1 = all of it, squashed sideways) and the rest is cropped evenly from the sides. At 2.0
+       and 0.3, faces are about 8% thinner and about 9.5% of the art is cut
+       from each side. */
+    --vhs-aspect: 2;
+    --vhs-stretch: 0.3;
+
+    /* Finish. The grain is SVG noise as a data URI (the CSP allows data: images): fractal noise
+       at baseFrequency 0.45 (coarse), 3 octaves, warm tan at 19% alpha, tiled every
+       --vhs-grain-size. The lab rebuilds it from its sliders. --vhs-grain-blend is how the grain
+       mixes with the poster on the cover (the spine keeps plain grain). --vhs-matte scales the
+       soft light falloff over the cover (1 = the 2026-10-09 strength, 0 = none), and --vhs-wear
+       the pale rubbed edges (0 = none). */
+    --vhs-grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.45' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0 0.42 0 0 0 0.19 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+    --vhs-grain-size: 80px;
+    --vhs-grain-blend: normal;
+    --vhs-matte: 0.3;
+    --vhs-wear: 1.25;
   }
 
   /* ---- Stage and box ------------------------------------------------------------------------ */
@@ -82,19 +104,18 @@
 
   /* The box. Derived sizes: --h (height), --d (depth). --still-y/--still-x are its
      resting pose (the rest angles; the keyboard pose on touch screens). --turn-*, --rise are
-     its current pose, which the rules below change. Shared paints: --grain (paper grain, SVG
-     noise as a data URI, which the CSP allows) and --print (the genre color bleached a quarter
+     its current pose, which the rules below change. Shared paints: --grain (the paper grain
+     knobs, ready to use as a background layer) and --print (the genre color bleached a quarter
      toward the paper, so dark ink on it reads at 4.8:1 or more for every genre). */
   .vhs-box {
-    --h: calc(100cqw * 3 / 2);
+    --h: calc(100cqw * var(--vhs-aspect));
     --d: calc(100cqw * var(--vhs-depth));
     --still-y: var(--vhs-rest-y);
     --still-x: var(--vhs-rest-x);
     --turn-y: var(--still-y);
     --turn-x: var(--still-x);
     --rise: 0px;
-    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0 0.42 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")
-      0 0 / 80px 80px;
+    --grain: var(--vhs-grain-image) 0 0 / var(--vhs-grain-size) var(--vhs-grain-size);
     --print: color-mix(in srgb, var(--tone) 75%, var(--color-vhs-box-card));
     position: relative;
     display: block;
@@ -172,51 +193,57 @@
 
   .vhs-face {
     position: absolute;
+    border-radius: var(--vhs-radius);
     backface-visibility: hidden;
   }
 
-  /* Front: the poster, printed edge to edge on matte card, with edges rubbed pale where the
-     sleeve slid against its neighbours on the shelf. Square corners (ADR-0040). */
+  /* Front: the poster, printed edge to edge on matte card, its corners slightly rounded
+     (--vhs-radius). */
   .vhs-front {
     inset: 0;
     overflow: hidden;
     background: var(--color-vhs-box-shell);
-    box-shadow: inset 0 0 calc(100cqw * 0.02)
-      color-mix(in srgb, var(--color-vhs-box-card) 30%, transparent);
   }
+  /* The poster, as tall as the cover and as wide as --vhs-stretch says (see the knobs), centred
+     so any extra width is cropped evenly from both sides. On the 2:3 cover that's exactly the
+     cover. `fill`, not `cover`: the box is already the shape the art should take, and `cover`
+     would undo the stretch by cropping back to the poster's ratio. */
   .vhs-front img {
+    position: relative;
+    left: 50%;
     display: block;
-    width: 100%;
+    width: calc(100cqw * (1 + (1 - var(--vhs-stretch)) * (var(--vhs-aspect) / 1.5 - 1)));
+    max-width: none;
     height: 100%;
-    /* The cover is the poster's 2:3, so nothing is cut off; `cover` only absorbs the odd poster
-       that's a pixel off that ratio. */
-    object-fit: cover;
+    translate: -50% 0;
+    object-fit: fill;
   }
-  /* The fold along the spine: a pale strip down the cover's left edge, 7px on a 190px box
-     (ADR-0040's clamshell hinge). */
+  /* Over the art, under the grain: one broad, soft light falloff (matte, no glossy glare) and
+     edges rubbed pale where the sleeve slid against its neighbours. (The dossier's pale hinge
+     strip down the left edge was removed, owner, 2026-10-15.) */
   .vhs-front::before {
     content: '';
     position: absolute;
-    inset: 0 auto 0 0;
+    inset: 0;
     z-index: 1;
-    width: calc(100cqw * 0.037);
-    background: color-mix(in srgb, var(--color-fg) 14%, transparent);
+    background: linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--color-vhs-box-card) calc(6% * var(--vhs-matte)), transparent),
+      transparent 55%,
+      color-mix(in srgb, var(--color-vhs-box-shell) calc(18% * var(--vhs-matte)), transparent)
+    );
+    box-shadow: inset 0 0 calc(100cqw * 0.02 * var(--vhs-wear))
+      color-mix(in srgb, var(--color-vhs-box-card) 30%, transparent);
     pointer-events: none;
   }
-  /* Matte finish over the art: paper grain and one broad, soft light falloff (no glossy glare). */
+  /* The paper grain, on top, blended into the art by --vhs-grain-blend. */
   .vhs-front::after {
     content: '';
     position: absolute;
     inset: 0;
-    background:
-      var(--grain),
-      linear-gradient(
-        160deg,
-        color-mix(in srgb, var(--color-vhs-box-card) 6%, transparent),
-        transparent 55%,
-        color-mix(in srgb, var(--color-vhs-box-shell) 18%, transparent)
-      );
-    background-blend-mode: multiply, normal;
+    z-index: 1;
+    background: var(--grain);
+    mix-blend-mode: var(--vhs-grain-blend);
     pointer-events: none;
   }
 
