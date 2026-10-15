@@ -150,6 +150,9 @@ export function VhsBox({
         </span>
         {/* The spine: genre band with the year ("’79"), the title, the store's barcode. */}
         <span className="vhs-face vhs-spine">
+          {/* The poster's strip when it wraps around the spine (hidden unless --vhs-wrap is on;
+              the same image as the cover's, so it loads once). */}
+          {poster && <img src={poster} alt="" loading="lazy" className="vhs-spine-art" />}
           <span className="vhs-spine-band">{year && `’${year.slice(2)}`}</span>
           <span className="vhs-spine-title">{movie.title}</span>
           <span className="vhs-spine-label">

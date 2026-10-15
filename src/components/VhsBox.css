@@ -77,6 +77,12 @@
        the genre print color with dark ink, unless --vhs-band-bg and --vhs-band-fg are set (the
        lab sets them to try others; they're left unset here so they fall back per box). */
     --vhs-band: 0;
+    /* Wrap: 1 lays the poster across the spine and the cover as one printed surface, like many
+       real sleeves, so on a tall cover it needs far less stretch (the spine adds its depth to
+       the width). The strip on the spine only shows when the box turns. --vhs-spine-tint darks
+       the art on the spine (0 = none, 1 = the plain dark spine) so its printing stays legible. */
+    --vhs-wrap: 0;
+    --vhs-spine-tint: 0.5;
     --vhs-band-order: 1;
     --vhs-band-text: 0.15;
 
@@ -120,11 +126,22 @@
      toward the paper, so dark ink on it reads at 4.8:1 or more for every genre). */
   .vhs-box {
     --h: calc(100cqw * var(--vhs-aspect));
-    /* The band's height (--vhs-band's share of the height beyond the poster's 2:3), and the
-       poster's height-to-width ratio once the band has its share. */
-    --band-h: calc((var(--h) - 100cqw * 1.5) * var(--vhs-band));
-    --art-ratio: calc(var(--vhs-aspect) - var(--vhs-band) * (var(--vhs-aspect) - 1.5));
     --d: calc(100cqw * var(--vhs-depth));
+    /* Where the poster goes. --band-h: the band's height (--vhs-band's share of the height
+       beyond the poster's 2:3); --art-h: the poster's height, the rest. --surface-w: the width
+       it's printed across, the cover plus the spine when wrapped. --art-w: the poster's width,
+       from that width (stretch 1) to its natural 2:3 width (stretch 0, cropped), never narrower
+       than the surface. --art-left: where it starts, measured from the spine's outer edge, so
+       any crop is even on both sides. */
+    --band-h: calc((var(--h) - 100cqw * 1.5) * var(--vhs-band));
+    --art-h: calc(var(--h) - var(--band-h));
+    --wrap-d: calc(var(--d) * var(--vhs-wrap));
+    --surface-w: calc(100cqw + var(--wrap-d));
+    --art-w: max(
+      var(--surface-w),
+      calc(var(--surface-w) + (1 - var(--vhs-stretch)) * (var(--art-h) / 1.5 - var(--surface-w)))
+    );
+    --art-left: calc((var(--surface-w) - var(--art-w)) / 2);
     --still-y: var(--vhs-rest-y);
     --still-x: var(--vhs-rest-x);
     --turn-y: var(--still-y);
@@ -227,14 +244,13 @@
      would undo the stretch by cropping back to the poster's ratio. */
   .vhs-art {
     position: relative;
-    left: 50%;
+    left: calc(var(--art-left) - var(--wrap-d));
     display: block;
     flex: none;
     align-self: flex-start;
-    width: calc(100cqw * (1 + (1 - var(--vhs-stretch)) * (var(--art-ratio) / 1.5 - 1)));
+    width: var(--art-w);
     max-width: none;
-    height: calc(var(--h) - var(--band-h));
-    translate: -50% 0;
+    height: var(--art-h);
     object-fit: fill;
   }
   /* The cover band (see the knobs): the title in the display face, centred, two lines at most.
@@ -316,6 +332,32 @@
     box-shadow: inset 0 0 calc(var(--d) * 0.12)
       color-mix(in srgb, var(--color-vhs-box-card) 30%, transparent);
   }
+  /* The wrapped poster's strip on the spine (--vhs-wrap): the same poster, placed where it
+     continues from the cover, level with it (below a band on top). Hidden when not wrapping. */
+  .vhs-spine-art {
+    position: absolute;
+    top: calc(var(--band-h) * (1 - var(--vhs-band-order)) / 2);
+    left: var(--art-left);
+    width: var(--art-w);
+    max-width: none;
+    height: var(--art-h);
+    object-fit: fill;
+    opacity: var(--vhs-wrap);
+  }
+  /* Darkens the wrapped art so the spine's printing reads (--vhs-spine-tint). Over the art,
+     under the printing. */
+  .vhs-spine::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--color-vhs-box-shell);
+    opacity: calc(var(--vhs-wrap) * var(--vhs-spine-tint));
+    pointer-events: none;
+  }
+  .vhs-spine > span {
+    position: relative;
+    z-index: 1;
+  }
   /* The top of the spine: a genre-color band with the release year ("’26"). */
   .vhs-spine-band {
     @apply font-display leading-none;
@@ -335,6 +377,8 @@
     color: var(--color-vhs-box-light);
     font-size: calc(var(--d) * 0.42);
     line-height: var(--d);
+    /* A soft dark halo, so the title still reads over wrapped art. */
+    text-shadow: 0 0 calc(var(--d) * 0.12) var(--color-vhs-box-shell);
     writing-mode: vertical-rl;
   }
   /* The rental store's barcode label, stuck on slightly crooked at the bottom of the spine. */
