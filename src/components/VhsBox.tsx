@@ -155,23 +155,30 @@ export function VhsBox({
         </span>
         {/* The spine: genre band with the year ("’79"), the title, the store's barcode. */}
         <span className="vhs-face vhs-spine">
+          {/* The poster's strip when it wraps around the spine (hidden unless --vhs-wrap is on;
+              the same image as the cover's, so it loads once). */}
+          {poster && <img src={poster} alt="" loading="lazy" className="vhs-spine-art" />}
           <span className="vhs-spine-band">{year && `’${year.slice(2)}`}</span>
           <span className="vhs-spine-title">{movie.title}</span>
           <span className="vhs-spine-label">
             <span className="vhs-barcode" />
           </span>
         </span>
-        {/* The front cover: the poster (or an empty placeholder) and the genre sticker. */}
+        {/* The front cover: the title band (hidden at its default size of 0), the poster (or an
+            empty placeholder) and the genre sticker. */}
         <span className="vhs-face vhs-front">
+          <span className="vhs-band">
+            <span className="vhs-band-title">{movie.title}</span>
+          </span>
           {poster ? (
-            <LoadingImage src={poster} alt="" loading="lazy" />
+            <LoadingImage src={poster} alt="" loading="lazy" className="vhs-art" />
           ) : (
-            <span className="block size-full bg-poster-placeholder" />
+            <span className="vhs-art bg-poster-placeholder" />
           )}
           <GenreSticker
             genreIds={movie.genre_ids}
             seed={movie.id}
-            className="absolute top-2.5 right-2.5 z-2"
+            className="vhs-pin-top absolute top-2.5 right-2.5 z-2"
           />
           {badge && <Badge badge={badge} />}
         </span>
@@ -210,14 +217,14 @@ function Badge({ badge }: { badge: VhsBadge }) {
       // A mustard tab against the cover's right edge, near the bottom (owner, 2026-10-13): clear
       // of the genre sticker at the top right.
       return (
-        <span className="absolute right-0 bottom-3.5 z-2 bg-accent px-2 py-1 font-display text-3xl leading-none text-fg-on-accent shadow-stamp">
+        <span className="vhs-pin-bottom absolute right-0 bottom-3.5 z-2 bg-accent px-2 py-1 font-display text-3xl leading-none text-fg-on-accent shadow-stamp">
           #{badge.rank}
         </span>
       )
     case 'ticket':
       // A bone ticket stub, stuck on slightly crooked, with a perforated right edge.
       return (
-        <span className="absolute top-3 left-3 z-2 -rotate-4 border-r-2 border-dashed border-fg-on-accent/40 bg-fg px-2 py-1 font-display text-xs tracking-widest text-fg-on-accent uppercase shadow-stamp">
+        <span className="vhs-pin-top absolute top-3 left-3 z-2 -rotate-4 border-r-2 border-dashed border-fg-on-accent/40 bg-fg px-2 py-1 font-display text-xs tracking-widest text-fg-on-accent uppercase shadow-stamp">
           Admit one
         </span>
       )
@@ -228,7 +235,7 @@ function Badge({ badge }: { badge: VhsBadge }) {
       const colors = MATCH_CLASSES[matchStep(badge.match)]
       return (
         <span
-          className={`absolute bottom-3 left-2 z-2 grid size-18 -rotate-12 place-content-center text-center font-display leading-none uppercase sm:size-22 ${colors.text}`}
+          className={`vhs-pin-bottom absolute bottom-3 left-2 z-2 grid size-18 -rotate-12 place-content-center text-center font-display leading-none uppercase sm:size-22 ${colors.text}`}
         >
           <svg viewBox="-4 -4 108 108" className="absolute inset-0 size-full overflow-visible">
             {/* The hard shadow: the same burst, offset down and right (elevation.stamp). */}

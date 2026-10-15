@@ -22,12 +22,41 @@ type GrainBlend = 'normal' | 'multiply' | 'overlay' | 'soft-light' | 'screen'
 /** The grain's color: warm tan (approved), or plain grey, black or white specks. */
 type GrainTint = 'warm' | 'grey' | 'black' | 'white'
 
+/** Where the cover band sits. */
+type BandPos = 'bottom' | 'top'
+/** The cover band's colors: the film's genre print color, black card or bone card. */
+type BandColor = 'genre' | 'black' | 'bone'
+
+/** Each band color as the CSS variables VhsBox.css reads (genre: unset, the per-box default). */
+const BAND_COLORS: Record<BandColor, Record<string, string | undefined>> = {
+  genre: { '--vhs-band-bg': undefined, '--vhs-band-fg': undefined },
+  black: {
+    '--vhs-band-bg': 'var(--color-vhs-box-shell)',
+    '--vhs-band-fg': 'var(--color-vhs-box-light)',
+  },
+  bone: {
+    '--vhs-band-bg': 'var(--color-vhs-box-card)',
+    '--vhs-band-fg': 'var(--color-vhs-box-ink)',
+  },
+}
+
 /** Every knob on the control panel. Angles in degrees, lift in px. */
 interface Settings {
   /** The cover's height as a multiple of its width (1.5 = the poster's 2:3, 1.83 = a sleeve). */
   aspect: number
   /** On a taller cover, how much of the difference the poster stretches (the rest is cropped). */
   stretch: number
+  /** The title band's share of the extra height (0 = none, 1 = all of it), where it sits, its
+   *  colors and its title size (a share of the box's width). */
+  band: number
+  /** Wrap the poster around the spine, and how dark the art on the spine is (0 to 1). */
+  wrap: boolean
+  spineTint: number
+  /** Slide the wrapped art right, as a share of the box's width (trims its right edge). */
+  artShift: number
+  bandPos: BandPos
+  bandColor: BandColor
+  bandText: number
   /** The grain: its opacity, coarseness (SVG baseFrequency: lower is coarser), detail
    *  (octaves), tile size in px, blend into the poster and color. */
   grainAlpha: number
@@ -56,6 +85,9 @@ interface Settings {
   perspective: number
   /** Corner radius on the box's faces, in px. */
   radius: number
+  /** The box's drop shadow: how far right and down it falls, in px. */
+  shadowX: number
+  shadowY: number
   /** Touch: tilt the boxes as they scroll past (phones only). */
   scroll: boolean
   /** Show the scroll tilt on this screen too, to try it with a mouse wheel. */
@@ -66,9 +98,16 @@ interface Settings {
 
 // Starting values: the approved design (src/components/VhsBox.css).
 const DEFAULTS: Settings = {
-  aspect: 2,
+  aspect: 1.7,
   stretch: 1,
-  grainAlpha: 0.19,
+  band: 0,
+  wrap: true,
+  spineTint: 0.6,
+  artShift: 0.1,
+  bandPos: 'bottom',
+  bandColor: 'genre',
+  bandText: 0.16,
+  grainAlpha: 0.17,
   grainFreq: 0.45,
   grainOctaves: 3,
   grainSize: 80,
@@ -79,15 +118,17 @@ const DEFAULTS: Settings = {
   depth: 0.195,
   restY: 0,
   restX: 0,
-  leanY: 31,
-  leanX: 10,
+  leanY: 35,
+  leanX: 12,
   focusY: 24,
   focusX: 0,
   scrollX: 8,
   lift: 2,
   perspective: 1100,
   radius: 3,
-  scroll: true,
+  shadowX: 10,
+  shadowY: 12,
+  scroll: false,
   scrollPreview: false,
   freeze: false,
 }
@@ -136,6 +177,14 @@ export function VhsLabPage() {
   const vars = {
     '--vhs-aspect': s.aspect,
     '--vhs-stretch': s.stretch,
+    '--vhs-band': s.band,
+    '--vhs-wrap': s.wrap ? 1 : 0,
+    '--vhs-spine-tint': s.spineTint,
+    '--vhs-art-shift': s.artShift,
+    '--vhs-scroll-anim': s.scroll ? 'vhs-shelf' : 'none',
+    '--vhs-band-order': s.bandPos === 'top' ? -1 : 1,
+    '--vhs-band-text': s.bandText,
+    ...BAND_COLORS[s.bandColor],
     '--vhs-grain-image': grainImage(s),
     '--vhs-grain-size': `${s.grainSize}px`,
     '--vhs-grain-blend': s.grainBlend,
@@ -152,6 +201,8 @@ export function VhsLabPage() {
     '--vhs-lift': `${-s.lift}px`,
     '--vhs-perspective': `${s.perspective}px`,
     '--vhs-radius': `${s.radius}px`,
+    '--vhs-shadow-x': `${s.shadowX}px`,
+    '--vhs-shadow-y': `${s.shadowY}px`,
   } as CSSProperties
   const freeze = s.freeze || tuning === 'keyboard'
   const scrollPreview = s.scroll && (s.scrollPreview || tuning === 'touch')
@@ -217,7 +268,11 @@ type Slider = [keyof Settings, string, number, number, number, string]
 const SLIDERS: Record<Section, Slider[]> = {
   shape: [
     ['aspect', 'Height (× the width)', 1.5, 2.4, 0.01, ''],
+    ['band', 'Title band (share of the extra height)', 0, 1, 0.05, ''],
     ['stretch', 'Stretch (the rest is cropped)', 0, 1, 0.05, ''],
+    ['bandText', 'Band title size', 0.06, 0.3, 0.01, ''],
+    ['spineTint', 'Spine darkening (when wrapped)', 0, 1, 0.05, ''],
+    ['artShift', 'Shift the art right (when wrapped)', 0, 0.2, 0.01, ''],
   ],
   finish: [
     ['grainAlpha', 'Grain strength', 0, 1, 0.01, ''],
@@ -233,6 +288,8 @@ const SLIDERS: Record<Section, Slider[]> = {
     ['restX', 'Tilt at rest', -10, 10, 1, '°'],
     ['perspective', 'Perspective', 500, 2500, 50, 'px'],
     ['radius', 'Corner radius', 0, 10, 0.5, 'px'],
+    ['shadowX', 'Shadow to the right', 0, 24, 1, 'px'],
+    ['shadowY', 'Shadow downward', 0, 24, 1, 'px'],
   ],
   mouse: [
     ['leanY', 'Turn at the sides', 0, 40, 1, '°'],
@@ -290,7 +347,7 @@ function Controls({
     }
   }, [onTuning])
 
-  const summary = `shape=${s.aspect} stretch=${s.stretch} grain=${s.grainAlpha}/${s.grainFreq}/${s.grainOctaves}oct/${s.grainSize}px/${s.grainBlend}/${s.grainTint} matte=${s.matte} wear=${s.wear} depth=${s.depth} rest=${s.restY}°/${s.restX}° mouse=${s.leanY}°/${s.leanX}° focus=${s.focusY}°/${s.focusX}° scroll=${s.scroll ? `${s.scrollX}°` : 'off'} lift=${s.lift}px perspective=${s.perspective}px radius=${s.radius}px`
+  const summary = `shape=${s.aspect} band=${s.band}/${s.bandPos}/${s.bandColor}/${s.bandText} wrap=${s.wrap ? `on/${s.spineTint}/shift ${s.artShift}` : 'off'} stretch=${s.stretch} grain=${s.grainAlpha}/${s.grainFreq}/${s.grainOctaves}oct/${s.grainSize}px/${s.grainBlend}/${s.grainTint} matte=${s.matte} wear=${s.wear} depth=${s.depth} rest=${s.restY}°/${s.restX}° mouse=${s.leanY}°/${s.leanX}° focus=${s.focusY}°/${s.focusX}° scroll=${s.scroll ? `${s.scrollX}°` : 'off'} lift=${s.lift}px perspective=${s.perspective}px radius=${s.radius}px shadow=${s.shadowX}/${s.shadowY}px`
 
   // One section of the panel. Its `data-section` tells the listeners above which motion you're
   // tuning.
@@ -329,7 +386,7 @@ function Controls({
 
   // A checkbox row.
   const checkbox = (
-    key: 'freeze' | 'scroll' | 'scrollPreview',
+    key: 'freeze' | 'scroll' | 'scrollPreview' | 'wrap',
     label: string,
     disabled = false,
   ) => (
@@ -346,7 +403,7 @@ function Controls({
   )
 
   // A dropdown row, for the grain's blend and color.
-  const select = <K extends 'grainBlend' | 'grainTint'>(
+  const select = <K extends 'grainBlend' | 'grainTint' | 'bandPos' | 'bandColor'>(
     key: K,
     label: string,
     options: readonly Settings[K][],
@@ -386,11 +443,16 @@ function Controls({
       {section(
         'shape',
         'Shape',
-        `Posters are 2:3 (1.5); a real VHS sleeve is ${SLEEVE}. On a taller box the poster either stretches or loses its sides. At ${SLEEVE}, full stretch makes faces 18% thinner and none crops 9% off each side; in between splits the difference.`,
-        <div className="flex gap-2">
-          {preset('Poster 2:3', 1.5)}
-          {preset('VHS sleeve', SLEEVE)}
-        </div>,
+        `Posters are 2:3 (1.5); a real VHS sleeve is ${SLEEVE}. On a taller box the extra height goes to a title band first (at 1 the poster keeps its own shape), and whatever's left is stretched or cropped from the sides. Wrapping spreads the poster across the spine too, so it needs less stretch; tick “Keep showing it on every box” under Keyboard to see the spine.`,
+        <>
+          <div className="flex gap-2">
+            {preset('Poster 2:3', 1.5)}
+            {preset('VHS sleeve', SLEEVE)}
+          </div>
+          {select('bandPos', 'Band position', ['bottom', 'top'])}
+          {select('bandColor', 'Band color', ['genre', 'black', 'bone'])}
+          {checkbox('wrap', 'Wrap the poster around the spine')}
+        </>,
       )}
       {section(
         'finish',

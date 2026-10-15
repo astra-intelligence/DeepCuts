@@ -156,7 +156,7 @@ function ListCassette({ id }: { id: number }) {
   if (!m) {
     return (
       <li aria-hidden="true" className="flex">
-        <div className="aspect-1/2 w-full bg-surface-raised halftone" />
+        <div className="aspect-[1/1.7] w-full bg-surface-raised halftone" />
       </li>
     )
   }
