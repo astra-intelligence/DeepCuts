@@ -3,7 +3,7 @@
 // The browser adapter (LocalTopTenRepository.ts) and the test fake of the accounts API both use
 // this, so they behave identically; the shared contract tests (topTenRepository.contract.ts) prove
 // that the server adapter matches them too.
-import { addToTopTen, removeFromTopTen, type TopTenList } from '../domain/topTen'
+import { addToTopTen, removeFromTopTen, reorderTopTen, type TopTenList } from '../domain/topTen'
 import type { TopTenRepository } from './TopTenRepository'
 
 /** Where the list lives: load it, or replace it. Adapters provide this. */
@@ -32,6 +32,10 @@ export function createTopTenRepository(store: TopTenStore): TopTenRepository {
     },
     async remove(tmdbId) {
       return write((list) => removeFromTopTen(list, tmdbId))
+    },
+    // `reorderTopTen` throws TopTenChangedError unless `order` holds exactly the stored films.
+    async reorder(order) {
+      return write((list) => reorderTopTen(list, order))
     },
   }
 }

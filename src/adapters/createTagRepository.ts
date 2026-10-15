@@ -3,6 +3,7 @@
 // Both local adapters (in-memory for guests, localStorage for profiles and accounts) use this
 // same logic; they only decide where the list of records lives. That keeps the tag behavior
 // identical everywhere, and the shared contract tests (tagRepository.contract.ts) prove it.
+import { applySavedOrder, ListChangedError, reorderList } from '../domain/ranking'
 import { applyTag, isInFeeds, isOnList, type SystemTag, type TagSet } from '../domain/tagRules'
 import type { TagRecord, TagRepository } from './TagRepository'
 
@@ -13,12 +14,41 @@ export interface RecordStore {
 }
 
 /**
+ * The films on one list, newest first, from a store's records (oldest first). A disliked film is
+ * only on the Disliked list (ADR-0017); for equal times, the record stored later wins. Shared by
+ * every tag store and the server, so lists come out the same everywhere.
+ */
+export function listOf(records: readonly TagRecord[], tag: SystemTag): number[] {
+  const films = new Map<number, Set<SystemTag>>()
+  for (const r of records) films.set(r.tmdbId, (films.get(r.tmdbId) ?? new Set()).add(r.tag))
+  return records
+    .map((r, i) => ({ r, i }))
+    .filter(({ r }) => r.tag === tag && isOnList(films.get(r.tmdbId) ?? new Set(), tag))
+    .sort((a, b) => b.r.createdAt.localeCompare(a.r.createdAt) || b.i - a.i)
+    .map(({ r }) => r.tmdbId)
+}
+
+/** Where the watchlist's saved order lives (ADR-0041): film ids, first first. */
+export interface OrderStore {
+  load(): readonly number[]
+  save(ids: readonly number[]): void
+}
+
+/** An order store that only lives in memory (for test fakes). */
+export function memoryOrderStore(): OrderStore {
+  let ids: readonly number[] = []
+  return { load: () => ids, save: (next) => void (ids = next) }
+}
+
+/**
  * Builds a TagRepository on top of a record store.
  * @param now - The clock for new records' timestamps; tests pass a fake one.
+ * @param order - Where the watchlist's saved order lives; in memory unless given.
  */
 export function createTagRepository(
   store: RecordStore,
   now: () => string = () => new Date().toISOString(),
+  order: OrderStore = memoryOrderStore(),
 ): TagRepository {
   // The tags one film has, collected from its records.
   const tagsOf = (records: readonly TagRecord[], tmdbId: number): TagSet =>
@@ -46,22 +76,44 @@ export function createTagRepository(
     return next
   }
 
+  // A list's films, newest first.
+  const newestFirst = (tag: SystemTag) => listOf(store.load(), tag)
+
+  // The watchlist in the saved order (ADR-0041).
+  const watchlist = () => applySavedOrder(newestFirst('watchlist'), order.load())
+
+  // Drops films that have left the watchlist from its saved order, so a film added again later
+  // comes back at the top (as new films do) rather than at its old place.
+  function pruneOrder() {
+    const saved = order.load()
+    if (saved.length === 0) return
+    const onList = new Set(newestFirst('watchlist'))
+    const kept = saved.filter((id) => onList.has(id))
+    if (kept.length !== saved.length) order.save(kept)
+  }
+
   return {
     async getTags(tmdbId) {
       return tagsOf(store.load(), tmdbId)
     },
     async setTag(tmdbId, tag, on) {
-      return write(tmdbId, tag, on, now())
+      const next = write(tmdbId, tag, on, now())
+      pruneOrder()
+      return next
     },
     async list(tag) {
-      const records = store.load()
-      const movies = byMovie(records)
-      // Newest first; later writes win ties because they were appended later.
-      return records
-        .map((r, i) => ({ r, i }))
-        .filter(({ r }) => r.tag === tag && isOnList(movies.get(r.tmdbId) ?? new Set(), tag))
-        .sort((a, b) => b.r.createdAt.localeCompare(a.r.createdAt) || b.i - a.i)
-        .map(({ r }) => r.tmdbId)
+      return tag === 'watchlist' ? [...watchlist()] : newestFirst(tag)
+    },
+    async reorder(_tag, ids) {
+      // `reorderList` throws unless `ids` is exactly the films on the watchlist.
+      const before = watchlist()
+      const after = reorderList(
+        before,
+        ids,
+        () => new ListChangedError('Your watchlist changed somewhere else.'),
+      )
+      if (after !== before) order.save(after)
+      return [...after]
     },
     async feedExclusions() {
       // Every film whose tags keep it out of feeds (today: disliked films).
@@ -77,9 +129,11 @@ export function createTagRepository(
       // what they would have got by tagging in this store all along.
       const ordered = [...records].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
       for (const r of ordered) write(r.tmdbId, r.tag, true, r.createdAt)
+      pruneOrder()
     },
     async clear() {
       store.save([])
+      order.save([])
     },
   }
 }

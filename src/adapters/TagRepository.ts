@@ -16,6 +16,18 @@ export const tagRecordSchema = z.object({
   tag: z.enum(SYSTEM_TAGS),
   createdAt: z.iso.datetime(),
 })
+/** The lists that can be put in the person's own order: only the watchlist (ADR-0041). */
+export type OrderedTag = 'watchlist'
+
+/**
+ * A saved watchlist order: distinct film ids, first first. Validated whenever it's read back.
+ * Capped at the most tags an account may hold (server/accounts/tags.ts, ACCOUNT_TAG_LIMIT).
+ */
+export const savedOrderSchema = z
+  .array(z.number().int().positive())
+  .max(20_000)
+  .refine((ids) => new Set(ids).size === ids.length, 'A film can appear only once')
+
 /** A single stored tag (see `tagRecordSchema`). */
 export type TagRecord = z.infer<typeof tagRecordSchema>
 
@@ -25,8 +37,18 @@ export interface TagRepository {
   getTags(tmdbId: number): Promise<TagSet>
   /** Turns one tag on or off. Always applies `tagRules`; returns the movie's new tags. */
   setTag(tmdbId: number, tag: SystemTag, on: boolean): Promise<TagSet>
-  /** Movie ids on a list, newest first. A disliked film is only on the Disliked list. */
+  /**
+   * Movie ids on a list, newest first. A disliked film is only on the Disliked list. The
+   * watchlist follows the person's saved order (ADR-0041): films added since they last reordered
+   * come first, newest first, then the order they chose.
+   */
   list(tag: SystemTag): Promise<number[]>
+  /**
+   * Saves a new order for the watchlist (ADR-0041) and returns it. Rejects with
+   * `ListChangedError` when `order` isn't exactly the films on the watchlist, because the list
+   * changed elsewhere (another tab or device) since it was read.
+   */
+  reorder(tag: OrderedTag, order: readonly number[]): Promise<number[]>
   /** Movie ids that must never appear in Discover, recommendations or onboarding picks. */
   feedExclusions(): Promise<ReadonlySet<number>>
   /** Every record, for moving picks to another store (e.g. when signing in). */

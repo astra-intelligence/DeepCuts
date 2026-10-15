@@ -54,6 +54,7 @@ export async function deleteAccount(request: Request, env: AccountsEnv, now = Da
   await db.batch([
     db.prepare('DELETE FROM tags WHERE user_id = ?').bind(user.id),
     db.prepare('DELETE FROM top_ten WHERE user_id = ?').bind(user.id),
+    db.prepare('DELETE FROM watchlist_order WHERE user_id = ?').bind(user.id),
     db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(user.id),
     db.prepare('DELETE FROM passkeys WHERE user_id = ?').bind(user.id),
     // Recovery invites for this user (used ones too: they'd point at a deleted user).

@@ -3,12 +3,17 @@
 // from the client's side (status codes, bodies, the tag rules) but keeps one "browser" session in
 // a variable instead of a cookie. The real server is tested on its own (server/accounts/).
 import { http, HttpResponse } from 'msw'
-import { createTagRepository } from '../../adapters/createTagRepository'
+import {
+  createTagRepository,
+  memoryOrderStore,
+  type OrderStore,
+} from '../../adapters/createTagRepository'
 import { createTopTenRepository } from '../../adapters/createTopTenRepository'
 import type { TagRecord, TagRepository } from '../../adapters/TagRepository'
 import type { TopTenRepository } from '../../adapters/TopTenRepository'
 import { SYSTEM_TAGS, type SystemTag } from '../../domain/tagRules'
-import { TopTenFullError, type TopTenList } from '../../domain/topTen'
+import { ListChangedError } from '../../domain/ranking'
+import { TopTenChangedError, TopTenFullError, type TopTenList } from '../../domain/topTen'
 
 type User = { id: string; name: string }
 
@@ -24,6 +29,8 @@ export function createFakeAccountsApi(now: () => string = () => new Date().toISO
     users: new Map<string, User>(),
     /** Each user's tags, kept with the same shared rules the real server applies. */
     tags: new Map<string, TagRepository>(),
+    /** Each user's saved watchlist order (ADR-0041), kept by the same shared tag store. */
+    watchlistOrder: new Map<string, OrderStore>(),
     /** Each user's Top Ten, kept with the same shared rules the real server applies. */
     topTen: new Map<string, TopTenRepository>(),
     /** Set to make the next registration fail, as with a used invite. */
@@ -32,9 +39,11 @@ export function createFakeAccountsApi(now: () => string = () => new Date().toISO
   const tagsOf = (id: string) => {
     if (!state.tags.has(id)) {
       let records: TagRecord[] = []
+      const order = memoryOrderStore()
+      state.watchlistOrder.set(id, order)
       state.tags.set(
         id,
-        createTagRepository({ load: () => records, save: (r) => void (records = r) }, now),
+        createTagRepository({ load: () => records, save: (r) => void (records = r) }, now, order),
       )
     }
     return state.tags.get(id) as TagRepository
@@ -92,13 +101,27 @@ export function createFakeAccountsApi(now: () => string = () => new Date().toISO
       if (!state.signedIn) return signedOut()
       state.users.delete(state.signedIn.id)
       state.tags.delete(state.signedIn.id)
+      state.watchlistOrder.delete(state.signedIn.id)
       state.topTen.delete(state.signedIn.id)
       state.signedIn = null
       return HttpResponse.json({ ok: true })
     }),
     http.get('/api/tags', async () => {
       if (!state.signedIn) return signedOut()
-      return HttpResponse.json({ records: await tagsOf(state.signedIn.id).exportAll() })
+      const records = await tagsOf(state.signedIn.id).exportAll()
+      const watchlistOrder = state.watchlistOrder.get(state.signedIn.id)?.load() ?? []
+      return HttpResponse.json({ records, watchlistOrder })
+    }),
+    http.patch('/api/tags/order', async ({ request }) => {
+      if (!state.signedIn) return signedOut()
+      const { ids } = (await request.json()) as { tag: 'watchlist'; ids: number[] }
+      try {
+        return HttpResponse.json({ ids: await tagsOf(state.signedIn.id).reorder('watchlist', ids) })
+      } catch (e) {
+        if (e instanceof ListChangedError)
+          return HttpResponse.json({ error: 'list_changed' }, { status: 409 })
+        throw e
+      }
     }),
     http.put('/api/tags', async ({ request }) => {
       if (!state.signedIn) return signedOut()
@@ -144,6 +167,17 @@ export function createFakeAccountsApi(now: () => string = () => new Date().toISO
       if (!state.signedIn) return signedOut()
       const { tmdbId } = (await request.json()) as { tmdbId: number }
       return HttpResponse.json({ films: await topTenOf(state.signedIn.id).remove(tmdbId) })
+    }),
+    http.patch('/api/top-ten', async ({ request }) => {
+      if (!state.signedIn) return signedOut()
+      const { ids } = (await request.json()) as { ids: number[] }
+      try {
+        return HttpResponse.json({ films: await topTenOf(state.signedIn.id).reorder(ids) })
+      } catch (e) {
+        if (e instanceof TopTenChangedError)
+          return HttpResponse.json({ error: 'top_ten_changed' }, { status: 409 })
+        throw e
+      }
     }),
   ]
 

@@ -384,6 +384,11 @@ describe('rename and delete (A2b)', () => {
     await other.call('PUT', '/api/tags', { tmdbId: 603, tag: 'liked' })
     await mike.call('PUT', '/api/top-ten', { tmdbId: 603 })
     await other.call('PUT', '/api/top-ten', { tmdbId: 603 })
+    for (const client of [mike, other]) {
+      for (const tmdbId of [1, 2])
+        await client.call('PUT', '/api/tags', { tmdbId, tag: 'watchlist' })
+      await client.call('PATCH', '/api/tags/order', { tag: 'watchlist', ids: [1, 2] })
+    }
     const mikeId = (await mike.call('GET', '/api/auth/session')).body.id
     await invite({ userId: mikeId }) // an unused recovery invite
     const stolen = createClient(env)
@@ -392,11 +397,20 @@ describe('rename and delete (A2b)', () => {
     const res = await mike.call('DELETE', '/api/auth/me')
     expect(res.status).toBe(200)
     expect(res.response.headers.get('Set-Cookie')).toContain('Max-Age=0')
-    for (const table of ['users', 'passkeys', 'sessions', 'tags', 'top_ten', 'invites'])
+    for (const table of [
+      'users',
+      'passkeys',
+      'sessions',
+      'tags',
+      'top_ten',
+      'watchlist_order',
+      'invites',
+    ])
       expect(JSON.stringify(db.rows(table))).not.toContain(mikeId)
     expect(db.rows('users')).toEqual([expect.objectContaining({ id: otherUser.body.id })])
-    expect(db.rows('tags')).toHaveLength(1)
+    expect(db.rows('tags')).toHaveLength(3)
     expect(db.rows('top_ten')).toHaveLength(1)
+    expect(db.rows('watchlist_order')).toHaveLength(2)
     expect((await stolen.call('GET', '/api/auth/session')).status).toBe(401)
   })
 })
@@ -482,6 +496,88 @@ describe('tags (A3)', () => {
   })
 })
 
+describe('watchlist order (ADR-0041)', () => {
+  async function signedIn() {
+    const client = createClient(env)
+    await register(client, await createSoftAuthenticator(), await invite())
+    return client
+  }
+  const add = (client: Client, tmdbId: number, tag = 'watchlist') =>
+    client.call('PUT', '/api/tags', { tmdbId, tag })
+  const order = async (client: Client) =>
+    (await client.call('GET', '/api/tags')).body.watchlistOrder
+  const reorder = (client: Client, ids: unknown, tag: unknown = 'watchlist') =>
+    client.call('PATCH', '/api/tags/order', { tag, ids })
+
+  it('saves a new order with PATCH, positions 1…n, and returns it with the tags', async () => {
+    const client = await signedIn()
+    for (const id of [1, 2, 3]) await add(client, id)
+    expect(await order(client)).toEqual([])
+    const res = await reorder(client, [1, 3, 2])
+    expect(res.status).toBe(200)
+    expect(res.body.ids).toEqual([1, 3, 2])
+    expect(await order(client)).toEqual([1, 3, 2])
+    expect(db.rows('watchlist_order').map((r) => [r.tmdb_id, r.position])).toEqual([
+      [1, 1],
+      [3, 2],
+      [2, 3],
+    ])
+  })
+
+  it('refuses a different set of films with 409 list_changed, and bad bodies with 400', async () => {
+    const client = await signedIn()
+    for (const id of [1, 2, 3]) await add(client, id)
+    // Film 4 is tagged, but liked, not on the watchlist.
+    await add(client, 4, 'liked')
+    for (const ids of [
+      [1, 2, 3, 4],
+      [1, 2],
+      [1, 2, 9],
+    ]) {
+      const res = await reorder(client, ids)
+      expect(res.status).toBe(409)
+      expect(res.body).toEqual({ error: 'list_changed' })
+    }
+    for (const [ids, tag] of [
+      [[1, 1, 2], 'watchlist'],
+      [[3, 2, -1], 'watchlist'],
+      ['3,2,1', 'watchlist'],
+      [[3, 2, 1], 'liked'],
+    ])
+      expect((await reorder(client, ids, tag)).status).toBe(400)
+    expect(await order(client)).toEqual([])
+  })
+
+  it('drops a film from the order when it leaves the watchlist (seen, removed or disliked)', async () => {
+    const client = await signedIn()
+    for (const id of [1, 2, 3, 4]) await add(client, id)
+    await reorder(client, [1, 2, 3, 4])
+    await add(client, 2, 'seen') // Seen clears Want to see (tag rules).
+    await client.call('DELETE', '/api/tags', { tmdbId: 3, tag: 'watchlist' })
+    await add(client, 4, 'disliked')
+    expect(db.rows('watchlist_order').map((r) => r.tmdb_id)).toEqual([1])
+    // Added again, film 3 has no saved place, so it's listed first (newest first).
+    await add(client, 3)
+    expect(await order(client)).toEqual([1])
+    await client.call('DELETE', '/api/tags', { all: true })
+    expect(db.rows('watchlist_order')).toEqual([])
+  })
+
+  it("reorders only the signed-in user's watchlist, and needs a session", async () => {
+    const a = await signedIn()
+    const b = await signedIn()
+    const aId = (await a.call('GET', '/api/auth/session')).body.id
+    for (const client of [a, b]) for (const id of [1, 2]) await add(client, id)
+    await b.call('PATCH', '/api/tags/order', { tag: 'watchlist', ids: [1, 2], userId: aId })
+    expect(await order(a)).toEqual([])
+    expect(await order(b)).toEqual([1, 2])
+    expect((await reorder(createClient(env), [1, 2])).status).toBe(401)
+    expect((await a.call('POST', '/api/tags/order', { tag: 'watchlist', ids: [] })).status).toBe(
+      405,
+    )
+  })
+})
+
 describe('Top Ten (ADR-0036)', () => {
   async function signedIn() {
     const client = createClient(env)
@@ -542,6 +638,51 @@ describe('Top Ten (ADR-0036)', () => {
       expect((await client.call('PUT', '/api/top-ten', body)).status).toBe(400)
     expect((await client.call('POST', '/api/top-ten', { tmdbId: 1 })).status).toBe(405)
     expect(await films(client)).toEqual([])
+  })
+
+  it('saves a new order with PATCH, rewriting positions 1…n (ADR-0041)', async () => {
+    const client = await signedIn()
+    for (const id of [1, 2, 3]) await client.call('PUT', '/api/top-ten', { tmdbId: id })
+    const res = await client.call('PATCH', '/api/top-ten', { ids: [3, 1, 2] })
+    expect(res.status).toBe(200)
+    expect(res.body.films).toEqual([3, 1, 2])
+    expect(db.rows('top_ten').map((r) => [r.tmdb_id, r.position])).toEqual([
+      [3, 1],
+      [1, 2],
+      [2, 3],
+    ])
+    expect(await films(client)).toEqual([3, 1, 2])
+  })
+
+  it('refuses an order that adds, drops or swaps in a film with 409 top_ten_changed', async () => {
+    const client = await signedIn()
+    for (const id of [1, 2, 3]) await client.call('PUT', '/api/top-ten', { tmdbId: id })
+    for (const ids of [
+      [1, 2, 3, 4],
+      [1, 2],
+      [1, 2, 9],
+    ]) {
+      const res = await client.call('PATCH', '/api/top-ten', { ids })
+      expect(res.status).toBe(409)
+      expect(res.body).toEqual({ error: 'top_ten_changed' })
+    }
+    // Repeats, eleven ids, or ids that aren't film ids are malformed, not a changed list.
+    const eleven = Array.from({ length: 11 }, (_, i) => i + 1)
+    for (const body of [{}, { ids: [1, 1, 2] }, { ids: eleven }, { ids: [3, 1, -2] }, { ids: 3 }])
+      expect((await client.call('PATCH', '/api/top-ten', body)).status).toBe(400)
+    expect(await films(client)).toEqual([1, 2, 3])
+  })
+
+  it("reorders only the signed-in user's list, ignoring a user id sent by the client", async () => {
+    const a = await signedIn()
+    const b = await signedIn()
+    const aId = (await a.call('GET', '/api/auth/session')).body.id
+    for (const id of [1, 2]) await a.call('PUT', '/api/top-ten', { tmdbId: id })
+    for (const id of [1, 2]) await b.call('PUT', '/api/top-ten', { tmdbId: id })
+    await b.call('PATCH', '/api/top-ten', { ids: [2, 1], userId: aId })
+    expect(await films(a)).toEqual([1, 2])
+    expect(await films(b)).toEqual([2, 1])
+    expect((await createClient(env).call('PATCH', '/api/top-ten', { ids: [] })).status).toBe(401)
   })
 
   it('never caches answers', async () => {

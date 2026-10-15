@@ -12,8 +12,8 @@ import {
   registerVerify,
 } from '../accounts/auth.ts'
 import type { AccountsEnv } from '../accounts/d1.ts'
-import { changeTag, importTags, listTags } from '../accounts/tags.ts'
-import { changeTopTen, listTopTen } from '../accounts/topTen.ts'
+import { changeTag, importTags, listTags, reorderWatchlist } from '../accounts/tags.ts'
+import { changeTopTen, listTopTen, saveTopTenOrder } from '../accounts/topTen.ts'
 import { guardApi } from '../apiGuard.ts'
 import { route } from '../http.ts'
 import type { RateLimiterBinding } from '../rateLimit.ts'
@@ -61,6 +61,10 @@ export const ROUTES = {
       DELETE: ({ request, env }) => changeTag(request, env),
     }),
   ],
+  '/api/tags/order': [
+    'functions/api/tags/order.ts',
+    route<Env>({ PATCH: ({ request, env }) => reorderWatchlist(request, env) }),
+  ],
   '/api/tags/import': [
     'functions/api/tags/import.ts',
     route<Env>({ POST: ({ request, env }) => importTags(request, env) }),
@@ -71,6 +75,7 @@ export const ROUTES = {
       GET: ({ request, env }) => listTopTen(request, env),
       PUT: ({ request, env }) => changeTopTen(request, env),
       DELETE: ({ request, env }) => changeTopTen(request, env),
+      PATCH: ({ request, env }) => saveTopTenOrder(request, env),
     }),
   ],
 } as const

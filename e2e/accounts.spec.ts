@@ -86,6 +86,29 @@ test('invite → register → reload → sign out → sign in with the passkey',
   // The lists are still there.
   const tags = await (await page.request.get('/api/tags')).json()
   expect(tags.records).toEqual([expect.objectContaining({ tmdbId: 1091, tag: 'liked' })])
+
+  // Reorders persist in D1 (ADR-0041): the watchlist's saved order and the Top Ten's ranks.
+  const api = (method: string, path: string, body: unknown) =>
+    page.evaluate(
+      ([m, p, b]) =>
+        fetch(p, {
+          method: m,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(b),
+        }).then((r) => r.status),
+      [method, path, body] as const,
+    )
+  for (const tmdbId of [348, 790]) {
+    expect(await api('PUT', '/api/tags', { tmdbId, tag: 'watchlist' })).toBe(200)
+    expect(await api('PUT', '/api/top-ten', { tmdbId })).toBe(200)
+  }
+  expect(await api('PATCH', '/api/tags/order', { tag: 'watchlist', ids: [348, 790] })).toBe(200)
+  expect(await api('PATCH', '/api/top-ten', { ids: [790, 348] })).toBe(200)
+  // A stale order (a film missing) is refused.
+  expect(await api('PATCH', '/api/top-ten', { ids: [790] })).toBe(409)
+  await page.reload()
+  expect((await (await page.request.get('/api/tags')).json()).watchlistOrder).toEqual([348, 790])
+  expect((await (await page.request.get('/api/top-ten')).json()).films).toEqual([790, 348])
 })
 
 test('a used invite is refused on the invite field', async ({ page }) => {

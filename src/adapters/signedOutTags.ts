@@ -28,11 +28,13 @@ export const signedOutTags: TagRepository = {
   setTag: refuse,
   importAll: refuse,
   clear: refuse,
+  reorder: refuse,
 }
 
-/** The signed-out Top Ten: always empty, and adding or removing a film throws `SignedOutError`. */
+/** The signed-out Top Ten: always empty, and every change throws `SignedOutError`. */
 export const signedOutTopTen: TopTenRepository = {
   list: async () => [],
   add: refuse,
   remove: refuse,
+  reorder: refuse,
 }

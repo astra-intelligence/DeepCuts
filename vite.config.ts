@@ -46,7 +46,9 @@ export default defineConfig(({ mode }) => ({
             },
             {
               name: 'react-aria',
-              test: /node_modules[\\/](react-aria|react-aria-components|react-stately|@react-aria|@react-stately|@react-types|@internationalized|@swc)[\\/]/,
+              // Except drag and drop: only Home's Top Ten reorder mode uses it (ADR-0041), so it
+              // stays in that lazy chunk instead of adding ~20 kB to every first visit.
+              test: /node_modules[\\/](react-aria|react-aria-components|react-stately|@react-aria|@react-stately|@react-types|@internationalized|@swc)[\\/](?!.*(?:[\\/]dnd[\\/]|[\\/]use(?:Drag|Drop)\.js$))/,
             },
             { name: 'data', test: /node_modules[\\/](zod|@tanstack)[\\/]/ },
           ],

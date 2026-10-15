@@ -3,10 +3,12 @@
 // Same shape as tagQueries.ts: the cached list's key includes the session scope (signed out, or
 // which account), so switching accounts never shows someone else's Top Ten. After a change the
 // store's answer *is* the new list, so it goes straight into the cache with no re-fetch.
+// Reordering (ADR-0041) updates the cache first, so a film moves the moment it's pressed.
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { TopTenFullError } from '../domain/topTen'
 import { useSession } from './SessionContext'
 import { tagScope } from './tagQueries'
+import { useOrderMutation } from './useOrderMutation'
 
 /** The query options for the current session's Top Ten, ready for `useQuery`. */
 function useTopTenQuery() {
@@ -39,4 +41,14 @@ export function useChangeTopTen() {
       if (error instanceof TopTenFullError) return queryClient.invalidateQueries({ queryKey })
     },
   })
+}
+
+/**
+ * Saves a new order for the Top Ten (ADR-0041): `useReorderTopTen().mutate(order)`. Optimistic,
+ * with a rollback or a re-fetch on failure (useOrderMutation).
+ */
+export function useReorderTopTen() {
+  const { topTen } = useSession()
+  const { queryKey } = useTopTenQuery()
+  return useOrderMutation(queryKey, (order) => topTen.reorder(order), 'Your Top Ten')
 }

@@ -8,6 +8,7 @@ import type { Session } from '../adapters/SessionProvider'
 import type { TagRepository } from '../adapters/TagRepository'
 import type { SystemTag } from '../domain/tagRules'
 import { useSession } from './SessionContext'
+import { useOrderMutation } from './useOrderMutation'
 
 /**
  * The tag queries for one store, ready to pass to `useQuery`.
@@ -21,7 +22,7 @@ export function tagQueries(repo: TagRepository, scope: string) {
         queryKey: ['tags', scope, 'movie', tmdbId],
         queryFn: () => repo.getTags(tmdbId),
       }),
-    /** The film ids on one list, newest first (My Lists, the scorer). */
+    /** The film ids on one list, newest first; the watchlist in its saved order (ADR-0041). */
     list: (tag: SystemTag) =>
       queryOptions({ queryKey: ['tags', scope, 'list', tag], queryFn: () => repo.list(tag) }),
     /** Every tag record, e.g. to count the films someone has tagged. */
@@ -64,4 +65,15 @@ export function useSetTag() {
       return queryClient.invalidateQueries({ queryKey: ['tags', tagScope(session)] })
     },
   })
+}
+
+/**
+ * Saves a new order for the watchlist (ADR-0041): `useReorderWatchlist().mutate(order)`.
+ * Optimistic, with a rollback or a re-fetch on failure (useOrderMutation). Home's watchlist shelf
+ * and the scorer read the same cached list, so they follow the new order at once.
+ */
+export function useReorderWatchlist() {
+  const { tags } = useSession()
+  const { queryKey } = useTagQueries().list('watchlist')
+  return useOrderMutation(queryKey, (order) => tags.reorder('watchlist', order), 'Your watchlist')
 }

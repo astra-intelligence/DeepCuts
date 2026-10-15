@@ -2,12 +2,13 @@
 // Top Ten, Watchlist, Discovery (ADR-0033, ADR-0040 §6b).
 //
 // Each shelf is a row of VHS boxes that wraps as its list grows: the whole Top Ten (ADR-0036)
-// with each box's rank on a tab and the next open slot, the latest watchlist films, and
+// with each box's rank on a tab and the next open slot, the first watchlist films, and
 // Discovery's picks. With likes, the picks come from the recommendation scorer (ADR-0026) with a
 // match stamp and the reason why. Without likes, they are popular films (minus disliked ones),
 // with a hint to like a few films. Every box names the film's director and writer, from its
-// details (the same cached call Detail makes).
+// details (the same cached call Detail makes). The Top Ten shelf has a reorder mode (ADR-0041).
 import { useQueries, useQuery } from '@tanstack/react-query'
+import { lazy, Suspense } from 'react'
 import { Link } from 'react-router'
 import { movieQueries } from '../api/queries'
 import { creditsOf, summaryOf } from '../api/tmdb'
@@ -17,15 +18,21 @@ import { CassetteCard, type CassetteItem } from '../components/CassetteCard'
 import { EmptySlot } from '../components/EmptySlot'
 import { focusHeaderSearch } from '../components/headerSearch'
 import { PageHeading } from '../components/PageHeading'
+import { ReorderStatus, ReorderToggle } from '../components/ReorderToggle'
+import { useReorderMode } from '../components/useReorderMode'
 import { PANELS } from '../components/panels'
 import { SHELF_GRID, ShelfSection } from '../components/ShelfSection'
 import { Ticker } from '../components/Ticker'
 import { useTagQueries } from '../session/tagQueries'
-import { useTopTen } from '../session/topTenQueries'
+import { useReorderTopTen, useTopTen } from '../session/topTenQueries'
 import { HOME_PICKS, LIMITS, useRecommendations } from '../session/useRecommendations'
 
-// How many watchlist films Home shows: the same most recent ones the scorer already loads, so
-// the shelf costs no extra calls. My Lists has them all.
+// Reorder mode's tiles and drag and drop load the first time someone presses "Reorder".
+const ReorderList = lazy(() => import('./ReorderList').then((m) => ({ default: m.ReorderList })))
+
+// How many watchlist films Home shows: the first ones in the person's order (newest first until
+// they reorder, ADR-0041), the same ones the scorer already loads, so the shelf costs no extra
+// calls. My Lists has them all.
 const WATCHLIST_PREVIEW = LIMITS.watchlist
 
 /** Home: the headline, then the three shelves (ADR-0033, ADR-0040). */
@@ -54,10 +61,17 @@ export function HomePage() {
 
 /**
  * The person's Top Ten (ADR-0036), all of it, in their order: #1 first, then the next open slot
- * until all ten are ranked. Films are added and removed from their Detail page; reordering comes
- * with the Top Ten management screen.
+ * until all ten are ranked. Films are added and removed from their Detail page. With two or more
+ * films, "Reorder" switches the shelf to reorder mode (ADR-0041) until "Done".
  */
 function TopTenShelf({ ids }: { ids: readonly number[] }) {
+  // A single film has nowhere to move (and a list can shrink in another tab mid-reorder).
+  const { active, toggle, message, announce, toggleRef, scopeRef } = useReorderMode(
+    ids.length >= 2,
+    'your Top Ten',
+  )
+  const reorderTopTen = useReorderTopTen()
+
   // One details call per film (cached for a day and shared with Detail). Each box appears once
   // its film has loaded; the rank comes from the list, so it stays right even if one film is
   // slow or missing.
@@ -73,31 +87,53 @@ function TopTenShelf({ ids }: { ids: readonly number[] }) {
       feature={1}
       title={PANELS['top-ten'].title}
       // No "3 of 10 ranked" count (owner, 2026-10-13): the dashed rule runs to the edge instead.
+      ref={scopeRef}
+      meta={ids.length >= 2 && <ReorderToggle ref={toggleRef} active={active} onPress={toggle} />}
     >
-      {/* An ordered list: the order is the meaning, and screen readers announce it. The open
-          slot is the list's next place, so it's an item too. */}
-      <ol className={SHELF_GRID}>
-        {films.map((item) => (
-          <li key={item.movie.id} className="flex">
-            <CassetteCard item={item} />
-          </li>
-        ))}
-        {ids.length < TOP_TEN_SIZE && (
-          <li>
-            <EmptySlot
-              mark={`#${ids.length + 1}`}
-              title="Add a film"
-              note="Slot still open. Find a film, then add it from its page."
-              onPress={focusHeaderSearch}
-            />
-          </li>
-        )}
-      </ol>
+      <ReorderStatus message={message} />
+      {active ? (
+        // Until reorder mode's code arrives (once, a moment), the shelf stays as it was.
+        <Suspense fallback={<RankedList films={films} />}>
+          <ReorderList ids={ids} announce={announce} onReorder={reorderTopTen.mutate} />
+        </Suspense>
+      ) : (
+        <RankedList
+          films={films}
+          openSlot={ids.length < TOP_TEN_SIZE ? ids.length + 1 : undefined}
+        />
+      )}
     </ShelfSection>
   )
 }
 
-/** The latest films on the watchlist, each with its ADMIT ONE ticket; My Lists has them all. */
+/**
+ * The Top Ten as linked tiles, then the next open slot (`openSlot`, its rank) when there's room.
+ * An ordered list: the order is the meaning, and screen readers announce it. The open slot is
+ * the list's next place, so it's an item too.
+ */
+function RankedList({ films, openSlot }: { films: CassetteItem[]; openSlot?: number | undefined }) {
+  return (
+    <ol className={SHELF_GRID}>
+      {films.map((item) => (
+        <li key={item.movie.id} className="flex">
+          <CassetteCard item={item} />
+        </li>
+      ))}
+      {openSlot !== undefined && (
+        <li>
+          <EmptySlot
+            mark={`#${openSlot}`}
+            title="Add a film"
+            note="Slot still open. Find a film, then add it from its page."
+            onPress={focusHeaderSearch}
+          />
+        </li>
+      )}
+    </ol>
+  )
+}
+
+/** The first films on the watchlist, each with its ADMIT ONE ticket; My Lists has them all. */
 function WatchlistShelf({ ids }: { ids: readonly number[] }) {
   const movies = useQueries({
     queries: ids.slice(0, WATCHLIST_PREVIEW).map((id) => movieQueries.detail(id)),
