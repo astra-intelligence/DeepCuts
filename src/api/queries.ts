@@ -35,7 +35,8 @@ export const movieQueries = {
   deepCuts: () =>
     queryOptions({
       queryKey: ['tmdb', 'deep-cuts'],
-      queryFn: ({ signal }) => tmdb.deepCuts(1 + Math.floor(Math.random() * DEEP_CUT_PAGES), signal),
+      queryFn: ({ signal }) =>
+        tmdb.deepCuts(1 + Math.floor(Math.random() * DEEP_CUT_PAGES), signal),
       staleTime: HOUR,
     }),
   /** Well-rated films with one keyword, for the scorer's keyword candidates (ADR-0038). */

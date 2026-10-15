@@ -12,9 +12,7 @@ const page = z.coerce.number().int().min(1).max(500)
 const id = z.coerce.number().int().positive().max(99_999_999)
 const voteCount = z.coerce.number().int().min(0).max(100_000)
 // A real calendar date, YYYY-MM-DD (no 2015-02-31), in a sane range: 1870 predates the first films.
-const isoDate = z.iso
-  .date()
-  .refine((v) => v >= '1870-01-01' && v <= '2999-12-31')
+const isoDate = z.iso.date().refine((v) => v >= '1870-01-01' && v <= '2999-12-31')
 // Extras that may ride along on a film's details call; each at most once.
 const APPENDABLE = new Set(['release_dates', 'recommendations', 'similar', 'keywords', 'credits'])
 const appendList = z.string().refine((v) => {
