@@ -1,8 +1,8 @@
 // Tests for the recommendation scorer (ADR-0026, ADR-0028, ADR-0032), with small hand-made films:
 // each score part, exclusions, series candidates, ranking, spread rules, explore slots, weights
 // and determinism, plus v3's similar films, next-in-series and once-only series credit
-// (ADR-0037), and Top Ten films weighing more than likes (ADR-0043). The scorer must stay at 100%
-// coverage.
+// (ADR-0037), Top Ten films weighing more than likes (ADR-0043), and v4's sharper parts, dislike
+// penalty and stretched match (ADR-0044). The scorer must stay at 100% coverage.
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_WEIGHTS,
@@ -11,13 +11,20 @@ import {
   keywordsToSearch,
   MAJOR_STUDIOS,
   DIVERSITY_PENALTY,
+  DISLIKE_PENALTY,
   EXPLORE_SLOTS,
+  MATCH_CEILING,
+  MATCH_FLOOR,
+  PENALTY_HITS,
+  PENALTY_KEYWORDS,
+  scoreCandidates,
   normalizeWeights,
   recommend,
   SCORE_PARTS,
   SERIES_PICKS,
   SIMILAR_MIN_VOTES,
   TOP_TEN_WEIGHT,
+  type FilmDetails,
   type Pick,
   type ScorerFilm,
   type TasteInput,
@@ -119,7 +126,8 @@ describe('recommend (ADR-0026)', () => {
     expect(picks.map((p) => p.film.title)).toEqual(['Shared', 'Single'])
     expect(picks[0]?.because).toEqual(['Alien', 'The Thing'])
     expect(picks[0]?.parts.support).toBe(1)
-    expect(picks[1]?.parts.support).toBe(0.5)
+    // Half the best support, on the square-root scale (ADR-0044).
+    expect(picks[1]?.parts.support).toBeCloseTo(Math.SQRT1_2, 10)
   })
 
   it('never recommends a tagged film, or a liked film to itself', () => {
@@ -196,7 +204,7 @@ describe('recommend (ADR-0026)', () => {
     )
   })
 
-  it('matches decade and language against your likes, with unknowns scoring zero', () => {
+  it('scores decade and language by how much more your likes lean to them (ADR-0044)', () => {
     const liked = film({ year: 1984, language: 'en' })
     const same = film({ year: 1989, language: 'en' })
     const other = film({ year: 2015, language: 'ko' })
@@ -205,12 +213,13 @@ describe('recommend (ADR-0026)', () => {
       input({ liked: [{ film: liked, recommendations: [same, other, unknown] }] }),
     )
     const byId = new Map(picks.map((p) => [p.film.id, p.parts]))
-    expect(byId.get(same.id)).toMatchObject({ decade: 1, language: 1 })
+    // All your likes are 1980s and English; a third of the candidates are: a lift of 3 → 0.75.
+    expect(byId.get(same.id)).toMatchObject({ decade: 0.75, language: 0.75 })
     expect(byId.get(other.id)).toMatchObject({ decade: 0, language: 0 })
     expect(byId.get(unknown.id)).toMatchObject({ decade: 0, language: 0 })
   })
 
-  it('shows match as the score in percent, without inflation', () => {
+  it('shows match as the score in percent when there is only one candidate', () => {
     const [pick] = recommend(input({ liked: [{ film: film(), recommendations: [film()] }] }))
     expect(pick?.match).toBe(Math.round((pick?.score ?? -1) * 100))
   })
@@ -521,7 +530,7 @@ describe('scorer v2 (ADR-0032)', () => {
     )
     expect(pickOf(picks, shared.id).because).toEqual(['A', 'B'])
     expect(pickOf(picks, shared.id).parts.support).toBe(1)
-    expect(pickOf(picks, onlySimilar.id).parts.support).toBe(0.5)
+    expect(pickOf(picks, onlySimilar.id).parts.support).toBeCloseTo(Math.SQRT1_2, 10)
   })
 
   it('skips similar films with too few votes or no genre in common (ADR-0037)', () => {
@@ -751,10 +760,10 @@ describe('Top Ten films weigh more than likes (ADR-0043)', () => {
       }),
     )
     expect(pickOf(picks, fromTopTen.id).parts.support).toBe(1)
-    expect(pickOf(picks, fromLike.id).parts.support).toBeCloseTo(1 / 1.25, 10)
+    expect(pickOf(picks, fromLike.id).parts.support).toBeCloseTo(Math.sqrt(1 / 1.25), 10)
   })
 
-  it("weights the decade and language shares toward the Top Ten film's", () => {
+  it("weights the decade and language leans toward the Top Ten film's", () => {
     const eighties = film({ year: 1984, language: 'en' })
     const nineties = film({ year: 1995, language: 'ja' })
     const picks = recommend(
@@ -769,10 +778,14 @@ describe('Top Ten films weigh more than likes (ADR-0043)', () => {
         ],
       }),
     )
-    // 1.25 of the 2.25 total weight is the Top Ten film's.
-    expect(pickOf(picks, nineties.id).parts.decade).toBeCloseTo(1.25 / 2.25, 10)
-    expect(pickOf(picks, nineties.id).parts.language).toBeCloseTo(1.25 / 2.25, 10)
-    expect(pickOf(picks, eighties.id).parts.decade).toBeCloseTo(1 / 2.25, 10)
+    // 1.25 of the 2.25 total weight is the Top Ten film's; half the candidates are from each.
+    const leanOf = (likeShare: number) => {
+      const lift = likeShare / 0.5
+      return lift / (1 + lift)
+    }
+    expect(pickOf(picks, nineties.id).parts.decade).toBeCloseTo(leanOf(1.25 / 2.25), 10)
+    expect(pickOf(picks, nineties.id).parts.language).toBeCloseTo(leanOf(1.25 / 2.25), 10)
+    expect(pickOf(picks, eighties.id).parts.decade).toBeCloseTo(leanOf(1 / 2.25), 10)
   })
 
   it("weights the Top Ten film's keywords, so two favourites can choose a search", () => {
@@ -804,5 +817,158 @@ describe('Top Ten films weigh more than likes (ADR-0043)', () => {
       input({ liked: [{ film: source, recommendations: [candidate], weight: 1 }] }),
     )
     expect(plain).toEqual(explicit)
+  })
+})
+
+describe('scorer v4: sharper parts, dislike penalty, stretched match (ADR-0044)', () => {
+  it('keeps the agreed constants', () => {
+    expect(DISLIKE_PENALTY).toBe(0.15)
+    expect(PENALTY_HITS).toBe(2)
+    expect(PENALTY_KEYWORDS).toBe(2)
+    expect([MATCH_FLOOR, MATCH_CEILING]).toEqual([30, 95])
+  })
+
+  it("scores genre by the film's best genre, so an untagged second genre doesn't halve it", () => {
+    const horrorComedy = film({ genreIds: [HORROR, COMEDY] })
+    const picks = recommend(
+      input({ liked: [{ film: film({ genreIds: [HORROR] }), recommendations: [horrorComedy] }] }),
+    )
+    expect(pickOf(picks, horrorComedy.id).parts.genre).toBe(1)
+  })
+
+  it('still lowers a film for a disliked second genre', () => {
+    const horrorComedy = film({ genreIds: [HORROR, COMEDY] })
+    const picks = recommend(
+      input({
+        liked: [{ film: film({ genreIds: [HORROR] }), recommendations: [horrorComedy] }],
+        disliked: [film({ genreIds: [COMEDY] })],
+      }),
+    )
+    // Horror +1, comedy −1: they cancel out to neutral.
+    expect(pickOf(picks, horrorComedy.id).parts.genre).toBe(0.5)
+  })
+
+  it('ranks ratings among the candidates: best 1, worst 0, ties shared', () => {
+    const best = film({ voteAverage: 7.6 })
+    const tieA = film({ voteAverage: 7 })
+    const tieB = film({ voteAverage: 7 })
+    const worst = film({ voteAverage: 6.4 })
+    const picks = recommend(
+      input({ liked: [{ film: film(), recommendations: [best, tieA, tieB, worst] }] }),
+    )
+    expect(pickOf(picks, best.id).parts.quality).toBe(1)
+    expect(pickOf(picks, worst.id).parts.quality).toBe(0)
+    expect(pickOf(picks, tieA.id).parts.quality).toBe(0.5)
+    expect(pickOf(picks, tieB.id).parts.quality).toBe(0.5)
+  })
+
+  it('is neutral on decade and language when the candidates lean the same way as your likes', () => {
+    const a = film({ year: 1984 })
+    const b = film({ year: 1986 })
+    const picks = recommend(
+      input({ liked: [{ film: film({ year: 1981 }), recommendations: [a, b] }] }),
+    )
+    expect(pickOf(picks, a.id).parts).toMatchObject({ decade: 0.5, language: 0.5 })
+  })
+
+  it('stretches match from MATCH_FLOOR for the weakest candidate to MATCH_CEILING for the best', () => {
+    const strong = film({ voteAverage: 8 })
+    const middling = film({ voteAverage: 7 })
+    const weak = film({ voteAverage: 5, popularity: 900 })
+    const picks = recommend(
+      input({ liked: [{ film: film(), recommendations: [strong, middling, weak] }] }),
+    )
+    expect(picks.map((p) => p.film.id)).toEqual([strong.id, middling.id, weak.id])
+    expect(pickOf(picks, strong.id).match).toBe(MATCH_CEILING)
+    expect(pickOf(picks, weak.id).match).toBe(MATCH_FLOOR)
+    const mid = pickOf(picks, middling.id).match
+    expect(mid).toBeGreaterThan(MATCH_FLOOR)
+    expect(mid).toBeLessThan(MATCH_CEILING)
+  })
+
+  it('returns every candidate, best score first, from scoreCandidates', () => {
+    const many = Array.from({ length: 30 }, (_, i) => film({ voteAverage: 5 + i / 10 }))
+    const all = scoreCandidates(input({ liked: [{ film: film(), recommendations: many }] }))
+    expect(all).toHaveLength(30)
+    expect(all[0]?.film.id).toBe(many[29]?.id)
+    expect(scoreCandidates(input())).toEqual([])
+  })
+
+  describe('the dislike penalty', () => {
+    const carpenter = { id: 1, name: 'John Carpenter' }
+    const writer = { id: 2, name: 'Bill Lancaster' }
+
+    // One candidate that overlaps a disliked film in the given ways, and one that doesn't,
+    // with every other part equal.
+    function setup(details: Partial<FilmDetails>, dislikedFilm: Partial<ScorerFilm>) {
+      const near = film()
+      const clean = film()
+      const disliked = film({ title: 'Ghosts of Mars', ...dislikedFilm })
+      const picks = recommend(
+        input({
+          liked: [{ film: film(), recommendations: [near, clean] }],
+          disliked: [disliked],
+          excluded: new Set([disliked.id]),
+          details: new Map([
+            [near.id, { keywordIds: [], directors: [], ...details }],
+            [clean.id, { keywordIds: [], directors: [] }],
+          ]),
+        }),
+      )
+      return { near: pickOf(picks, near.id), clean: pickOf(picks, clean.id) }
+    }
+
+    it('takes half the penalty for one overlap, and names it', () => {
+      const { near, clean } = setup({ directors: [carpenter] }, { directors: [carpenter] })
+      expect(near.penalty).toBe(0.5)
+      expect(near.nearDisliked).toEqual({ overlap: 'John Carpenter', disliked: 'Ghosts of Mars' })
+      expect(clean.score - near.score).toBeCloseTo(DISLIKE_PENALTY / 2, 10)
+      expect(clean.penalty).toBe(0)
+      expect(clean.nearDisliked).toBeUndefined()
+    })
+
+    it('takes the full penalty from PENALTY_HITS overlaps on, and no more', () => {
+      const { near, clean } = setup(
+        { directors: [carpenter], writers: [writer], cast: [carpenter] },
+        { directors: [carpenter], writers: [writer], cast: [carpenter] },
+      )
+      expect(near.penalty).toBe(1)
+      expect(clean.score - near.score).toBeCloseTo(DISLIKE_PENALTY, 10)
+    })
+
+    it('counts a non-major studio, the same series, and shared keywords, but not majors or generic keywords', () => {
+      const hammer = { id: 9999, name: 'Hammer' }
+      const universal = { id: 33, name: 'Universal' }
+      expect(setup({ companies: [hammer] }, { companies: [hammer] }).near.penalty).toBe(0.5)
+      expect(setup({ companies: [universal] }, { companies: [universal] }).near.penalty).toBe(0)
+      const series = setup({ seriesId: 77 }, { seriesId: 77 }).near
+      expect(series.nearDisliked?.overlap).toBe('the same series')
+      expect(setup({ keywordIds: [5, 6] }, { keywordIds: [5, 6, 7] }).near).toMatchObject({
+        penalty: 0.5,
+        nearDisliked: { overlap: 'shared keywords' },
+      })
+      expect(setup({ keywordIds: [5] }, { keywordIds: [5, 6] }).near.penalty).toBe(0)
+      const generic = [...GENERIC_KEYWORDS].slice(0, 2)
+      expect(setup({ keywordIds: generic }, { keywordIds: generic }).near.penalty).toBe(0)
+    })
+
+    it('can be turned off with dislikePenalty: 0', () => {
+      const near = film()
+      const disliked = film({ directors: [carpenter] })
+      const [pick] = scoreCandidates(
+        input({
+          liked: [{ film: film(), recommendations: [near] }],
+          disliked: [disliked],
+          details: new Map([[near.id, { keywordIds: [], directors: [carpenter] }]]),
+        }),
+        { dislikePenalty: 0 },
+      )
+      expect(pick?.penalty).toBe(0.5)
+      const weighted = SCORE_PARTS.reduce(
+        (s, p) => s + DEFAULT_WEIGHTS[p] * (pick?.parts[p] ?? 0),
+        0,
+      )
+      expect(pick?.score).toBeCloseTo(weighted, 10)
+    })
   })
 })
