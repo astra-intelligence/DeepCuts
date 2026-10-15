@@ -2,7 +2,7 @@
 // order with the next open slot (ADR-0036) and its reorder mode (ADR-0041), the ticker, and the
 // Discovery panel: popular films without likes, scored picks with a match and the reason with
 // likes, and the quick actions on each pick (issue #76).
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { delay, http, HttpResponse } from 'msw'
@@ -361,7 +361,9 @@ describe('home', () => {
       await user.click(within(tile).getByRole('button', { name: 'Not for me The Thing' }))
       const toast = await findToast('The Thing won’t be picked again.')
       const region = toast.closest('section') ?? document.body
-      await user.click(within(region).getByRole('button', { name: 'Undo' }))
+      // A plain click: a pointer press on a toast starts Sonner's swipe, which calls
+      // setPointerCapture, missing in jsdom.
+      fireEvent.click(within(region).getByRole('button', { name: 'Undo' }))
       await waitFor(() =>
         expect(within(tile).getByRole('link')).not.toHaveAccessibleName(/Not for me/),
       )
