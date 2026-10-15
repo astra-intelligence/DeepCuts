@@ -3,6 +3,8 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { describe, expect, it } from 'vitest'
+import { createLocalFeedbackLog } from '../../adapters/local/LocalFeedbackLog'
+import { SCORE_PARTS, SCORER_VERSION, type ScorePart } from '../../domain/scorer'
 import { renderRoute } from '../../test/renderRoute'
 
 /** Likes The Thing on its Detail page, then opens `path`, as a person would. */
@@ -97,6 +99,50 @@ describe('weights lab (ADR-0026)', () => {
       '/lab/weights?support=0&genre=0&quality=0&deepCut=0&decade=0&language=0&keywords=0&director=0&writer=0&series=0&cast=0&studio=0',
     )
     expect(await screen.findByRole('alert')).toHaveTextContent('Every weight is at zero')
+  })
+
+  describe('learn from your presses (ADR-0045)', () => {
+    // Saves `count` presses on Home's picks for the demo account: Wants have high quality, Nopes
+    // low, so quality is what tells them apart.
+    function savePresses(count: number) {
+      const log = createLocalFeedbackLog('feedback-demo:demo')
+      for (let i = 0; i < count; i++) {
+        const want = i % 2 === 1
+        log.add({
+          tmdbId: 1000 + i,
+          action: want ? 'watchlist' : 'disliked',
+          parts: {
+            ...(Object.fromEntries(SCORE_PARTS.map((p) => [p, 0.5])) as Record<ScorePart, number>),
+            quality: want ? 0.9 : 0.1,
+          },
+          penalty: 0,
+          scorerVersion: SCORER_VERSION,
+          at: '2026-10-15T12:00:00.000Z',
+        })
+      }
+    }
+
+    it('says how many presses it still needs', async () => {
+      savePresses(4)
+      await likeThenOpen('/lab/weights')
+      const panel = await screen.findByRole('region', { name: 'Learn from your presses' })
+      expect(panel).toHaveTextContent('Want 2 · Nope 2 · Seen 0')
+      expect(panel).toHaveTextContent('30 presses, at least 5 of each, are needed')
+      expect(panel).toHaveTextContent('4 so far')
+    })
+
+    it('suggests weights from enough presses and puts them on the sliders', async () => {
+      savePresses(40)
+      const { user, router } = await likeThenOpen('/lab/weights?diversity=5')
+      const panel = await screen.findByRole('region', { name: 'Learn from your presses' })
+      expect(panel).toHaveTextContent(/call 100% of your presses right/)
+      await user.click(within(panel).getByRole('link', { name: 'Use these weights' }))
+      const search = new URLSearchParams(router.state.location.search)
+      expect(Number(search.get('quality'))).toBeGreaterThan(90)
+      expect(search.get('diversity')).toBe('5')
+      expect(search.get('penalty')).toBe('0')
+      expect(screen.getByRole('slider', { name: 'Rating' })).toHaveValue(search.get('quality'))
+    })
   })
 
   it('is linked from Discover once there are picks', async () => {
