@@ -47,7 +47,12 @@
     }
   }
 
-  /* Whatever sits right under the logo (the header's tagline, AppLayout.tsx) drops 8px further,
+  /* The tagline (Logo.tsx) fades to its lit color with the wordmark. */
+  .halloween-logo + .logo-tagline {
+    transition: color 0.5s ease;
+  }
+
+  /* The tagline under the logo (Logo.tsx; the main header shows it) drops 8px further,
      so the bottom pumpkins, which hang about 12px past the wordmark, don't cover it. Only in
      October: the rest of the year the tagline keeps its usual spacing.
 
@@ -58,10 +63,10 @@
      From `md` only, like the tagline: on phones it's in the DOM but hidden, and the phone header
      must stay exactly as it was. */
   @variant md {
-    .halloween-logo + * {
+    .halloween-logo + .logo-tagline {
       margin-top: --spacing(2);
     }
-    .halloween-logo:has(+ *) {
+    .halloween-logo:has(+ .logo-tagline) {
       translate: none;
     }
   }
@@ -144,6 +149,10 @@
     & .halloween-logo__moon {
       fill: var(--dc-brand-halloween-moon-lit);
     }
+    /* The tagline (Logo.tsx) turns orange with CUTS. */
+    & + .logo-tagline {
+      --logo-tagline: var(--dc-brand-halloween-lit-cuts);
+    }
     /* The pumpkins darken so the faces stand out. */
     & .halloween-logo__skin,
     & .halloween-logo__rib {
@@ -162,7 +171,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .halloween-logo,
-    .halloween-logo * {
+    .halloween-logo *,
+    .halloween-logo + .logo-tagline {
       animation: none !important;
       transition: none !important;
     }

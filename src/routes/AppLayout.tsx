@@ -5,7 +5,6 @@
 // signed-in pages (ADR-0034).
 import { useRef } from 'react'
 import { Link, Outlet } from 'react-router'
-import { TAGLINE } from '../config/brand'
 import { FEATURES } from '../config/features'
 import { AccountChip } from '../components/AccountChip'
 import { Icon } from '../components/Icon'
@@ -63,12 +62,14 @@ export function AppLayout() {
             aria-label="Deep Cuts, go to Home"
             className="inline-flex min-h-11 shrink-0 flex-col items-start justify-center gap-1 md:translate-y-2"
           >
-            <Logo decorative className="h-9 w-auto md:h-10" />
-            {/* The tagline, from `md` only: phones keep their header height (owner, 2026-10-15).
-                The link's aria-label already names it, so screen readers hear "Deep Cuts" once. */}
-            <span className="hidden font-label text-xs leading-none tracking-wider text-fg-muted md:block">
-              {TAGLINE}
-            </span>
+            {/* The tagline shows from `md` only: phones keep their header height (owner,
+                2026-10-15). */}
+            <Logo
+              decorative
+              tagline
+              taglineClassName="hidden md:block"
+              className="h-9 w-auto md:h-10"
+            />
           </Link>
           {/* Grows to fill the row up to a readable width; the auto margins then centre it.
             `min-w-0` lets it shrink below the input's built-in width (else it overflows at 320px). */}

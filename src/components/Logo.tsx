@@ -6,7 +6,12 @@
 // Holidays: from time to time the logo swaps in seasonal artwork (e.g. all of October for
 // Halloween). Each holiday is one entry in SEASONAL_LOGOS (seasonalLogos.ts), with its own date
 // window, artwork component and favicon; the rest of the year shows the standard wordmark.
+//
+// Tagline: any costume can carry "The B-sides of cinema" (config/brand.ts) under the artwork. It's
+// live text in the label face, in the logo's bone white; a holiday stylesheet can recolor it for
+// its lit state by setting `--logo-tagline` (HalloweenLogo.css turns it orange, like CUTS).
 
+import { TAGLINE } from '../config/brand'
 import { currentSeason } from '../domain/seasons'
 import { CUTS, DEEP, type LogoAlign, type LogoArtProps } from './logoGlyphs'
 import { SEASONAL_LOGOS } from './seasonalLogos'
@@ -21,6 +26,13 @@ type LogoProps = {
    * wordmark; it grows away from this edge so it never runs off the screen. Defaults to `start`.
    */
   align?: LogoAlign
+  /**
+   * Show the tagline under the artwork, as the artwork's next sibling, so the parent lays the
+   * two out (the header's Home link stacks them). Off by default: only the main header has room.
+   */
+  tagline?: boolean
+  /** Placement classes for the tagline, e.g. which breakpoints show it. */
+  taglineClassName?: string
 }
 
 /**
@@ -35,16 +47,31 @@ export function Logo({
   decorative = false,
   date = new Date(),
   align = 'start',
+  tagline = false,
+  taglineClassName = '',
 }: LogoProps) {
   const Art = currentSeason(SEASONAL_LOGOS, date)?.Art ?? StandardLogo
   return (
-    <Art
-      className={className}
-      role={decorative ? undefined : 'img'}
-      aria-label={decorative ? undefined : 'Deep Cuts'}
-      aria-hidden={decorative || undefined}
-      data-align={align}
-    />
+    <>
+      <Art
+        className={className}
+        role={decorative ? undefined : 'img'}
+        aria-label={decorative ? undefined : 'Deep Cuts'}
+        aria-hidden={decorative || undefined}
+        data-align={align}
+      />
+      {tagline && (
+        // Bone white unless the costume's lit state sets `--logo-tagline`. Hidden from assistive
+        // tech with the artwork when decorative: the link around it already names the brand.
+        <span
+          aria-hidden={decorative || undefined}
+          className={`logo-tagline font-label text-xs leading-none tracking-wider ${taglineClassName}`}
+          style={{ color: 'var(--logo-tagline, var(--dc-brand-logo-bone))' }}
+        >
+          {TAGLINE}
+        </span>
+      )}
+    </>
   )
 }
 
