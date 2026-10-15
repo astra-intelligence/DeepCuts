@@ -69,6 +69,17 @@
     --vhs-aspect: 2;
     --vhs-stretch: 1;
 
+    /* The cover band: a printed strip with the film's title, like a real sleeve's, that takes
+       up the cover's extra height so the poster needn't stretch or crop. --vhs-band is its share
+       of the extra height (0 = no band, 1 = all of it, the poster at its own 2:3); the rest is
+       left to --vhs-stretch as above. --vhs-band-order puts it below the poster (1) or above it
+       (-1), and --vhs-band-text sizes its title as a share of the box's width. Its colors are
+       the genre print color with dark ink, unless --vhs-band-bg and --vhs-band-fg are set (the
+       lab sets them to try others; they're left unset here so they fall back per box). */
+    --vhs-band: 0;
+    --vhs-band-order: 1;
+    --vhs-band-text: 0.15;
+
     /* Finish. The grain is SVG noise as a data URI (the CSP allows data: images): fractal noise
        at baseFrequency 0.45 (coarse), 3 octaves, warm tan at 19% alpha, tiled every
        --vhs-grain-size. The lab rebuilds it from its sliders. --vhs-grain-blend is how the grain
@@ -109,6 +120,10 @@
      toward the paper, so dark ink on it reads at 4.8:1 or more for every genre). */
   .vhs-box {
     --h: calc(100cqw * var(--vhs-aspect));
+    /* The band's height (--vhs-band's share of the height beyond the poster's 2:3), and the
+       poster's height-to-width ratio once the band has its share. */
+    --band-h: calc((var(--h) - 100cqw * 1.5) * var(--vhs-band));
+    --art-ratio: calc(var(--vhs-aspect) - var(--vhs-band) * (var(--vhs-aspect) - 1.5));
     --d: calc(100cqw * var(--vhs-depth));
     --still-y: var(--vhs-rest-y);
     --still-x: var(--vhs-rest-x);
@@ -201,22 +216,53 @@
      (--vhs-radius). */
   .vhs-front {
     inset: 0;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
     background: var(--color-vhs-box-shell);
   }
-  /* The poster, as tall as the cover and as wide as --vhs-stretch says (see the knobs), centred
-     so any extra width is cropped evenly from both sides. On the 2:3 cover that's exactly the
-     cover. `fill`, not `cover`: the box is already the shape the art should take, and `cover`
+  /* The poster (or its placeholder), as tall as the cover less the band and as wide as
+     --vhs-stretch says (see the knobs), centred so any extra width is cropped evenly from both
+     sides. At the poster's own 2:3 that's exactly its natural shape. `fill`, not `cover`: the box is already the shape the art should take, and `cover`
      would undo the stretch by cropping back to the poster's ratio. */
-  .vhs-front img {
+  .vhs-art {
     position: relative;
     left: 50%;
     display: block;
-    width: calc(100cqw * (1 + (1 - var(--vhs-stretch)) * (var(--vhs-aspect) / 1.5 - 1)));
+    flex: none;
+    align-self: flex-start;
+    width: calc(100cqw * (1 + (1 - var(--vhs-stretch)) * (var(--art-ratio) / 1.5 - 1)));
     max-width: none;
-    height: 100%;
+    height: calc(var(--h) - var(--band-h));
     translate: -50% 0;
     object-fit: fill;
+  }
+  /* The cover band (see the knobs): the title in the display face, centred, two lines at most.
+     First in the markup so the badges stay last; `order` moves it below or above the poster. */
+  .vhs-band {
+    display: grid;
+    flex: none;
+    order: var(--vhs-band-order);
+    place-content: center;
+    height: var(--band-h);
+    padding-inline: calc(100cqw * 0.08);
+    overflow: hidden;
+    background: var(--vhs-band-bg, var(--print));
+    color: var(--vhs-band-fg, var(--color-vhs-box-ink));
+    font-size: calc(100cqw * var(--vhs-band-text));
+    text-align: center;
+  }
+  /* Stickers and badges stay on the poster, clear of the band: the ones pinned to the cover's
+     top move down past a band on top, the ones pinned to its bottom move up past a band below.
+     (--vhs-band-order is -1 for top, 1 for bottom.) */
+  .vhs-pin-top {
+    margin-top: calc(var(--band-h) * (1 - var(--vhs-band-order)) / 2);
+  }
+  .vhs-pin-bottom {
+    margin-bottom: calc(var(--band-h) * (1 + var(--vhs-band-order)) / 2);
+  }
+  .vhs-band-title {
+    @apply line-clamp-2 font-display leading-none tracking-wide uppercase;
   }
   /* Over the art, under the grain: one broad, soft light falloff (matte, no glossy glare) and
      edges rubbed pale where the sleeve slid against its neighbours. (The dossier's pale hinge
