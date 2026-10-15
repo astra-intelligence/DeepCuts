@@ -1,10 +1,11 @@
 // Tags saved in this browser (ADR-0013), for the demo and practice accounts.
 //
 // Each account gets its own key (`account-<id>-tags`), so signing out and in again never mixes
-// lists (ADR-0025). Passkey accounts keep their lists on the server instead (ADR-0031).
+// lists (ADR-0025). Passkey accounts keep their lists on the server instead (ADR-0031). The
+// watchlist's saved order (ADR-0041) sits beside the tags, under `account-<id>-watchlist-order`.
 import { z } from 'zod'
 import { createTagRepository } from '../createTagRepository'
-import { tagRecordSchema, type TagRepository } from '../TagRepository'
+import { savedOrderSchema, tagRecordSchema, type TagRepository } from '../TagRepository'
 import { versionedStore } from './versionedStore'
 
 /**
@@ -25,5 +26,12 @@ export function createLocalTagRepository(
     // Only pass `storage` when given, so versionedStore's own default (localStorage) applies.
     ...(storage && { storage }),
   })
-  return createTagRepository(store, now)
+  const order = versionedStore<readonly number[]>({
+    key: key.endsWith('-tags') ? key.replace(/-tags$/, '-watchlist-order') : `${key}-order`,
+    // An invalid saved order is dropped: the watchlist is then simply newest first.
+    schema: savedOrderSchema,
+    fallback: [],
+    ...(storage && { storage }),
+  })
+  return createTagRepository(store, now, order)
 }

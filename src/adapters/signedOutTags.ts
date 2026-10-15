@@ -28,6 +28,7 @@ export const signedOutTags: TagRepository = {
   setTag: refuse,
   importAll: refuse,
   clear: refuse,
+  reorder: refuse,
 }
 
 /** The signed-out Top Ten: always empty, and every change throws `SignedOutError`. */

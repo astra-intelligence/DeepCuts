@@ -4,16 +4,18 @@
 //
 // The server applies the tag rules itself (the same `applyTag`), so this adapter only sends what
 // the person did. To keep within the API rate limit (120 requests a minute), the account's records
-// are fetched once and reused for 30 seconds, and refreshed after every change.
+// are fetched once and reused for 30 seconds, and refreshed after every change. The same answer
+// carries the watchlist's saved order (ADR-0041), which `list('watchlist')` applies.
 import { z } from 'zod'
+import { applySavedOrder, ListChangedError } from '../../domain/ranking'
+import { listOf } from '../createTagRepository'
+import { isInFeeds, SYSTEM_TAGS, type SystemTag, type TagSet } from '../../domain/tagRules'
 import {
-  isInFeeds,
-  isOnList,
-  SYSTEM_TAGS,
-  type SystemTag,
-  type TagSet,
-} from '../../domain/tagRules'
-import { tagRecordSchema, type TagRecord, type TagRepository } from '../TagRepository'
+  savedOrderSchema,
+  tagRecordSchema,
+  type TagRecord,
+  type TagRepository,
+} from '../TagRepository'
 
 /** A failed tags API call. */
 export class TagApiError extends Error {
@@ -24,7 +26,12 @@ export class TagApiError extends Error {
   }
 }
 
-const recordsSchema = z.object({ records: z.array(tagRecordSchema) })
+const recordsSchema = z.object({
+  records: z.array(tagRecordSchema),
+  // Optional, so a server from before ADR-0041 still reads as "no saved order".
+  watchlistOrder: savedOrderSchema.default([]),
+})
+const orderSchema = z.object({ ids: savedOrderSchema })
 const tagsSchema = z.object({ tags: z.array(z.enum(SYSTEM_TAGS)) })
 /** How long fetched records are reused before asking again. */
 const FRESH_MS = 30_000
@@ -39,7 +46,16 @@ async function call<T>(method: string, path: string, schema: z.ZodType<T>, body?
     headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
     body: body === undefined ? null : JSON.stringify(body),
   })
-  if (!res.ok) throw new TagApiError(res.status)
+  if (!res.ok) {
+    // A reorder for a watchlist that changed elsewhere is expected, not a failure (ADR-0041).
+    const body: unknown = await res.json().catch(() => undefined)
+    if (
+      res.status === 409 &&
+      z.object({ error: z.literal('list_changed') }).safeParse(body).success
+    )
+      throw new ListChangedError('Your watchlist changed somewhere else.')
+    throw new TagApiError(res.status)
+  }
   const parsed = schema.safeParse(await res.json().catch(() => undefined))
   if (!parsed.success) throw new TagApiError(502)
   return parsed.data
@@ -50,18 +66,21 @@ async function call<T>(method: string, path: string, schema: z.ZodType<T>, body?
  * @param clock - For the 30-second reuse window; tests pass their own.
  */
 export function createCloudflareTagRepository(clock: () => number = Date.now): TagRepository {
-  let cached: { at: number; records: Promise<TagRecord[]> } | null = null
+  type Loaded = z.infer<typeof recordsSchema>
+  let cached: { at: number; data: Promise<Loaded> } | null = null
 
-  // The account's records, oldest first (as the server sends them). Reused while fresh.
-  function load(): Promise<TagRecord[]> {
+  // The account's records, oldest first (as the server sends them), and the saved watchlist
+  // order. Reused while fresh.
+  function fetchAll(): Promise<Loaded> {
     if (!cached || clock() - cached.at > FRESH_MS) {
-      const records = call('GET', '/api/tags', recordsSchema).then((r) => r.records)
-      cached = { at: clock(), records }
+      const data = call('GET', '/api/tags', recordsSchema)
+      cached = { at: clock(), data }
       // A failed fetch isn't kept, so the next call tries again.
-      records.catch(() => (cached = null))
+      data.catch(() => (cached = null))
     }
-    return cached.records
+    return cached.data
   }
+  const load = async (): Promise<TagRecord[]> => (await fetchAll()).records
   const invalidate = () => void (cached = null)
 
   // Groups records by film: film id → its set of tags.
@@ -81,14 +100,14 @@ export function createCloudflareTagRepository(clock: () => number = Date.now): T
       return new Set(tags)
     },
     async list(tag) {
-      const records = await load()
-      const films = byFilm(records)
-      // Newest first; for equal times, the one stored later wins (same rule as the local stores).
-      return records
-        .map((r, i) => ({ r, i }))
-        .filter(({ r }) => r.tag === tag && isOnList(films.get(r.tmdbId) ?? new Set(), tag))
-        .sort((a, b) => b.r.createdAt.localeCompare(a.r.createdAt) || b.i - a.i)
-        .map(({ r }) => r.tmdbId)
+      const { records, watchlistOrder } = await fetchAll()
+      const newestFirst = listOf(records, tag)
+      // The watchlist follows the saved order, with films added since then on top (ADR-0041).
+      return tag === 'watchlist' ? [...applySavedOrder(newestFirst, watchlistOrder)] : newestFirst
+    },
+    async reorder(tag, order) {
+      invalidate()
+      return (await call('PATCH', '/api/tags/order', orderSchema, { tag, ids: order })).ids
     },
     async feedExclusions() {
       const excluded = new Set<number>()

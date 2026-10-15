@@ -1,5 +1,6 @@
 // Shared contract suite (ADR-0013): every TagRepository implementation must pass it unchanged.
 import { beforeEach, describe, expect, it } from 'vitest'
+import { ListChangedError } from '../domain/ranking'
 import type { TagRepository } from './TagRepository'
 
 /** `make` receives a deterministic clock so ordering is testable. */
@@ -66,6 +67,51 @@ export function tagRepositoryContract(name: string, make: (now: () => string) =>
       expect(await tags(1)).toEqual(['liked'])
       // Imported picks are applied on top of existing tags, so they win (guest picks are the latest intent).
       expect(await tags(2)).toEqual(['watchlist'])
+    })
+
+    it('saves a watchlist order; newer films go on top of it (ADR-0041)', async () => {
+      for (const id of [1, 2, 3]) await repo.setTag(id, 'watchlist', true)
+      expect(await repo.list('watchlist')).toEqual([3, 2, 1])
+      expect(await repo.reorder('watchlist', [1, 3, 2])).toEqual([1, 3, 2])
+      expect(await repo.list('watchlist')).toEqual([1, 3, 2])
+      // A film added after the reorder goes first, above the chosen order.
+      await repo.setTag(4, 'watchlist', true)
+      expect(await repo.list('watchlist')).toEqual([4, 1, 3, 2])
+      // Other lists stay newest first.
+      await repo.setTag(5, 'liked', true)
+      await repo.setTag(6, 'liked', true)
+      expect(await repo.list('liked')).toEqual([6, 5])
+    })
+
+    it('a film that leaves the watchlist and comes back goes on top', async () => {
+      for (const id of [1, 2, 3]) await repo.setTag(id, 'watchlist', true)
+      await repo.reorder('watchlist', [1, 2, 3])
+      // Seen removes it from the watchlist (tag rules), and its saved place goes with it.
+      await repo.setTag(2, 'seen', true)
+      expect(await repo.list('watchlist')).toEqual([1, 3])
+      await repo.setTag(2, 'watchlist', true)
+      expect(await repo.list('watchlist')).toEqual([2, 1, 3])
+    })
+
+    it('refuses an order that adds, drops or repeats a film, and keeps the list', async () => {
+      for (const id of [1, 2, 3]) await repo.setTag(id, 'watchlist', true)
+      for (const order of [
+        [1, 2, 3, 4],
+        [1, 2],
+        [1, 2, 9],
+        [1, 1, 2],
+      ])
+        await expect(repo.reorder('watchlist', order)).rejects.toBeInstanceOf(ListChangedError)
+      expect(await repo.list('watchlist')).toEqual([3, 2, 1])
+    })
+
+    it('clearing every tag clears the saved order too', async () => {
+      for (const id of [1, 2]) await repo.setTag(id, 'watchlist', true)
+      await repo.reorder('watchlist', [1, 2])
+      await repo.clear()
+      await repo.setTag(1, 'watchlist', true)
+      await repo.setTag(2, 'watchlist', true)
+      expect(await repo.list('watchlist')).toEqual([2, 1])
     })
   })
 }

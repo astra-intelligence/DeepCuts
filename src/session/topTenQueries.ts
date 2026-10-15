@@ -5,10 +5,10 @@
 // store's answer *is* the new list, so it goes straight into the cache with no re-fetch.
 // Reordering (ADR-0041) updates the cache first, so a film moves the moment it's pressed.
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { TopTenChangedError, TopTenFullError, type TopTenList } from '../domain/topTen'
-import { notify } from '../notify'
+import { TopTenFullError } from '../domain/topTen'
 import { useSession } from './SessionContext'
 import { tagScope } from './tagQueries'
+import { useOrderMutation } from './useOrderMutation'
 
 /** The query options for the current session's Top Ten, ready for `useQuery`. */
 function useTopTenQuery() {
@@ -43,45 +43,12 @@ export function useChangeTopTen() {
   })
 }
 
-/** Runs every reorder for a session one after another, so an older order can't land last. */
-const REORDER_SCOPE = 'top-ten-reorder'
-
 /**
- * Saves a new order for the Top Ten (ADR-0041): `useReorderTopTen().mutate(order)`.
- *
- * Optimistic: the cached list becomes `order` at once, and is put back if the save fails, with a
- * toast saying so. If the list changed elsewhere (`TopTenChangedError`), it's re-fetched instead,
- * so the shelf shows what's really stored. Quick presses queue up (the mutation scope), and only
- * the last answer is written to the cache, so the films don't jump back while saves catch up.
+ * Saves a new order for the Top Ten (ADR-0041): `useReorderTopTen().mutate(order)`. Optimistic,
+ * with a rollback or a re-fetch on failure (useOrderMutation).
  */
 export function useReorderTopTen() {
   const { topTen } = useSession()
-  const queryClient = useQueryClient()
   const { queryKey } = useTopTenQuery()
-  const mutationKey = [REORDER_SCOPE, ...queryKey]
-  return useMutation({
-    mutationKey,
-    scope: { id: REORDER_SCOPE },
-    mutationFn: (order: TopTenList) => topTen.reorder(order),
-    onMutate: async (order) => {
-      // Stop a re-fetch in flight from overwriting the new order with the old one.
-      await queryClient.cancelQueries({ queryKey })
-      const previous = queryClient.getQueryData<TopTenList>(queryKey)
-      queryClient.setQueryData(queryKey, order)
-      return { previous }
-    },
-    onSuccess: (list) => {
-      // Later presses are still saving: their order is already in the cache, so leave it.
-      if (queryClient.isMutating({ mutationKey }) > 1) return
-      queryClient.setQueryData(queryKey, list)
-    },
-    onError: (error, _order, context) => {
-      if (error instanceof TopTenChangedError) {
-        notify.error('Your Top Ten changed somewhere else. Here’s the latest order.')
-        return queryClient.invalidateQueries({ queryKey })
-      }
-      queryClient.setQueryData(queryKey, context?.previous)
-      notify.error('Your new order wasn’t saved. Try again.')
-    },
-  })
+  return useOrderMutation(queryKey, (order) => topTen.reorder(order), 'Your Top Ten')
 }

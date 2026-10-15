@@ -2,7 +2,7 @@
 // Top Ten, Watchlist, Discovery (ADR-0033, ADR-0040 §6b).
 //
 // Each shelf is a row of VHS boxes that wraps as its list grows: the whole Top Ten (ADR-0036)
-// with each box's rank on a tab and the next open slot, the latest watchlist films, and
+// with each box's rank on a tab and the next open slot, the first watchlist films, and
 // Discovery's picks. With likes, the picks come from the recommendation scorer (ADR-0026) with a
 // match stamp and the reason why. Without likes, they are popular films (minus disliked ones),
 // with a hint to like a few films. Every box names the film's director and writer, from its
@@ -24,16 +24,15 @@ import { PANELS } from '../components/panels'
 import { SHELF_GRID, ShelfSection } from '../components/ShelfSection'
 import { Ticker } from '../components/Ticker'
 import { useTagQueries } from '../session/tagQueries'
-import { useTopTen } from '../session/topTenQueries'
+import { useReorderTopTen, useTopTen } from '../session/topTenQueries'
 import { HOME_PICKS, LIMITS, useRecommendations } from '../session/useRecommendations'
 
 // Reorder mode's tiles and drag and drop load the first time someone presses "Reorder".
-const TopTenReorder = lazy(() =>
-  import('./TopTenReorder').then((m) => ({ default: m.TopTenReorder })),
-)
+const ReorderList = lazy(() => import('./ReorderList').then((m) => ({ default: m.ReorderList })))
 
-// How many watchlist films Home shows: the same most recent ones the scorer already loads, so
-// the shelf costs no extra calls. My Lists has them all.
+// How many watchlist films Home shows: the first ones in the person's order (newest first until
+// they reorder, ADR-0041), the same ones the scorer already loads, so the shelf costs no extra
+// calls. My Lists has them all.
 const WATCHLIST_PREVIEW = LIMITS.watchlist
 
 /** Home: the headline, then the three shelves (ADR-0033, ADR-0040). */
@@ -71,6 +70,7 @@ function TopTenShelf({ ids }: { ids: readonly number[] }) {
     ids.length >= 2,
     'your Top Ten',
   )
+  const reorderTopTen = useReorderTopTen()
 
   // One details call per film (cached for a day and shared with Detail). Each box appears once
   // its film has loaded; the rank comes from the list, so it stays right even if one film is
@@ -94,7 +94,7 @@ function TopTenShelf({ ids }: { ids: readonly number[] }) {
       {active ? (
         // Until reorder mode's code arrives (once, a moment), the shelf stays as it was.
         <Suspense fallback={<RankedList films={films} />}>
-          <TopTenReorder ids={ids} films={films} announce={announce} />
+          <ReorderList ids={ids} announce={announce} onReorder={reorderTopTen.mutate} />
         </Suspense>
       ) : (
         <RankedList
@@ -133,7 +133,7 @@ function RankedList({ films, openSlot }: { films: CassetteItem[]; openSlot?: num
   )
 }
 
-/** The latest films on the watchlist, each with its ADMIT ONE ticket; My Lists has them all. */
+/** The first films on the watchlist, each with its ADMIT ONE ticket; My Lists has them all. */
 function WatchlistShelf({ ids }: { ids: readonly number[] }) {
   const movies = useQueries({
     queries: ids.slice(0, WATCHLIST_PREVIEW).map((id) => movieQueries.detail(id)),

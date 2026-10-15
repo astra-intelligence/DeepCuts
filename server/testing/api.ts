@@ -12,7 +12,7 @@ import {
   registerVerify,
 } from '../accounts/auth.ts'
 import type { AccountsEnv } from '../accounts/d1.ts'
-import { changeTag, importTags, listTags } from '../accounts/tags.ts'
+import { changeTag, importTags, listTags, reorderWatchlist } from '../accounts/tags.ts'
 import { changeTopTen, listTopTen, saveTopTenOrder } from '../accounts/topTen.ts'
 import { guardApi } from '../apiGuard.ts'
 import { route } from '../http.ts'
@@ -60,6 +60,10 @@ export const ROUTES = {
       PUT: ({ request, env }) => changeTag(request, env),
       DELETE: ({ request, env }) => changeTag(request, env),
     }),
+  ],
+  '/api/tags/order': [
+    'functions/api/tags/order.ts',
+    route<Env>({ PATCH: ({ request, env }) => reorderWatchlist(request, env) }),
   ],
   '/api/tags/import': [
     'functions/api/tags/import.ts',

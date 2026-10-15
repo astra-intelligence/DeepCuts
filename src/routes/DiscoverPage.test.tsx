@@ -7,6 +7,7 @@ import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { delay, http, HttpResponse } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
+import { createLocalTagRepository } from '../adapters/local/LocalTagRepository'
 import { createLocalTopTenRepository } from '../adapters/local/LocalTopTenRepository'
 import { findToast, renderRoute } from '../test/renderRoute'
 import { searchFixture } from '../test/msw/fixtures'
@@ -273,6 +274,21 @@ describe('home', () => {
       'href',
       '/lists?tag=watchlist',
     )
+  })
+
+  it('shows the watchlist in the order you chose on My Lists (ADR-0041)', async () => {
+    const tags = createLocalTagRepository(undefined, undefined, 'account-demo-tags')
+    for (const id of [348, 1091]) await tags.setTag(id, 'watchlist', true)
+    // Newest first would be The Thing, then Alien; the saved order puts Alien first.
+    await tags.reorder('watchlist', [348, 1091])
+    renderRoute('/')
+    const panel = await screen.findByRole('region', { name: 'My Watchlist' })
+    await within(panel).findByRole('link', { name: /^The Thing/ })
+    const films = within(panel)
+      .getAllByRole('link')
+      .map((l) => l.getAttribute('href'))
+      .filter((href) => href?.startsWith('/movie/'))
+    expect(films).toEqual(['/movie/348', '/movie/1091'])
   })
 
   it('leaves disliked films out of the feed (ADR-0017)', async () => {

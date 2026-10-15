@@ -277,6 +277,85 @@ test.describe('reordering the Top Ten (ADR-0041)', () => {
   })
 })
 
+test.describe('reordering the watchlist on My Lists (ADR-0041)', () => {
+  // Signed in to the demo account with three films on the watchlist (Alpha oldest, Charlie
+  // newest), seeded through the new browser context's storage like e2e/fixtures.ts.
+  test.use({
+    storageState: async ({ baseURL }, use) => {
+      const origin = new URL(baseURL ?? 'http://localhost').origin
+      const account = { id: 'demo', name: 'Mike Curts', method: 'demo' }
+      const records = [1, 2, 3].map((tmdbId) => ({
+        tmdbId,
+        tag: 'watchlist',
+        createdAt: `2026-10-0${tmdbId}T00:00:00.000Z`,
+      }))
+      await use({
+        cookies: [],
+        origins: [
+          {
+            origin,
+            localStorage: [
+              { name: 'deepcuts:v1:account', value: JSON.stringify(account) },
+              { name: 'deepcuts:v1:account-demo-tags', value: JSON.stringify(records) },
+            ],
+          },
+        ],
+      })
+    },
+  })
+  test.beforeEach(async ({ page }) => {
+    const titles: Record<string, string> = { '1': 'Alpha', '2': 'Bravo', '3': 'Charlie' }
+    await page.route(/\/api\/tmdb\/movie\/(\d+)(\?.*)?$/, (route) => {
+      const id = /movie\/(\d+)/.exec(route.request().url())?.[1] ?? ''
+      return route.fulfill({ json: { ...movieFixture, id: Number(id), title: titles[id] } })
+    })
+    await page.goto('/lists?tag=watchlist')
+  })
+  const titlesOf = (page: Page) => page.getByRole('main').getByRole('heading', { level: 3 })
+
+  test('works by keyboard and touch at every width, Escape leaves, and it survives a reload', async ({
+    page,
+  }, testInfo) => {
+    const touch = testInfo.project.use.hasTouch === true
+    // Newest first until reordered.
+    await expect(titlesOf(page)).toHaveText(['Charlie', 'Bravo', 'Alpha'])
+    const toggle = page.getByRole('button', { name: 'Reorder' })
+    if (touch) await toggle.tap()
+    else {
+      await toggle.focus()
+      await page.keyboard.press('Enter')
+    }
+    const earlier = page.getByRole('button', { name: 'Move Alpha earlier' })
+    await expect(earlier).toBeVisible()
+    for (const button of await page.getByRole('button', { name: /^Move / }).all()) {
+      const box = await button.boundingBox()
+      expect(box?.width).toBeGreaterThanOrEqual(44)
+      expect(box?.height).toBeGreaterThanOrEqual(44)
+    }
+    await expectNoA11yViolations(page)
+    await expectNoHorizontalOverflow(page)
+
+    if (touch) await earlier.tap()
+    else {
+      await earlier.focus()
+      await page.keyboard.press('Enter')
+    }
+    await expect(titlesOf(page)).toHaveText(['#1 Charlie', '#2 Alpha', '#3 Bravo'])
+    if (!touch) {
+      await expect(earlier).toBeFocused()
+      await page.keyboard.press('Escape')
+      await expect(page.getByRole('button', { name: 'Reorder' })).toBeFocused()
+    }
+
+    await page.reload()
+    await expect(titlesOf(page)).toHaveText(['Charlie', 'Alpha', 'Bravo'])
+    // Home's watchlist shelf follows the same order.
+    await page.goto('/')
+    const shelf = page.getByRole('region', { name: 'My Watchlist' })
+    await expect(shelf.getByRole('heading', { level: 3 })).toHaveText(['Charlie', 'Alpha', 'Bravo'])
+  })
+})
+
 test('a disliked film appears only on the Disliked list, with the tag accent', async ({ page }) => {
   await page.goto('/movie/1091')
   const dislike = page

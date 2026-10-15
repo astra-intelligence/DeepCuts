@@ -30,7 +30,8 @@ import { useTagQueries } from './tagQueries'
 /**
  * How many recent tags of each kind inform the feed (bounds the number of calls). Likes drive the
  * candidates, so they get the most; the watchlist and dislikes only nudge scores, so 5 each is
- * enough (cut from 10 to fit the rate limit, owner 2026-10-07).
+ * enough (cut from 10 to fit the rate limit, owner 2026-10-07). "Recent" for likes and dislikes;
+ * for the watchlist it's the first 5 in the person's own order (ADR-0041), the same 5 Home shows.
  */
 export const LIMITS = { liked: 20, watchlist: 5, disliked: 5 } as const
 /**
