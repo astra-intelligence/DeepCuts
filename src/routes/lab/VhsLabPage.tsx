@@ -1,7 +1,8 @@
 // VHS box lab (/lab/vhs, dev server only): Discover's films as the real VHS box posters
 // (VhsBox), with a control panel to try new values for the shape, finish and motion live.
 //
-// The design was tuned here and approved on 2026-10-09; its values now live in
+// The design was tuned here and approved on 2026-10-09 (shape, finish and angles retuned on
+// 2026-10-15); its values now live in
 // src/components/VhsBox.css and the vhs-box tokens. The lab stays as a tuning tool: it renders the
 // real component and only overrides the `--vhs-*` CSS variables on its wrapper, so what you see
 // here is exactly what Discover would show with those values. It isn't linked from the app,
@@ -18,7 +19,7 @@ import './vhs-lab.css'
 
 /** How the grain mixes with the poster (CSS mix-blend-mode). */
 type GrainBlend = 'normal' | 'multiply' | 'overlay' | 'soft-light' | 'screen'
-/** The grain's color: the approved warm tan, or plain grey, black or white specks. */
+/** The grain's color: warm tan, or plain grey (approved), black or white specks. */
 type GrainTint = 'warm' | 'grey' | 'black' | 'white'
 
 /** Every knob on the control panel. Angles in degrees, lift in px. */
@@ -35,9 +36,9 @@ interface Settings {
   grainSize: number
   grainBlend: GrainBlend
   grainTint: GrainTint
-  /** The soft light falloff over the cover (1 = as approved). */
+  /** The soft light falloff over the cover (1 = the 2026-10-09 strength). */
   matte: number
-  /** The pale rubbed edges on the cover (0 = none, as approved). */
+  /** The pale rubbed edges on the cover (0 = none). */
   wear: number
   /** Depth as a share of the width. */
   depth: number
@@ -63,25 +64,25 @@ interface Settings {
 
 // Starting values: the approved design (src/components/VhsBox.css).
 const DEFAULTS: Settings = {
-  aspect: 1.5,
-  stretch: 0,
+  aspect: 2,
+  stretch: 0.3,
   grainAlpha: 0.35,
-  grainFreq: 1.1,
-  grainOctaves: 2,
+  grainFreq: 0.45,
+  grainOctaves: 3,
   grainSize: 80,
   grainBlend: 'normal',
-  grainTint: 'warm',
-  matte: 1,
-  wear: 0,
-  depth: 0.24,
+  grainTint: 'grey',
+  matte: 0.3,
+  wear: 1.25,
+  depth: 0.195,
   restY: 0,
   restX: 0,
-  leanY: 24,
-  leanX: 12,
-  focusY: 18,
-  focusX: -4,
+  leanY: 31,
+  leanX: 10,
+  focusY: 24,
+  focusX: 0,
   scrollX: 8,
-  lift: 4,
+  lift: 2,
   perspective: 1100,
   scroll: true,
   scrollPreview: false,
@@ -91,7 +92,7 @@ const DEFAULTS: Settings = {
 /** The real proportions of a VHS sleeve: 190 mm tall on a 104 mm face. */
 const SLEEVE = 1.83
 
-/** Each grain tint's RGB, 0 to 1, for the SVG's color matrix ('warm' is the approved tan). */
+/** Each grain tint's RGB, 0 to 1, for the SVG's color matrix ('grey' is the approved one). */
 const TINTS: Record<GrainTint, [number, number, number]> = {
   warm: [0.55, 0.5, 0.42],
   grey: [0.5, 0.5, 0.5],
@@ -211,7 +212,7 @@ type Slider = [keyof Settings, string, number, number, number, string]
 
 const SLIDERS: Record<Section, Slider[]> = {
   shape: [
-    ['aspect', 'Height (× the width)', 1.5, 2, 0.01, ''],
+    ['aspect', 'Height (× the width)', 1.5, 2.4, 0.01, ''],
     ['stretch', 'Stretch (the rest is cropped)', 0, 1, 0.05, ''],
   ],
   finish: [
@@ -359,7 +360,7 @@ function Controls({
     </label>
   )
 
-  // The shape presets: the approved poster shape and a real sleeve's.
+  // The shape presets: the poster's own shape and a real sleeve's.
   const preset = (label: string, aspect: number) => (
     <button
       type="button"
