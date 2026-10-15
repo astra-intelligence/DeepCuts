@@ -402,6 +402,21 @@ describe('home', () => {
     })
   })
 
+  it('drops a pick tagged on its Detail page once you are back on Home', async () => {
+    const user = userEvent.setup()
+    renderRoute('/')
+    // Open the pick, tag it there and save, which closes Detail back to Home.
+    await user.click(await firstPick())
+    const group = await screen.findByRole('group', { name: 'Your tags' })
+    await user.click(within(group).getByRole('button', { name: 'Seen it' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await screen.findByRole('heading', { level: 1, name: 'Your movies, close at hand' })
+    // The shelf is built from the saved tags, not the ones from before the save: the next film
+    // moves up and the tagged one is gone.
+    expect(await firstPick()).toHaveAccessibleName(/^Alien/)
+    expect(screen.queryByRole('link', { name: /^The Thing/ })).not.toBeInTheDocument()
+  })
+
   it.each(['?genres=27,53', '?genres=27;DROP', '?genres='])(
     'ignores %s: favourite genres are gone (ADR-0032)',
     async (qs) => {
