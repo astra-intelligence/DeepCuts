@@ -6,6 +6,7 @@ import { Link } from 'react-router'
 import { releaseYear, type Credits, type MovieSummary } from '../api/tmdb'
 import { genreTone, primaryGenreName } from '../domain/genres'
 import { Because, CreditLines } from './FilmCredits'
+import { quickAction, type QuickAction } from './quickActions'
 import { VhsBox, type VhsBadge } from './VhsBox'
 
 /** A film on a cassette tile, with its match and reasons when it came from the scorer. */
@@ -19,10 +20,16 @@ export interface CassetteItem {
   rank?: number
   /** Show the ADMIT ONE ticket: the film is on the watchlist (Home's watchlist shelf). */
   ticket?: boolean
+  /** A Discovery quick action just done on it (issue #76): stamped over the box until Undo. */
+  stamp?: QuickAction['tag']
 }
 
-/** The box's badge for an item: its rank, its match, or the watchlist ticket, in that order. */
+/**
+ * The box's badge for an item: a quick action's stamp, its rank, its match, or the watchlist
+ * ticket, in that order.
+ */
 function badgeOf(item: CassetteItem): VhsBadge | undefined {
+  if (item.stamp) return { kind: 'stamp', tag: item.stamp, label: quickAction(item.stamp).stamp }
   if (item.rank !== undefined) return { kind: 'rank', rank: item.rank }
   if (item.match !== undefined) return { kind: 'match', match: item.match }
   if (item.ticket) return { kind: 'ticket' }
@@ -61,6 +68,8 @@ export function CassetteCard({ item }: { item: CassetteItem }) {
           {movie.title}
         </h3>
         {item.match !== undefined && <span className="sr-only">{item.match}% match</span>}
+        {/* The stamp is on the hidden box, so say it here too: "On your watchlist." */}
+        {item.stamp && <span className="sr-only">{quickAction(item.stamp).stamp}.</span>}
         <Because titles={item.because?.slice(0, 1)} />
         <p className="mt-1 min-h-5 text-sm text-fg-muted">{meta.join(' · ')}</p>
         <CreditLines credits={item.credits} />
