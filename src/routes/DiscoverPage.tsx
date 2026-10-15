@@ -8,7 +8,7 @@
 // with a hint to like a few films. Every box names the film's director and writer, from its
 // details (the same cached call Detail makes). The Top Ten shelf has a reorder mode (ADR-0041).
 import { useQueries, useQuery } from '@tanstack/react-query'
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense } from 'react'
 import { Link } from 'react-router'
 import { movieQueries } from '../api/queries'
 import { creditsOf, summaryOf } from '../api/tmdb'
@@ -18,6 +18,8 @@ import { CassetteCard, type CassetteItem } from '../components/CassetteCard'
 import { EmptySlot } from '../components/EmptySlot'
 import { focusHeaderSearch } from '../components/headerSearch'
 import { PageHeading } from '../components/PageHeading'
+import { ReorderStatus, ReorderToggle } from '../components/ReorderToggle'
+import { useReorderMode } from '../components/useReorderMode'
 import { PANELS } from '../components/panels'
 import { SHELF_GRID, ShelfSection } from '../components/ShelfSection'
 import { Ticker } from '../components/Ticker'
@@ -64,12 +66,11 @@ export function HomePage() {
  * films, "Reorder" switches the shelf to reorder mode (ADR-0041) until "Done".
  */
 function TopTenShelf({ ids }: { ids: readonly number[] }) {
-  const [reordering, setReordering] = useState(false)
-  // What the polite live region last said: entering and leaving reorder mode, and each move.
-  const [message, setMessage] = useState('')
   // A single film has nowhere to move (and a list can shrink in another tab mid-reorder).
-  const canReorder = ids.length >= 2
-  const active = reordering && canReorder
+  const { active, toggle, message, announce, toggleRef, scopeRef } = useReorderMode(
+    ids.length >= 2,
+    'your Top Ten',
+  )
 
   // One details call per film (cached for a day and shared with Detail). Each box appears once
   // its film has loaded; the rank comes from the list, so it stays right even if one film is
@@ -86,35 +87,14 @@ function TopTenShelf({ ids }: { ids: readonly number[] }) {
       feature={1}
       title={PANELS['top-ten'].title}
       // No "3 of 10 ranked" count (owner, 2026-10-13): the dashed rule runs to the edge instead.
-      // The one action is the reorder toggle. Its label says what pressing it does next, and
-      // focus stays on it, so "Done" is right where "Reorder" was.
-      meta={
-        canReorder && (
-          <button
-            type="button"
-            onClick={() => {
-              setReordering(!active)
-              setMessage(
-                active
-                  ? 'Done reordering.'
-                  : 'Reordering your Top Ten. Use each film’s Move earlier and Move later buttons, or drag a film onto another.',
-              )
-            }}
-            className="flex min-h-11 items-center justify-center border-2 border-button-secondary-border bg-button-secondary-bg px-5 font-display text-base tracking-widest text-button-secondary-fg uppercase hover:border-accent"
-          >
-            {active ? 'Done' : 'Reorder'}
-          </button>
-        )
-      }
+      ref={scopeRef}
+      meta={ids.length >= 2 && <ReorderToggle ref={toggleRef} active={active} onPress={toggle} />}
     >
-      {/* Always in the page, so screen readers announce its changes (WCAG 4.1.3). */}
-      <p role="status" className="sr-only">
-        {message}
-      </p>
+      <ReorderStatus message={message} />
       {active ? (
         // Until reorder mode's code arrives (once, a moment), the shelf stays as it was.
         <Suspense fallback={<RankedList films={films} />}>
-          <TopTenReorder ids={ids} films={films} announce={setMessage} />
+          <TopTenReorder ids={ids} films={films} announce={announce} />
         </Suspense>
       ) : (
         <RankedList

@@ -188,6 +188,26 @@ describe('home', () => {
       ])
     })
 
+    it('Escape leaves reorder mode and puts focus on Reorder', async () => {
+      await seed()
+      const user = userEvent.setup()
+      renderRoute('/')
+      const panel = await screen.findByRole('region', { name: 'Your Top Ten of All Time' })
+      await within(panel).findByRole('link', { name: /^#3 / })
+      await user.click(within(panel).getByRole('button', { name: 'Reorder' }))
+      within(panel).getByRole('button', { name: 'Move Alien later' }).focus()
+      await user.keyboard('{Escape}')
+      const toggle = within(panel).getByRole('button', { name: 'Reorder' })
+      expect(toggle).toHaveFocus()
+      expect(within(panel).getByRole('status')).toHaveTextContent('Done reordering.')
+      expect(within(panel).queryByRole('button', { name: /^Move / })).not.toBeInTheDocument()
+      // Escape outside the shelf (here, with focus on the page) changes nothing.
+      await user.click(toggle)
+      ;(document.activeElement as HTMLElement).blur()
+      await user.keyboard('{Escape}')
+      expect(within(panel).getByRole('button', { name: 'Done' })).toBeInTheDocument()
+    })
+
     it('shows the latest list when it changed in another tab mid-reorder', async () => {
       const topTen = await seed()
       const user = userEvent.setup()
