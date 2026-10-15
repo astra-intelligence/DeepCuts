@@ -63,7 +63,20 @@ export function useSetTag() {
       queryClient.setQueryData(tagQueries(tags, tagScope(session)).forMovie(tmdbId).queryKey, next)
       // …then refresh lists, counts and exclusions. Returning the promise keeps the mutation
       // "pending" until that's done.
-      return queryClient.invalidateQueries({ queryKey: ['tags', tagScope(session)] })
+      const scope = tagScope(session)
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['tags', scope] }),
+        // Invalidating only re-fetches what's on screen. Detail is its own route, so Home's lists
+        // aren't, and Home would build Discovery from the old ones and hold that shelf, tagged
+        // film and all, before their re-fetch landed. So fetch the lists, counts and exclusions
+        // now, while Save is still pending. Per-film tags are skipped: there can be dozens
+        // cached, and each refreshes when its page opens.
+        queryClient.refetchQueries({
+          queryKey: ['tags', scope],
+          type: 'inactive',
+          predicate: (query) => query.queryKey[2] !== 'movie',
+        }),
+      ])
     },
   })
 }
