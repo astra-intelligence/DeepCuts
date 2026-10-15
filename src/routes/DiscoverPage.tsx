@@ -6,8 +6,9 @@
 // Discovery's picks. With likes, the picks come from the recommendation scorer (ADR-0026) with a
 // match stamp and the reason why. Without likes, they are popular films (minus disliked ones),
 // with a hint to like a few films. Every box names the film's director and writer, from its
-// details (the same cached call Detail makes).
+// details (the same cached call Detail makes). The Top Ten shelf has a reorder mode (ADR-0041).
 import { useQueries, useQuery } from '@tanstack/react-query'
+import { lazy, Suspense, useState } from 'react'
 import { Link } from 'react-router'
 import { movieQueries } from '../api/queries'
 import { creditsOf, summaryOf } from '../api/tmdb'
@@ -23,6 +24,11 @@ import { Ticker } from '../components/Ticker'
 import { useTagQueries } from '../session/tagQueries'
 import { useTopTen } from '../session/topTenQueries'
 import { HOME_PICKS, LIMITS, useRecommendations } from '../session/useRecommendations'
+
+// Reorder mode's tiles and drag and drop load the first time someone presses "Reorder".
+const TopTenReorder = lazy(() =>
+  import('./TopTenReorder').then((m) => ({ default: m.TopTenReorder })),
+)
 
 // How many watchlist films Home shows: the same most recent ones the scorer already loads, so
 // the shelf costs no extra calls. My Lists has them all.
@@ -54,10 +60,17 @@ export function HomePage() {
 
 /**
  * The person's Top Ten (ADR-0036), all of it, in their order: #1 first, then the next open slot
- * until all ten are ranked. Films are added and removed from their Detail page; reordering comes
- * with the Top Ten management screen.
+ * until all ten are ranked. Films are added and removed from their Detail page. With two or more
+ * films, "Reorder" switches the shelf to reorder mode (ADR-0041) until "Done".
  */
 function TopTenShelf({ ids }: { ids: readonly number[] }) {
+  const [reordering, setReordering] = useState(false)
+  // What the polite live region last said: entering and leaving reorder mode, and each move.
+  const [message, setMessage] = useState('')
+  // A single film has nowhere to move (and a list can shrink in another tab mid-reorder).
+  const canReorder = ids.length >= 2
+  const active = reordering && canReorder
+
   // One details call per film (cached for a day and shared with Detail). Each box appears once
   // its film has loaded; the rank comes from the list, so it stays right even if one film is
   // slow or missing.
@@ -73,27 +86,70 @@ function TopTenShelf({ ids }: { ids: readonly number[] }) {
       feature={1}
       title={PANELS['top-ten'].title}
       // No "3 of 10 ranked" count (owner, 2026-10-13): the dashed rule runs to the edge instead.
+      // The one action is the reorder toggle. Its label says what pressing it does next, and
+      // focus stays on it, so "Done" is right where "Reorder" was.
+      meta={
+        canReorder && (
+          <button
+            type="button"
+            onClick={() => {
+              setReordering(!active)
+              setMessage(
+                active
+                  ? 'Done reordering.'
+                  : 'Reordering your Top Ten. Use each film’s Move earlier and Move later buttons, or drag a film onto another.',
+              )
+            }}
+            className="flex min-h-11 items-center justify-center border-2 border-button-secondary-border bg-button-secondary-bg px-5 font-display text-base tracking-widest text-button-secondary-fg uppercase hover:border-accent"
+          >
+            {active ? 'Done' : 'Reorder'}
+          </button>
+        )
+      }
     >
-      {/* An ordered list: the order is the meaning, and screen readers announce it. The open
-          slot is the list's next place, so it's an item too. */}
-      <ol className={SHELF_GRID}>
-        {films.map((item) => (
-          <li key={item.movie.id} className="flex">
-            <CassetteCard item={item} />
-          </li>
-        ))}
-        {ids.length < TOP_TEN_SIZE && (
-          <li>
-            <EmptySlot
-              mark={`#${ids.length + 1}`}
-              title="Add a film"
-              note="Slot still open. Find a film, then add it from its page."
-              onPress={focusHeaderSearch}
-            />
-          </li>
-        )}
-      </ol>
+      {/* Always in the page, so screen readers announce its changes (WCAG 4.1.3). */}
+      <p role="status" className="sr-only">
+        {message}
+      </p>
+      {active ? (
+        // Until reorder mode's code arrives (once, a moment), the shelf stays as it was.
+        <Suspense fallback={<RankedList films={films} />}>
+          <TopTenReorder ids={ids} films={films} announce={setMessage} />
+        </Suspense>
+      ) : (
+        <RankedList
+          films={films}
+          openSlot={ids.length < TOP_TEN_SIZE ? ids.length + 1 : undefined}
+        />
+      )}
     </ShelfSection>
+  )
+}
+
+/**
+ * The Top Ten as linked tiles, then the next open slot (`openSlot`, its rank) when there's room.
+ * An ordered list: the order is the meaning, and screen readers announce it. The open slot is
+ * the list's next place, so it's an item too.
+ */
+function RankedList({ films, openSlot }: { films: CassetteItem[]; openSlot?: number | undefined }) {
+  return (
+    <ol className={SHELF_GRID}>
+      {films.map((item) => (
+        <li key={item.movie.id} className="flex">
+          <CassetteCard item={item} />
+        </li>
+      ))}
+      {openSlot !== undefined && (
+        <li>
+          <EmptySlot
+            mark={`#${openSlot}`}
+            title="Add a film"
+            note="Slot still open. Find a film, then add it from its page."
+            onPress={focusHeaderSearch}
+          />
+        </li>
+      )}
+    </ol>
   )
 }
 

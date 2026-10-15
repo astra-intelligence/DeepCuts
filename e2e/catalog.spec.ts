@@ -2,6 +2,7 @@
 // axe accessibility scan with no sideways scrolling, and the main journeys work by keyboard.
 // TMDB is never called; e2e/fixtures.ts answers every request with fixed data.
 import type { Page } from '@playwright/test'
+import { movieFixture } from '../src/test/msw/fixtures'
 import { expect, expectNoA11yViolations, expectNoHorizontalOverflow, test } from './fixtures'
 
 // Sonner's toast area (src/notify.ts): action outcomes ("Saved.", "Signed in as Mike.") show here.
@@ -187,6 +188,93 @@ test('detail tags toggle and save by keyboard, all at 44px or more', async ({ pa
     page.getByRole('heading', { level: 1, name: 'Your movies, close at hand' }),
   ).toBeFocused()
   await expectNoA11yViolations(page)
+})
+
+test.describe('reordering the Top Ten (ADR-0041)', () => {
+  // Signed in to the demo account with a Top Ten of three, seeded the way e2e/fixtures.ts signs
+  // in: through the new browser context's storage.
+  test.use({
+    storageState: async ({ baseURL }, use) => {
+      const origin = new URL(baseURL ?? 'http://localhost').origin
+      const account = { id: 'demo', name: 'Mike Curts', method: 'demo' }
+      await use({
+        cookies: [],
+        origins: [
+          {
+            origin,
+            localStorage: [
+              { name: 'deepcuts:v1:account', value: JSON.stringify(account) },
+              { name: 'deepcuts:v1:account-demo-top-ten', value: JSON.stringify([1, 2, 3]) },
+            ],
+          },
+        ],
+      })
+    },
+  })
+  // Three films, each with its own title (the shared fixture answers every id as The Thing).
+  test.beforeEach(async ({ page }) => {
+    const titles: Record<string, string> = { '1': 'Alpha', '2': 'Bravo', '3': 'Charlie' }
+    await page.route(/\/api\/tmdb\/movie\/(\d+)(\?.*)?$/, (route) => {
+      const id = /movie\/(\d+)/.exec(route.request().url())?.[1] ?? ''
+      return route.fulfill({ json: { ...movieFixture, id: Number(id), title: titles[id] } })
+    })
+    await page.goto('/')
+  })
+  const shelf = (page: Page) => page.getByRole('region', { name: 'Your Top Ten of All Time' })
+  const titlesOf = (page: Page) => shelf(page).getByRole('heading', { level: 3 })
+
+  test('works by keyboard and touch-sized buttons at every width, and survives a reload', async ({
+    page,
+  }, testInfo) => {
+    // On the touch project, tap like a phone; elsewhere, use the keyboard alone.
+    const touch = testInfo.project.use.hasTouch === true
+    // Before reordering the rank is part of each film's link, not its heading.
+    await expect(titlesOf(page)).toHaveText(['Alpha', 'Bravo', 'Charlie'])
+    const toggle = shelf(page).getByRole('button', { name: 'Reorder' })
+    if (touch) await toggle.tap()
+    else {
+      await toggle.focus()
+      await page.keyboard.press('Enter')
+    }
+    const earlier = shelf(page).getByRole('button', { name: 'Move Charlie earlier' })
+    await expect(earlier).toBeVisible()
+    // Every move button is a 44px target, and reorder mode still fits 320px without scrolling.
+    for (const button of await shelf(page)
+      .getByRole('button', { name: /^Move / })
+      .all()) {
+      const box = await button.boundingBox()
+      expect(box?.width).toBeGreaterThanOrEqual(44)
+      expect(box?.height).toBeGreaterThanOrEqual(44)
+    }
+    await expectNoA11yViolations(page)
+    await expectNoHorizontalOverflow(page)
+
+    if (touch) await earlier.tap()
+    else {
+      await earlier.focus()
+      await page.keyboard.press('Enter')
+    }
+    await expect(titlesOf(page)).toHaveText(['#1 Alpha', '#2 Charlie', '#3 Bravo'])
+    await expect(shelf(page).getByRole('status')).toHaveText('Charlie moved to #2.')
+    if (!touch) await expect(earlier).toBeFocused()
+
+    await page.reload()
+    await expect(titlesOf(page)).toHaveText(['Alpha', 'Charlie', 'Bravo'])
+  })
+
+  test('a film dragged onto another takes its place', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop-1280', 'Mouse drag is checked once, on desktop')
+    await shelf(page).getByRole('button', { name: 'Reorder' }).click()
+    const tile = (title: string) =>
+      shelf(page)
+        .getByRole('listitem')
+        .filter({ has: page.getByRole('heading', { name: title }) })
+    await expect(tile('Charlie')).toBeVisible()
+    // Drop Charlie on Alpha: Charlie becomes #1, and the others move down one place.
+    await tile('Charlie').locator('[draggable]').dragTo(tile('Alpha').locator('[draggable]'))
+    await expect(titlesOf(page)).toHaveText(['#1 Charlie', '#2 Alpha', '#3 Bravo'])
+    await expect(shelf(page).getByRole('status')).toHaveText('Charlie moved to #1.')
+  })
 })
 
 test('a disliked film appears only on the Disliked list, with the tag accent', async ({ page }) => {

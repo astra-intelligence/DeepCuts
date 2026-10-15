@@ -1,14 +1,14 @@
 // Tests for Home (signed in): its three shelves in order (ADR-0040), the Top Ten in its ranked
-// order with the next open slot (ADR-0036), the ticker, and the
+// order with the next open slot (ADR-0036) and its reorder mode (ADR-0041), the ticker, and the
 // Discovery panel: popular films without likes, scored picks with a match and the reason with
 // likes.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { delay, http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createLocalTopTenRepository } from '../adapters/local/LocalTopTenRepository'
-import { renderRoute } from '../test/renderRoute'
+import { findToast, renderRoute } from '../test/renderRoute'
 import { searchFixture } from '../test/msw/fixtures'
 import { server } from '../test/msw/server'
 
@@ -60,7 +60,9 @@ describe('home', () => {
     )
 
     renderRoute('/')
-    expect(await screen.findByRole('status')).toHaveTextContent('Finding films…')
+    // Discovery's own status (the Top Ten shelf has one too, for reorder mode).
+    const discovery = await screen.findByRole('region', { name: 'Discover Some Deep Cuts' })
+    expect(await within(discovery).findByRole('status')).toHaveTextContent('Finding films…')
     expect(document.querySelector('[data-loading-section="grid"]')).toBeInTheDocument()
     expect(await firstPick()).toHaveAccessibleName(/^The Thing/)
   })
@@ -117,6 +119,114 @@ describe('home', () => {
     expect(links[0]).toHaveAccessibleName(/^#1 Alien/)
     // The rank is also the box's mustard tab (decorative; the caption says it to screen readers).
     expect(links[0]?.querySelector('[aria-hidden="true"]')).toHaveTextContent('#1')
+  })
+
+  describe('reordering the Top Ten (ADR-0041)', () => {
+    /** Seeds the demo account's Top Ten: Alien, The Thing, then a third film (790). */
+    async function seed() {
+      const topTen = createLocalTopTenRepository('account-demo-top-ten')
+      for (const id of [348, 1091, 790]) await topTen.add(id)
+      return topTen
+    }
+    /** The films' titles on the shelf, in the order shown. */
+    const titles = (panel: HTMLElement) =>
+      within(panel)
+        .getAllByRole('heading', { level: 3 })
+        .map((h) => h.textContent?.replace(/^#\d+ /, ''))
+
+    it('offers no reorder with one film', async () => {
+      await createLocalTopTenRepository('account-demo-top-ten').add(348)
+      renderRoute('/')
+      const panel = await screen.findByRole('region', { name: 'Your Top Ten of All Time' })
+      await within(panel).findByRole('link', { name: /^#1 Alien/ })
+      expect(within(panel).queryByRole('button', { name: 'Reorder' })).not.toBeInTheDocument()
+    })
+
+    it('moves a film by keyboard alone, says where it went, keeps focus and saves', async () => {
+      const topTen = await seed()
+      const user = userEvent.setup()
+      renderRoute('/')
+      const panel = await screen.findByRole('region', { name: 'Your Top Ten of All Time' })
+      await within(panel).findByRole('link', { name: /^#3 / })
+      const third = titles(panel)[2] as string
+
+      // Tab to "Reorder" and press Enter: the tiles become move buttons, and that's announced.
+      const toggle = within(panel).getByRole('button', { name: 'Reorder' })
+      toggle.focus()
+      await user.keyboard('{Enter}')
+      expect(toggle).toHaveTextContent('Done')
+      expect(within(panel).getByRole('status')).toHaveTextContent(/^Reordering your Top Ten/)
+      const earlier = await within(panel).findByRole('button', { name: `Move ${third} earlier` })
+      // The open "Add a film" slot and the links step aside while reordering.
+      expect(within(panel).queryByRole('link')).not.toBeInTheDocument()
+      expect(within(panel).queryByRole('button', { name: /Add a film/ })).not.toBeInTheDocument()
+      // The first film can't go earlier, and the last can't go later.
+      expect(within(panel).queryByRole('button', { name: 'Move Alien earlier' })).toBeNull()
+      expect(within(panel).queryByRole('button', { name: `Move ${third} later` })).toBeNull()
+
+      earlier.focus()
+      await user.keyboard('{Enter}')
+      await waitFor(() => expect(titles(panel)).toEqual(['Alien', third, 'The Thing']))
+      expect(within(panel).getByRole('status')).toHaveTextContent(`${third} moved to #2.`)
+      expect(within(panel).getByRole('button', { name: `Move ${third} earlier` })).toHaveFocus()
+
+      // Once it's #1 there's no "earlier" button, so focus lands on its "later" button.
+      await user.keyboard('{Enter}')
+      await waitFor(() => expect(titles(panel)).toEqual([third, 'Alien', 'The Thing']))
+      expect(within(panel).getByRole('status')).toHaveTextContent(`${third} moved to #1.`)
+      expect(within(panel).getByRole('button', { name: `Move ${third} later` })).toHaveFocus()
+      expect(await topTen.list()).toEqual([790, 348, 1091])
+
+      // "Done" brings the links back in the new order.
+      await user.click(toggle)
+      expect(within(panel).getByRole('status')).toHaveTextContent('Done reordering.')
+      const links = within(panel).getAllByRole('link')
+      expect(links.map((l) => l.getAttribute('href'))).toEqual([
+        '/movie/790',
+        '/movie/348',
+        '/movie/1091',
+      ])
+    })
+
+    it('shows the latest list when it changed in another tab mid-reorder', async () => {
+      const topTen = await seed()
+      const user = userEvent.setup()
+      renderRoute('/')
+      const panel = await screen.findByRole('region', { name: 'Your Top Ten of All Time' })
+      await within(panel).findByRole('link', { name: /^#3 / })
+      await user.click(within(panel).getByRole('button', { name: 'Reorder' }))
+      const later = await within(panel).findByRole('button', { name: 'Move Alien later' })
+      // Another tab removes The Thing, so this tab's new order no longer fits the stored list.
+      await topTen.remove(1091)
+      await user.click(later)
+      expect(
+        await findToast('Your Top Ten changed somewhere else. Here’s the latest order.'),
+      ).toBeInTheDocument()
+      await waitFor(() => expect(titles(panel)).toHaveLength(2))
+      expect(await topTen.list()).toEqual([348, 790])
+    })
+
+    it('puts the order back and says so when the save fails', async () => {
+      const topTen = await seed()
+      const user = userEvent.setup()
+      renderRoute('/')
+      const panel = await screen.findByRole('region', { name: 'Your Top Ten of All Time' })
+      await within(panel).findByRole('link', { name: /^#3 / })
+      await user.click(within(panel).getByRole('button', { name: 'Reorder' }))
+      const later = await within(panel).findByRole('button', { name: 'Move Alien later' })
+      // Imitate a browser that refuses to store anything (e.g. storage full).
+      const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new Error('QuotaExceededError')
+      })
+      try {
+        await user.click(later)
+        expect(await findToast('Your new order wasn’t saved. Try again.')).toBeInTheDocument()
+        expect(titles(panel).slice(0, 2)).toEqual(['Alien', 'The Thing'])
+      } finally {
+        setItem.mockRestore()
+      }
+      expect(await topTen.list()).toEqual([348, 1091, 790])
+    })
   })
 
   it('starts the watchlist shelf with an empty slot that sends you to search', async () => {
@@ -193,7 +303,8 @@ describe('home with likes (ADR-0026)', () => {
     // with The Thing, which lifts it to the top spot.
     expect(feature).toHaveTextContent('The Fog')
     // Picks only appear once both passes are in, so the top pick never changes under you.
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    const discovery = screen.getByRole('region', { name: 'Discover Some Deep Cuts' })
+    expect(within(discovery).queryByRole('status')).not.toBeInTheDocument()
     // Tiles name the director and writer; the old "Directed by X, like Y" reason is gone.
     await waitFor(() => expect(feature).toHaveTextContent('Director: John Carpenter'))
     expect(feature).not.toHaveTextContent('Directed by')
