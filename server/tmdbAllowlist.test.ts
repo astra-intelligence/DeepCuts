@@ -41,6 +41,15 @@ describe('resolveTmdbRequest', () => {
     ['discover/movie', 'with_keywords=-1'],
     ['collection/9735', 'page=1'],
     ['discover/movie', 'sort_by=revenue.desc'],
+    // The starter shelf's bounds (ADR-0042): counts, ratings and real dates only.
+    ['discover/movie', 'vote_count.lte=-1'],
+    ['discover/movie', 'vote_count.lte=100001'],
+    ['discover/movie', 'vote_average.gte=11'],
+    ['discover/movie', 'vote_average.gte=seven'],
+    ['discover/movie', 'primary_release_date.lte=2015-02-31'],
+    ['discover/movie', 'primary_release_date.lte=2015'],
+    ['discover/movie', 'primary_release_date.lte=1800-01-01'],
+    ['discover/movie', 'primary_release_date.gte=2015-12-31'],
     ['movie/603', 'append_to_response=videos'],
     ['movie/603', 'append_to_response=release_dates,images'],
     ['movie/603', 'append_to_response=recommendations,recommendations'],
@@ -85,6 +94,25 @@ describe('resolveTmdbRequest', () => {
       q('with_keywords=12339&sort_by=vote_average.desc&vote_count.gte=100'),
     )
     expect(r.ok && r.request.params.get('with_keywords')).toBe('12339')
+  })
+
+  it('allows the deep-cuts starter query (ADR-0042)', () => {
+    const r = resolveTmdbRequest(
+      'discover/movie',
+      q(
+        'vote_count.gte=200&vote_count.lte=3000&vote_average.gte=7' +
+          '&primary_release_date.lte=2016-12-31&sort_by=popularity.desc&page=4',
+      ),
+    )
+    expect(r.ok && Object.fromEntries(r.request.params)).toEqual({
+      'vote_count.gte': '200',
+      'vote_count.lte': '3000',
+      'vote_average.gte': '7',
+      'primary_release_date.lte': '2016-12-31',
+      sort_by: 'popularity.desc',
+      page: '4',
+      include_adult: 'false',
+    })
   })
 
   it('rejects ids beyond the allowed range', () => {

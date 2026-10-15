@@ -1,6 +1,6 @@
 // Tests for Home (signed in): its three shelves in order (ADR-0040), the Top Ten in its ranked
 // order with the next open slot (ADR-0036) and its reorder mode (ADR-0041), the ticker, and the
-// Discovery panel: popular films without likes, scored picks with a match and the reason with
+// Discovery panel: the deep-cuts starter shelf without likes (ADR-0042), scored picks with a match and the reason with
 // likes, and the quick actions on each pick (issue #76).
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -50,6 +50,23 @@ describe('home', () => {
     const { router } = renderRoute('/discover')
     await screen.findByRole('heading', { level: 1, name: 'Your movies, close at hand' })
     expect(router.state.location.pathname).toBe('/')
+  })
+
+  it('starts a new account on acclaimed, lesser-known older films, not popular ones (ADR-0042)', async () => {
+    let url: URL | undefined
+    server.use(
+      http.get('/api/tmdb/discover/movie', ({ request }) => {
+        url = new URL(request.url)
+        return HttpResponse.json(searchFixture)
+      }),
+    )
+    renderRoute('/')
+    expect(await firstPick()).toHaveAccessibleName(/^The Thing/)
+    // The vote band that keeps blockbusters out, on one of the first ten pages.
+    expect(url?.searchParams.get('vote_count.lte')).toBe('3000')
+    expect(url?.searchParams.get('vote_average.gte')).toBe('7')
+    expect(Number(url?.searchParams.get('page'))).toBeGreaterThanOrEqual(1)
+    expect(Number(url?.searchParams.get('page'))).toBeLessThanOrEqual(10)
   })
 
   it('reserves the picks while the film list loads', async () => {
@@ -351,11 +368,11 @@ describe('home', () => {
 
     it('undoes from the toast too, putting back the tags the film had', async () => {
       const user = userEvent.setup()
-      // Alien is already marked seen, so it stays out of the popular picks (it's tagged).
+      // Alien is already marked seen, so it stays out of the starter picks (it's tagged).
       const tags = createLocalTagRepository(undefined, undefined, 'account-demo-tags')
       await tags.setTag(348, 'seen', true)
       renderRoute('/')
-      // Tagged films leave the popular picks, so seen Alien isn't offered; use The Thing.
+      // Tagged films leave the starter picks, so seen Alien isn't offered; use The Thing.
       expect(screen.queryByRole('link', { name: /^Alien/ })).not.toBeInTheDocument()
       const tile = await pickTile(/^The Thing/)
       await user.click(within(tile).getByRole('button', { name: 'Not for me The Thing' }))

@@ -6,6 +6,9 @@ import { queryOptions } from '@tanstack/react-query'
 import { tmdb } from './tmdb'
 
 const HOUR = 60 * 60 * 1000
+// The starter shelf picks from TMDB's first ten pages of deep cuts (ADR-0042): about 200 films,
+// the better-known end of the ~120 pages, so newcomers meet films they may recognise.
+const DEEP_CUT_PAGES = 10
 
 // Movie metadata rarely changes, so TMDB queries stay fresh for a long time (ADR-0015).
 export const movieQueries = {
@@ -22,6 +25,18 @@ export const movieQueries = {
     queryOptions({
       queryKey: ['tmdb', 'discover'],
       queryFn: ({ signal }) => tmdb.discover(signal),
+      staleTime: HOUR,
+    }),
+  /**
+   * Discovery's starter shelf before any likes (ADR-0042): one random page of the first ten, so
+   * new visits see different films. The page is picked when the query runs, so the shelf holds
+   * still for the hour the result stays fresh.
+   */
+  deepCuts: () =>
+    queryOptions({
+      queryKey: ['tmdb', 'deep-cuts'],
+      queryFn: ({ signal }) =>
+        tmdb.deepCuts(1 + Math.floor(Math.random() * DEEP_CUT_PAGES), signal),
       staleTime: HOUR,
     }),
   /** Well-rated films with one keyword, for the scorer's keyword candidates (ADR-0038). */
