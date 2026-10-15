@@ -13,7 +13,8 @@ import { HOME_PICKS, LIMITS, MAX_SERIES, RERANK } from './useRecommendations'
 // Home's Discovery shelf: each pick needs its details for the credit lines. Counted in full: most
 // are already loaded by the re-rank, but an explore slot can come from outside it.
 const HOME_CARDS = HOME_PICKS
-// Home's Top Ten shelf: one details call per ranked film, which may not be tagged. (The watchlist
+// Home's Top Ten shelf: one details call per ranked film, which may not be tagged. The scorer
+// reads the same cached details for the Top Ten's taste (ADR-0043), so that adds nothing. (The watchlist
 // shelf shows the films the scorer already loads, LIMITS.watchlist, so it adds nothing.)
 const TOP_TEN = TOP_TEN_SIZE
 // Other calls a first load can make: the popular feed, the session check, and the account's

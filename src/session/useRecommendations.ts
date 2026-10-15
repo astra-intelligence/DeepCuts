@@ -1,5 +1,8 @@
-// Feeds the scorer (ADR-0026, ADR-0028, ADR-0032, ADR-0037) from the person's tags and cached
-// TMDB data.
+// Feeds the scorer (ADR-0026, ADR-0028, ADR-0032, ADR-0037, ADR-0043) from the person's tags,
+// their Top Ten and cached TMDB data.
+//
+// The Top Ten (ADR-0043) counts as extra likes: each Top Ten film is a liked film that weighs
+// TOP_TEN_WEIGHT, whether or not it also has the liked tag, and is never suggested back.
 //
 // Two passes:
 // 1. One details call per tagged film (with recommended and similar films, keywords and credits
@@ -15,6 +18,7 @@ import { crewOf, releaseYear, type MovieDetail, type MovieSummary } from '../api
 import {
   keywordsToSearch,
   recommend,
+  TOP_TEN_WEIGHT,
   type FilmDetails,
   type Pick,
   type RecommendOptions,
@@ -22,8 +26,9 @@ import {
   type TasteInput,
 } from '../domain/scorer'
 import { useTagQueries } from './tagQueries'
+import { useTopTen } from './topTenQueries'
 
-// These three caps bound how many proxy calls a first Discover load makes, which must stay well
+// These caps bound how many proxy calls a first Discover load makes, which must stay well
 // under the per-client rate limit (workers/rate-limit/wrangler.toml). feedBudget.test.ts adds
 // them up and fails if a change here would push a heavy profile's first load over it.
 
@@ -82,21 +87,28 @@ function toScorerFilm(m: MovieSummary | MovieDetail): ScorerFilm {
 
 /** The person's taste, loaded once and scored as often as needed (Discover, the weights lab). */
 export interface Taste {
+  /** True when there's anything to recommend from: a liked film or a Top Ten film (ADR-0043). */
   hasLikes: boolean
   loading: boolean
   /** Scores the taste, keeping picks whose TMDB summary is known (for posters and links). */
   score: (options?: RecommendOptions) => Recommendation[]
 }
 
-/** Loads the current person's taste (their recent tags plus each tagged film's details). */
+/**
+ * Loads the current person's taste: their recent tags and their Top Ten, plus each film's details.
+ */
 export function useTaste(): Taste {
   const tagQueries = useTagQueries()
+  // The whole Top Ten (at most ten films), in rank order. Home's Top Ten shelf loads the same
+  // details, so on Home these cost no extra calls (feedBudget.test.ts already counts them).
+  const topTenQuery = useTopTen()
+  const topTen = topTenQuery.data ?? []
   const liked = (useQuery(tagQueries.list('liked')).data ?? []).slice(0, LIMITS.liked)
   const wanted = (useQuery(tagQueries.list('watchlist')).data ?? []).slice(0, LIMITS.watchlist)
   const disliked = (useQuery(tagQueries.list('disliked')).data ?? []).slice(0, LIMITS.disliked)
   const tagged = useQuery(tagQueries.all()).data
 
-  const ids = [...new Set([...liked, ...wanted, ...disliked])]
+  const ids = [...new Set([...topTen, ...liked, ...wanted, ...disliked])]
   // One details call per tagged film, all in parallel; already-cached films cost nothing.
   const details = useQueries({ queries: ids.map((id) => movieQueries.detail(id)) })
   const byId = new Map<number, MovieDetail>()
@@ -106,7 +118,11 @@ export function useTaste(): Taste {
   })
   const moviesFor = (list: number[]) => list.flatMap((id) => byId.get(id) ?? [])
 
-  const likedMovies = moviesFor(liked)
+  // Every film that counts as a like: the Top Ten first (the strongest signal, so their series
+  // come first under MAX_SERIES), then liked films not already in it. A film that is both counts
+  // once, at the Top Ten weight.
+  const inTopTen = new Set(topTen)
+  const likedMovies = moviesFor([...new Set([...topTen, ...liked])])
   // The series of your liked films (ADR-0032): one cached call each, newest likes first.
   const seriesIds = [
     ...new Set(likedMovies.flatMap((m) => m.belongs_to_collection?.id ?? [])),
@@ -127,6 +143,7 @@ export function useTaste(): Taste {
   const tags = {
     liked: likedMovies.map((m) => ({
       film: toScorerFilm(m),
+      weight: inTopTen.has(m.id) ? TOP_TEN_WEIGHT : 1,
       recommendations: (m.recommendations?.results ?? []).map(toScorerFilm),
       similar: (m.similar?.results ?? []).map(toScorerFilm),
       // Series films carry their series id, so the series part and spread rules know them.
@@ -140,7 +157,7 @@ export function useTaste(): Taste {
   }
   // The keywords your likes share most, each searched for well-rated films (ADR-0038). Waits for
   // every tagged film's details, so the keywords don't change (and search again) as they arrive.
-  const taggedLoaded = details.every((q) => !q.isPending)
+  const taggedLoaded = !topTenQuery.isPending && details.every((q) => !q.isPending)
   const keywordIds = taggedLoaded ? keywordsToSearch(tags) : []
   const keywordQueries = useQueries({
     queries: keywordIds.map((id) => movieQueries.byKeyword(id)),
@@ -163,7 +180,8 @@ export function useTaste(): Taste {
       keywordId,
       films: (keywordFilms[i] ?? []).map(toScorerFilm),
     })),
-    excluded: new Set(tagged?.map((r) => r.tmdbId)),
+    // Your own Top Ten films are never suggested back to you, tagged or not (ADR-0043).
+    excluded: new Set([...(tagged?.map((r) => r.tmdbId) ?? []), ...topTen]),
   }
 
   // Pass 2: load keywords, credits and series for the top candidates (default weights, so the set of
@@ -178,9 +196,10 @@ export function useTaste(): Taste {
   const reranked: TasteInput = { ...input, details: candidateDetails }
 
   return {
-    hasLikes: liked.length > 0,
+    hasLikes: liked.length > 0 || topTen.length > 0,
     // Still loading until both passes are in, so the picks don't reshuffle on screen.
     loading:
+      topTenQuery.isPending ||
       details.some((q) => q.isPending) ||
       seriesQueries.some((q) => q.isPending) ||
       keywordQueries.some((q) => q.isPending) ||

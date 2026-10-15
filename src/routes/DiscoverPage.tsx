@@ -203,9 +203,11 @@ function useDiscoveryPicks() {
   const starter = useQuery(movieQueries.deepCuts())
   // Every film you've tagged stays out of the starter picks, not just disliked ones (owner,
   // 2026-10-15): a film you saved or marked seen with a quick action shouldn't come back. The
-  // scorer's picks already leave out every tagged film.
+  // scorer's picks already leave out every tagged film. Your Top Ten films stay out too
+  // (ADR-0043): a favourite you already ranked isn't a discovery.
   const tagged = useQuery(useTagQueries().all()).data
-  const excluded = tagged && new Set(tagged.map((r) => r.tmdbId))
+  const topTen = useTopTen().data ?? []
+  const excluded = tagged && new Set([...tagged.map((r) => r.tmdbId), ...topTen])
 
   // Use the scorer's picks when there are likes and the scorer has (or is still finding) picks;
   // otherwise fall back to the starter shelf so the panel is never empty.

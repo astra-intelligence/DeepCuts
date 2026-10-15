@@ -1,7 +1,7 @@
 // Tests for Home (signed in): its three shelves in order (ADR-0040), the Top Ten in its ranked
 // order with the next open slot (ADR-0036) and its reorder mode (ADR-0041), the ticker, and the
 // Discovery panel: the deep-cuts starter shelf without likes (ADR-0042), scored picks with a match and the reason with
-// likes, and the quick actions on each pick (issue #76).
+// likes or a Top Ten (ADR-0043), and the quick actions on each pick (issue #76).
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
@@ -470,6 +470,34 @@ describe('home with likes (ADR-0026)', () => {
       expect.stringMatching(/^Discovery: \d+ new picks?$/),
       expect.stringMatching(/^Top pick: The Fog, \d+% match$/),
     ])
+  })
+})
+
+describe('home with a Top Ten (ADR-0043)', () => {
+  it('tunes the picks from your Top Ten alone, and never suggests a Top Ten film', async () => {
+    // The Thing is in the Top Ten but has no tags at all.
+    await createLocalTopTenRepository('account-demo-top-ten').add(1091)
+    renderRoute('/')
+
+    const feature = await firstPick()
+    // Scored picks, not the starter shelf: a match and the reason, from the Top Ten film.
+    expect(feature).toHaveTextContent(/\d+% match/)
+    expect(feature).toHaveTextContent('Because you liked The Thing')
+    expect(feature).toHaveTextContent('The Fog')
+    // The Top Ten film itself is never recommended back.
+    const panel = screen.getByRole('region', { name: 'Discover Some Deep Cuts' })
+    expect(within(panel).queryByRole('link', { name: /^The Thing/ })).not.toBeInTheDocument()
+  })
+
+  it('leaves Top Ten films out of the starter shelf too', async () => {
+    // TMDB recommends nothing for Alien here, so the scorer has no picks and the starter shelf
+    // (The Thing, then Alien) shows instead.
+    await createLocalTopTenRepository('account-demo-top-ten').add(348)
+    renderRoute('/')
+
+    expect(await firstPick()).toHaveAccessibleName(/^The Thing/)
+    const panel = screen.getByRole('region', { name: 'Discover Some Deep Cuts' })
+    expect(within(panel).queryByRole('link', { name: /^Alien/ })).not.toBeInTheDocument()
   })
 })
 
