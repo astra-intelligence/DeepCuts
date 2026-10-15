@@ -202,6 +202,30 @@ export const tmdb = {
       signal,
     ),
   /**
+   * Acclaimed, lesser-known, older films: Discovery's starter shelf before you've liked anything
+   * (ADR-0042). `page` picks one slice of the ~120 pages; `today` is only for tests.
+   */
+  deepCuts: (page: number, signal?: AbortSignal, today = new Date()) =>
+    get(
+      'discover/movie',
+      searchResultsSchema,
+      {
+        // 200 to 3,000 votes: enough to trust the rating, too few for a blockbuster (those have
+        // tens of thousands).
+        'vote_count.gte': '200',
+        'vote_count.lte': '3000',
+        'vote_average.gte': '7',
+        // Released more than ten years ago, counted in whole years so the cutoff moves each
+        // January and "older" stays true.
+        'primary_release_date.lte': `${today.getFullYear() - 10}-12-31`,
+        // Popularity *within* that band brings up recognisable cult films; sorting by rating
+        // instead surfaced mostly concert films, shorts and arthouse canon (sampled 2026-10-15).
+        sort_by: 'popularity.desc',
+        page: String(page),
+      },
+      signal,
+    ),
+  /**
    * Well-rated films tagged with one keyword ("slasher"), for the scorer's keyword candidates
    * (ADR-0038). Needs 100 votes, so the barely-rated don't rank by a lucky 10/10.
    */

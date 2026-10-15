@@ -127,6 +127,27 @@ describe('discover', () => {
   })
 })
 
+describe('deep cuts (ADR-0042)', () => {
+  it('asks for well-rated films with a modest vote count, released over ten years ago', async () => {
+    let url: URL | undefined
+    server.use(
+      http.get('/api/tmdb/discover/movie', ({ request }) => {
+        url = new URL(request.url)
+        return HttpResponse.json({ page: 3, total_pages: 120, total_results: 0, results: [] })
+      }),
+    )
+    await tmdb.deepCuts(3, undefined, new Date('2026-10-15'))
+    expect(Object.fromEntries(url?.searchParams ?? [])).toEqual({
+      'vote_count.gte': '200',
+      'vote_count.lte': '3000',
+      'vote_average.gte': '7',
+      'primary_release_date.lte': '2016-12-31',
+      sort_by: 'popularity.desc',
+      page: '3',
+    })
+  })
+})
+
 describe('collections (ADR-0032)', () => {
   it('reads a series and its films', async () => {
     const series = await tmdb.collection(9735)

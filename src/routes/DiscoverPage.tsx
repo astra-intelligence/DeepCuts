@@ -4,8 +4,8 @@
 // Each shelf is a row of VHS boxes that wraps as its list grows: the whole Top Ten (ADR-0036)
 // with each box's rank on a tab and the next open slot, the first watchlist films, and
 // Discovery's picks. With likes, the picks come from the recommendation scorer (ADR-0026) with a
-// match stamp and the reason why. Without likes, they are popular films (minus any you've
-// tagged), with a hint to like a few films. Each pick has quick actions under it (issue #76):
+// match stamp and the reason why. Without likes, they are a starter shelf of acclaimed,
+// lesser-known older films (ADR-0042, minus any you've tagged), with a hint to like a few films. Each pick has quick actions under it (issue #76):
 // Want to see, Seen it, Not for me, saved at once with Undo. Every box names the film's director
 // and writer, from its details (the same cached call Detail makes). The Top Ten shelf has a reorder mode (ADR-0041).
 import { useQueries, useQuery } from '@tanstack/react-query'
@@ -177,7 +177,7 @@ function WatchlistShelf({ ids }: { ids: readonly number[] }) {
 
 /**
  * The ticker's live facts (ADR-0040), most important first. An empty list drops its item rather
- * than showing a zero, and only scorer picks count as picks (the popular fallback isn't tuned).
+ * than showing a zero, and only scorer picks count as picks (the starter shelf isn't tuned).
  */
 function tickerItems(topTen: number, watchlist: number, discovery: DiscoveryPicks): string[] {
   const tuned = discovery.usePicks && !discovery.loading ? discovery.picks : []
@@ -194,20 +194,21 @@ function tickerItems(topTen: number, watchlist: number, discovery: DiscoveryPick
 type DiscoveryPicks = ReturnType<typeof useDiscoveryPicks>
 
 /**
- * Discovery's picks (ADR-0026): the scorer's when there are likes, else popular films. (The big
+ * Discovery's picks (ADR-0026): the scorer's when there are likes, else a starter shelf of
+ * acclaimed, lesser-known older films (ADR-0042), never this week's blockbusters. (The big
  * featured card is gone, owner 2026-10-09: the top pick is simply the first box.)
  */
 function useDiscoveryPicks() {
   const tuned = useRecommendations(HOME_PICKS)
-  const popular = useQuery(movieQueries.discover())
-  // Every film you've tagged stays out of the popular picks, not just disliked ones (owner,
+  const starter = useQuery(movieQueries.deepCuts())
+  // Every film you've tagged stays out of the starter picks, not just disliked ones (owner,
   // 2026-10-15): a film you saved or marked seen with a quick action shouldn't come back. The
   // scorer's picks already leave out every tagged film.
   const tagged = useQuery(useTagQueries().all()).data
   const excluded = tagged && new Set(tagged.map((r) => r.tmdbId))
 
   // Use the scorer's picks when there are likes and the scorer has (or is still finding) picks;
-  // otherwise fall back to popular films so the panel is never empty.
+  // otherwise fall back to the starter shelf so the panel is never empty.
   const usePicks = tuned.hasLikes && (tuned.loading || tuned.recommendations.length > 0)
   // While the scorer is still loading (both passes, ADR-0028), show nothing rather than early
   // picks that would reshuffle when the re-rank arrives.
@@ -218,7 +219,7 @@ function useDiscoveryPicks() {
           match: r.match,
           because: r.because,
         }))
-      : (popular.data?.results ?? [])
+      : (starter.data?.results ?? [])
           .filter((m) => !excluded?.has(m.id))
           .map((movie) => ({ movie }))
   ).slice(0, HOME_PICKS)
@@ -233,8 +234,8 @@ function useDiscoveryPicks() {
   return {
     picks,
     usePicks,
-    loading: usePicks ? tuned.loading : popular.isPending,
-    failed: !usePicks && popular.isError,
+    loading: usePicks ? tuned.loading : starter.isPending,
+    failed: !usePicks && starter.isError,
   }
 }
 
