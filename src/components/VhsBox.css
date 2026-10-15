@@ -22,8 +22,8 @@
 
    How it moves, by input. The interactive parent (the tile's link) carries `data-vhs-target`:
      mouse    - look around the box: face-on with the pointer in the middle; the side under the
-                pointer swings toward you and the far side presses away, so the left edge shows
-                the spine (up to 31° turn, 10° tilt; reversed by the owner, 2026-10-15). VhsBox smooths it frame by frame, so entering, following and leaving
+                pointer presses away and the far side swings toward you (up to 31° turn, 10°
+                tilt). VhsBox smooths it frame by frame, so entering, following and leaving
                 glide instead of snapping
      keyboard - focus turns the box to a fixed pose that shows the spine (24°, level)
      touch    - phones can't hover or focus a box, so boxes rest in the keyboard pose to show
@@ -188,8 +188,7 @@
   /* Mouse: while the pointer is over the target, VhsBox marks it `data-vhs-active` and eases
      three variables each frame: --vhs-px/--vhs-py (where the pointer is over the box, −1 to 1,
      left/top = −1) and --vhs-h (0 at rest to 1 following). The pose blends from rest to the
-     lean by --vhs-h, the near side coming toward you (pointer at the left turns the spine into
-     view, at the top tips the top edge toward you), so VhsBox's easing does the work and no CSS transition runs. After the
+     lean by --vhs-h, so VhsBox's easing does the work and no CSS transition runs. After the
      focus rule, so the mouse wins on a focused box. The tile is raised above its neighbours
      until the box is back at rest, so a swung edge never slips behind the next tile. */
   [data-vhs-target][data-vhs-active] {
@@ -197,10 +196,10 @@
   }
   [data-vhs-active] .vhs-box {
     --turn-y: calc(
-      var(--still-y) * (1 - var(--vhs-h)) - var(--vhs-lean-y) * var(--vhs-px) * var(--vhs-h)
+      var(--still-y) * (1 - var(--vhs-h)) + var(--vhs-lean-y) * var(--vhs-px) * var(--vhs-h)
     );
     --turn-x: calc(
-      var(--still-x) * (1 - var(--vhs-h)) + var(--vhs-lean-x) * var(--vhs-py) * var(--vhs-h)
+      var(--still-x) * (1 - var(--vhs-h)) - var(--vhs-lean-x) * var(--vhs-py) * var(--vhs-h)
     );
     --rise: calc(var(--vhs-lift) * var(--vhs-h));
     transition: none;
