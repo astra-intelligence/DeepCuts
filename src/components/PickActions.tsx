@@ -64,7 +64,7 @@ export function PickActions({
           </span>
         </button>
       ) : (
-        <div role="group" aria-label={`Quick actions for ${title}`} className="grid grid-cols-3">
+        <div role="group" aria-label={`Quick actions for ${title}`} className="flex">
           {QUICK_ACTIONS.map((action) => (
             <button
               key={action.tag}
@@ -76,7 +76,11 @@ export function PickActions({
               aria-label={`${action.label} ${title}`}
               title={action.label}
               style={tagColor(action.tag) as CSSProperties}
-              className="flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 border-y-2 border-r-2 border-tag-toggle-border bg-tag-toggle-bg px-0.5 text-xs font-bold text-tag-toggle-fg first:border-l-2 hover:border-(--tag) aria-disabled:cursor-wait aria-disabled:opacity-60"
+              // Each button draws all four borders, and the second and third overlap the one before by a
+              // border's width, so the strip still reads as one row with single 2px dividers. The
+              // hovered or focused button is lifted above its neighbours, so its whole outline shows
+              // in the tag's colour (with shared dividers, its left edge was the previous button's).
+              className="relative flex min-h-11 min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-0.5 border-2 border-tag-toggle-border bg-tag-toggle-bg px-0.5 text-xs font-bold text-tag-toggle-fg not-first:-ml-0.5 hover:z-10 hover:border-(--tag) focus-visible:z-10 aria-disabled:cursor-wait aria-disabled:opacity-60"
             >
               <Icon name={action.icon} className="size-5 shrink-0 text-(--tag)" />
               <span aria-hidden="true">{action.short}</span>
