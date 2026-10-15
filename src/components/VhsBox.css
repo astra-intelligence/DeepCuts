@@ -22,7 +22,7 @@
 
    How it moves, by input. The interactive parent (the tile's link) carries `data-vhs-target`:
      mouse    - look around the box: face-on with the pointer in the middle; the side under the
-                pointer presses away and the far side swings toward you (up to 31° turn, 10°
+                pointer presses away and the far side swings toward you (up to 35° turn, 12°
                 tilt). VhsBox smooths it frame by frame, so entering, following and leaving
                 glide instead of snapping
      keyboard - focus turns the box to a fixed pose that shows the spine (24°, level)
@@ -49,8 +49,8 @@
     --vhs-depth: 0.195; /* depth as a share of the width */
     --vhs-rest-y: 0deg; /* turn at rest: straight on (positive shows the spine) */
     --vhs-rest-x: 0deg; /* tilt at rest: level (negative = top toward you) */
-    --vhs-lean-y: 31deg; /* mouse: turn with the pointer at a side edge */
-    --vhs-lean-x: 10deg; /* mouse: tilt with the pointer at the top or bottom edge */
+    --vhs-lean-y: 35deg; /* mouse: turn with the pointer at a side edge */
+    --vhs-lean-x: 12deg; /* mouse: tilt with the pointer at the top or bottom edge */
     --vhs-focus-y: 24deg; /* keyboard focus (and touch at rest): turn */
     --vhs-focus-x: 0deg; /* keyboard focus (and touch at rest): tilt */
     --vhs-scroll-x: 8deg; /* touch: tilt at the top and bottom of the screen, when on */
