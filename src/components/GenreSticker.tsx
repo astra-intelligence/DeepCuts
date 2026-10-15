@@ -8,6 +8,7 @@
 // poster too, so the sticker is hidden from screen readers.
 import { useId } from 'react'
 import { primaryGenre } from '../domain/genres'
+import { stickerShadow } from './stickerShadow'
 
 // Diameter in pixels (ADR-0040).
 const SIZE = 54
@@ -43,8 +44,13 @@ export function GenreSticker({
     <span
       aria-hidden="true"
       data-genre-sticker={genre.slug}
-      className={`pointer-events-none grid place-items-center rounded-full shadow-sticker ${className}`}
-      style={{ width: SIZE, height: SIZE, rotate: `${TILT}deg` }}
+      className={`pointer-events-none grid place-items-center rounded-full ${className}`}
+      style={{
+        width: SIZE,
+        height: SIZE,
+        rotate: `${TILT}deg`,
+        boxShadow: stickerShadow(genre.slug),
+      }}
     >
       {/* Rough, worn edges: noise displaces the face's outline by a couple of pixels. The noise
           seed comes from the film, so no two stickers wear the same way. */}

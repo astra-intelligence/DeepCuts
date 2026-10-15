@@ -1,9 +1,11 @@
 // Tests for the VHS genre sticker: it shows the first known genre's short label, stays hidden from
 // screen readers, is 54px at the same −10° slant on every film (ADR-0040), gives each film its
-// own wear filter, and renders nothing without a known genre.
+// own wear filter, and renders nothing without a known genre. Its shadow falls downward, a little
+// differently for each genre.
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { GenreSticker } from './GenreSticker'
+import { stickerShadow } from './stickerShadow'
 
 const sticker = (container: HTMLElement) =>
   container.querySelector<HTMLElement>('[data-genre-sticker]')
@@ -43,5 +45,21 @@ describe('GenreSticker', () => {
       '91',
       '48',
     ])
+  })
+
+  it('casts a soft shadow that always falls downward, placed a little differently per genre', () => {
+    const slugs = ['action', 'comedy', 'drama', 'horror', 'mystery', 'science-fiction', 'western']
+    const offsets = slugs.map((slug) => {
+      const [x = 0, y = 0] = stickerShadow(slug).split(' ').map(parseFloat)
+      return { x, y }
+    })
+    for (const { x, y } of offsets) {
+      expect(y).toBeGreaterThanOrEqual(1)
+      expect(Math.abs(x)).toBeLessThanOrEqual(1.5)
+    }
+    // Not one shadow for all: several different placements across genres.
+    expect(new Set(offsets.map(({ x, y }) => `${x},${y}`)).size).toBeGreaterThan(3)
+    // Stable: the same genre always gets the same shadow.
+    expect(stickerShadow('horror')).toBe(stickerShadow('horror'))
   })
 })
