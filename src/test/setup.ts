@@ -16,7 +16,7 @@ import { server } from './msw/server'
 configure({ asyncUtilTimeout: 3000 })
 
 // Any request without a fake handler fails the test, so tests can never reach the real TMDB.
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
 afterEach(async () => {
   // Toasts live in Sonner's global store, and a new <Toaster> replays every one still active, so
   // dismiss them or the next test would see this test's toasts.
