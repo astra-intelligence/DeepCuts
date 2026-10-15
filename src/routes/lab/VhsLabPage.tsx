@@ -1,5 +1,5 @@
 // VHS box lab (/lab/vhs, dev server only): Discover's films as the real VHS box posters
-// (VhsBox), with a control panel to try new values for the look and the motion live.
+// (VhsBox), with a control panel to try new values for the shape, finish and motion live.
 //
 // The design was tuned here and approved on 2026-10-09; its values now live in
 // src/components/VhsBox.css and the vhs-box tokens. The lab stays as a tuning tool: it renders the
@@ -16,8 +16,29 @@ import { VhsBox } from '../../components/VhsBox'
 import { genreTone, primaryGenreName } from '../../domain/genres'
 import './vhs-lab.css'
 
+/** How the grain mixes with the poster (CSS mix-blend-mode). */
+type GrainBlend = 'normal' | 'multiply' | 'overlay' | 'soft-light' | 'screen'
+/** The grain's color: the approved warm tan, or plain grey, black or white specks. */
+type GrainTint = 'warm' | 'grey' | 'black' | 'white'
+
 /** Every knob on the control panel. Angles in degrees, lift in px. */
 interface Settings {
+  /** The cover's height as a multiple of its width (1.5 = the poster's 2:3, 1.83 = a sleeve). */
+  aspect: number
+  /** On a taller cover, how much of the difference the poster stretches (the rest is cropped). */
+  stretch: number
+  /** The grain: its opacity, coarseness (SVG baseFrequency: lower is coarser), detail
+   *  (octaves), tile size in px, blend into the poster and color. */
+  grainAlpha: number
+  grainFreq: number
+  grainOctaves: number
+  grainSize: number
+  grainBlend: GrainBlend
+  grainTint: GrainTint
+  /** The soft light falloff over the cover (1 = as approved). */
+  matte: number
+  /** The pale rubbed edges on the cover (0 = none, as approved). */
+  wear: number
   /** Depth as a share of the width. */
   depth: number
   restY: number
@@ -42,6 +63,16 @@ interface Settings {
 
 // Starting values: the approved design (src/components/VhsBox.css).
 const DEFAULTS: Settings = {
+  aspect: 1.5,
+  stretch: 0,
+  grainAlpha: 0.35,
+  grainFreq: 1.1,
+  grainOctaves: 2,
+  grainSize: 80,
+  grainBlend: 'normal',
+  grainTint: 'warm',
+  matte: 1,
+  wear: 0,
   depth: 0.24,
   restY: 0,
   restX: 0,
@@ -55,6 +86,32 @@ const DEFAULTS: Settings = {
   scroll: true,
   scrollPreview: false,
   freeze: false,
+}
+
+/** The real proportions of a VHS sleeve: 190 mm tall on a 104 mm face. */
+const SLEEVE = 1.83
+
+/** Each grain tint's RGB, 0 to 1, for the SVG's color matrix ('warm' is the approved tan). */
+const TINTS: Record<GrainTint, [number, number, number]> = {
+  warm: [0.55, 0.5, 0.42],
+  grey: [0.5, 0.5, 0.5],
+  black: [0, 0, 0],
+  white: [1, 1, 1],
+}
+
+/**
+ * The grain as a CSS url(): the same SVG noise VhsBox.css ships (fractal turbulence recolored
+ * by a color matrix), built from the lab's settings. Only the lab builds it at runtime; the
+ * approved values are written out in the stylesheet.
+ */
+function grainImage(s: Settings) {
+  const [r, g, b] = TINTS[s.grainTint]
+  const svg =
+    `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'>` +
+    `<feTurbulence type='fractalNoise' baseFrequency='${s.grainFreq}' numOctaves='${s.grainOctaves}' stitchTiles='stitch'/>` +
+    `<feColorMatrix values='0 0 0 0 ${r} 0 0 0 0 ${g} 0 0 0 0 ${b} 0 0 0 ${s.grainAlpha} 0'/>` +
+    `</filter><rect width='120' height='120' filter='url(#n)'/></svg>`
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`
 }
 
 /**
@@ -73,6 +130,13 @@ export function VhsLabPage() {
 
   // The knobs as the CSS variables the VHS box styles read.
   const vars = {
+    '--vhs-aspect': s.aspect,
+    '--vhs-stretch': s.stretch,
+    '--vhs-grain-image': grainImage(s),
+    '--vhs-grain-size': `${s.grainSize}px`,
+    '--vhs-grain-blend': s.grainBlend,
+    '--vhs-matte': s.matte,
+    '--vhs-wear': s.wear,
     '--vhs-depth': s.depth,
     '--vhs-rest-y': `${s.restY}deg`,
     '--vhs-rest-x': `${s.restX}deg`,
@@ -140,12 +204,24 @@ function LabCard({ movie }: { movie: MovieSummary }) {
 }
 
 /** The panel's sections. Focus inside Keyboard or Touch previews that motion on the boxes. */
-type Section = 'box' | 'mouse' | 'keyboard' | 'touch'
+type Section = 'shape' | 'finish' | 'box' | 'mouse' | 'keyboard' | 'touch'
 
 /** A slider: [setting, label, min, max, step, unit]. */
 type Slider = [keyof Settings, string, number, number, number, string]
 
 const SLIDERS: Record<Section, Slider[]> = {
+  shape: [
+    ['aspect', 'Height (× the width)', 1.5, 2, 0.01, ''],
+    ['stretch', 'Stretch (the rest is cropped)', 0, 1, 0.05, ''],
+  ],
+  finish: [
+    ['grainAlpha', 'Grain strength', 0, 1, 0.01, ''],
+    ['grainFreq', 'Grain fineness (lower is coarser)', 0.2, 3, 0.05, ''],
+    ['grainOctaves', 'Grain detail (octaves)', 1, 5, 1, ''],
+    ['grainSize', 'Grain tile size', 30, 240, 5, 'px'],
+    ['matte', 'Light falloff', 0, 4, 0.1, '×'],
+    ['wear', 'Rubbed edges', 0, 6, 0.25, '×'],
+  ],
   box: [
     ['depth', 'Depth (share of width)', 0.12, 0.35, 0.005, ''],
     ['restY', 'Turn at rest', 0, 20, 1, '°'],
@@ -208,7 +284,7 @@ function Controls({
     }
   }, [onTuning])
 
-  const summary = `depth=${s.depth} rest=${s.restY}°/${s.restX}° mouse=${s.leanY}°/${s.leanX}° focus=${s.focusY}°/${s.focusX}° scroll=${s.scroll ? `${s.scrollX}°` : 'off'} lift=${s.lift}px perspective=${s.perspective}px`
+  const summary = `shape=${s.aspect} stretch=${s.stretch} grain=${s.grainAlpha}/${s.grainFreq}/${s.grainOctaves}oct/${s.grainSize}px/${s.grainBlend}/${s.grainTint} matte=${s.matte} wear=${s.wear} depth=${s.depth} rest=${s.restY}°/${s.restX}° mouse=${s.leanY}°/${s.leanX}° focus=${s.focusY}°/${s.focusX}° scroll=${s.scroll ? `${s.scrollX}°` : 'off'} lift=${s.lift}px perspective=${s.perspective}px`
 
   // One section of the panel. Its `data-section` tells the listeners above which motion you're
   // tuning.
@@ -263,6 +339,38 @@ function Controls({
     </label>
   )
 
+  // A dropdown row, for the grain's blend and color.
+  const select = <K extends 'grainBlend' | 'grainTint'>(
+    key: K,
+    label: string,
+    options: readonly Settings[K][],
+  ) => (
+    <label className="focus-ring-within flex items-center justify-between gap-2">
+      {label}
+      <select
+        value={s[key]}
+        onChange={(e) => set(key, e.target.value as Settings[K])}
+        className="border border-border bg-surface px-2 py-1"
+      >
+        {options.map((option) => (
+          <option key={option}>{option}</option>
+        ))}
+      </select>
+    </label>
+  )
+
+  // The shape presets: the approved poster shape and a real sleeve's.
+  const preset = (label: string, aspect: number) => (
+    <button
+      type="button"
+      onClick={() => set('aspect', aspect)}
+      aria-pressed={s.aspect === aspect}
+      className="border-2 border-border px-2 py-1 aria-pressed:border-accent aria-pressed:text-accent"
+    >
+      {label}
+    </button>
+  )
+
   return (
     <form
       ref={form}
@@ -270,10 +378,30 @@ function Controls({
       onSubmit={(e) => e.preventDefault()}
     >
       {section(
-        'box',
-        'Box',
-        'Its depth and how it sits at rest. Its shape is the poster’s 2:3, so the art is never cropped.',
+        'shape',
+        'Shape',
+        `Posters are 2:3 (1.5); a real VHS sleeve is ${SLEEVE}. On a taller box the poster either stretches or loses its sides. At ${SLEEVE}, full stretch makes faces 18% thinner and none crops 9% off each side; in between splits the difference.`,
+        <div className="flex gap-2">
+          {preset('Poster 2:3', 1.5)}
+          {preset('VHS sleeve', SLEEVE)}
+        </div>,
       )}
+      {section(
+        'finish',
+        'Finish',
+        'The paper grain and wear over the cover. The spine shares the grain.',
+        <>
+          {select('grainBlend', 'Grain blend', [
+            'normal',
+            'multiply',
+            'overlay',
+            'soft-light',
+            'screen',
+          ])}
+          {select('grainTint', 'Grain color', ['warm', 'grey', 'black', 'white'])}
+        </>,
+      )}
+      {section('box', 'Box', 'Its depth and how it sits at rest.')}
       {section('mouse', 'Mouse', 'Hover a box and move around it to try these.')}
       {section(
         'keyboard',

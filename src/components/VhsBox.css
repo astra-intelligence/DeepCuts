@@ -43,10 +43,11 @@
 
 @layer components {
   /* ---- Tuning knobs -------------------------------------------------------------------------
-     On :root so the lab can override them on any ancestor. The box's shape is not a knob: it
-     is the poster's own 2:3, so the art fills the cover without cropping (owner, 2026-10-13;
-     a real sleeve's 0.547 cut off the sides). Depth is a real cardboard sleeve's, 25 mm on a
-     104 mm face (Pacdora's VHS box template, checked 2026-10-09). */
+     On :root so the lab can override them on any ancestor. The approved shape is the poster's
+     own 2:3, so the art fills the cover without cropping (owner, 2026-10-13; a real sleeve's
+     0.547 cut off the sides); --vhs-aspect and --vhs-stretch below let the lab try a taller,
+     truer sleeve. Depth is a real cardboard sleeve's, 25 mm on a 104 mm face (Pacdora's VHS
+     box template, checked 2026-10-09). */
   :root {
     --vhs-depth: 0.24; /* depth as a share of the width */
     --vhs-rest-y: 0deg; /* turn at rest: straight on (positive shows the spine) */
@@ -58,6 +59,25 @@
     --vhs-scroll-x: 8deg; /* touch: tilt at the top and bottom of the screen */
     --vhs-lift: -4px; /* how far the box rises on hover and focus */
     --vhs-perspective: 1100px;
+
+    /* Shape: the cover's height as a multiple of its width. 1.5 is the poster's own 2:3; a real
+       sleeve is 1.83 (190 mm on 104 mm). On a taller cover the poster has to give: --vhs-stretch
+       says how much of the difference it stretches (1 = all of it, the art squashed sideways)
+       and the rest it crops from the sides (0 = all cropped, today's behaviour on a 2:3 cover). */
+    --vhs-aspect: 1.5;
+    --vhs-stretch: 0;
+
+    /* Finish. The grain is SVG noise as a data url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0 0.42 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E") (the CSP allows data: images): fractal noise
+       at baseFrequency 1.1, 2 octaves, tinted tan at 35% alpha, tiled every --vhs-grain-size.
+       The lab rebuilds the url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0 0.42 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E") from its sliders. --vhs-grain-blend is how the grain mixes with
+       the poster on the cover (the spine keeps plain grain). --vhs-matte scales the soft light
+       falloff over the cover (1 = as approved, 0 = none), and --vhs-wear the pale rubbed edges
+       (0 = none, as approved). */
+    --vhs-grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0 0.42 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+    --vhs-grain-size: 80px;
+    --vhs-grain-blend: normal;
+    --vhs-matte: 1;
+    --vhs-wear: 0;
   }
 
   /* ---- Stage and box ------------------------------------------------------------------------ */
@@ -82,19 +102,18 @@
 
   /* The box. Derived sizes: --h (height), --d (depth). --still-y/--still-x are its
      resting pose (the rest angles; the keyboard pose on touch screens). --turn-*, --rise are
-     its current pose, which the rules below change. Shared paints: --grain (paper grain, SVG
-     noise as a data URI, which the CSP allows) and --print (the genre color bleached a quarter
+     its current pose, which the rules below change. Shared paints: --grain (the paper grain
+     knobs, ready to use as a background layer) and --print (the genre color bleached a quarter
      toward the paper, so dark ink on it reads at 4.8:1 or more for every genre). */
   .vhs-box {
-    --h: calc(100cqw * 3 / 2);
+    --h: calc(100cqw * var(--vhs-aspect));
     --d: calc(100cqw * var(--vhs-depth));
     --still-y: var(--vhs-rest-y);
     --still-x: var(--vhs-rest-x);
     --turn-y: var(--still-y);
     --turn-x: var(--still-x);
     --rise: 0px;
-    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0 0.42 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")
-      0 0 / 80px 80px;
+    --grain: var(--vhs-grain-image) 0 0 / var(--vhs-grain-size) var(--vhs-grain-size);
     --print: color-mix(in srgb, var(--tone) 75%, var(--color-vhs-box-card));
     position: relative;
     display: block;
@@ -175,48 +194,58 @@
     backface-visibility: hidden;
   }
 
-  /* Front: the poster, printed edge to edge on matte card, with edges rubbed pale where the
-     sleeve slid against its neighbours on the shelf. Square corners (ADR-0040). */
+  /* Front: the poster, printed edge to edge on matte card. Square corners (ADR-0040). */
   .vhs-front {
     inset: 0;
     overflow: hidden;
     background: var(--color-vhs-box-shell);
-    box-shadow: inset 0 0 calc(100cqw * 0.02)
-      color-mix(in srgb, var(--color-vhs-box-card) 30%, transparent);
   }
+  /* The poster, as tall as the cover and as wide as --vhs-stretch says (see the knobs), centred
+     so any extra width is cropped evenly from both sides. On the 2:3 cover that's exactly the
+     cover. `fill`, not `cover`: the box is already the shape the art should take, and `cover`
+     would undo the stretch by cropping back to the poster's ratio. */
   .vhs-front img {
+    position: relative;
+    left: 50%;
     display: block;
-    width: 100%;
+    width: calc(100cqw * (1 + (1 - var(--vhs-stretch)) * (var(--vhs-aspect) / 1.5 - 1)));
+    max-width: none;
     height: 100%;
-    /* The cover is the poster's 2:3, so nothing is cut off; `cover` only absorbs the odd poster
-       that's a pixel off that ratio. */
-    object-fit: cover;
+    translate: -50% 0;
+    object-fit: fill;
   }
-  /* The fold along the spine: a pale strip down the cover's left edge, 7px on a 190px box
-     (ADR-0040's clamshell hinge). */
+  /* Over the art, under the grain: the fold along the spine, a pale strip down the cover's left
+     edge (7px on a 190px box, ADR-0040's clamshell hinge); one broad, soft light falloff (matte,
+     no glossy glare); and edges rubbed pale where the sleeve slid against its neighbours. */
   .vhs-front::before {
     content: '';
     position: absolute;
-    inset: 0 auto 0 0;
+    inset: 0;
     z-index: 1;
-    width: calc(100cqw * 0.037);
-    background: color-mix(in srgb, var(--color-fg) 14%, transparent);
+    background:
+      linear-gradient(
+        to right,
+        color-mix(in srgb, var(--color-fg) 14%, transparent) calc(100cqw * 0.037),
+        transparent 0
+      ),
+      linear-gradient(
+        160deg,
+        color-mix(in srgb, var(--color-vhs-box-card) calc(6% * var(--vhs-matte)), transparent),
+        transparent 55%,
+        color-mix(in srgb, var(--color-vhs-box-shell) calc(18% * var(--vhs-matte)), transparent)
+      );
+    box-shadow: inset 0 0 calc(100cqw * 0.02 * var(--vhs-wear))
+      color-mix(in srgb, var(--color-vhs-box-card) 30%, transparent);
     pointer-events: none;
   }
-  /* Matte finish over the art: paper grain and one broad, soft light falloff (no glossy glare). */
+  /* The paper grain, on top, blended into the art by --vhs-grain-blend. */
   .vhs-front::after {
     content: '';
     position: absolute;
     inset: 0;
-    background:
-      var(--grain),
-      linear-gradient(
-        160deg,
-        color-mix(in srgb, var(--color-vhs-box-card) 6%, transparent),
-        transparent 55%,
-        color-mix(in srgb, var(--color-vhs-box-shell) 18%, transparent)
-      );
-    background-blend-mode: multiply, normal;
+    z-index: 1;
+    background: var(--grain);
+    mix-blend-mode: var(--vhs-grain-blend);
     pointer-events: none;
   }
 
