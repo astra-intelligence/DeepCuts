@@ -47,6 +47,25 @@
     }
   }
 
+  /* Whatever sits right under the logo (the header's tagline, AppLayout.tsx) drops 8px further,
+     so the bottom pumpkins, which hang about 12px past the wordmark, don't cover it. Only in
+     October: the rest of the year the tagline keeps its usual spacing.
+
+     With the tagline under it, the logo also drops the upward nudge above: the tagline's gap
+     already keeps the pumpkins off the row below, and without the nudge the logo and tagline sit
+     centred in the header (owner, 2026-10-15).
+
+     From `md` only, like the tagline: on phones it's in the DOM but hidden, and the phone header
+     must stay exactly as it was. */
+  @variant md {
+    .halloween-logo + * {
+      margin-top: --spacing(2);
+    }
+    .halloween-logo:has(+ *) {
+      translate: none;
+    }
+  }
+
   /* The decorations never take a click: where they overhang a neighbour (a button, the ticker),
      the neighbour stays clickable. Hovering the wordmark itself still lights it. */
   .halloween-logo__moon,

@@ -5,6 +5,7 @@
 // signed-in pages (ADR-0034).
 import { useRef } from 'react'
 import { Link, Outlet } from 'react-router'
+import { TAGLINE } from '../config/brand'
 import { FEATURES } from '../config/features'
 import { AccountChip } from '../components/AccountChip'
 import { Icon } from '../components/Icon'
@@ -54,12 +55,20 @@ export function AppLayout() {
           keyboard focus goes logo → search → account there. */}
       <header ref={header} className="sticky top-0 z-20 border-b-2 border-border bg-surface">
         <div className="mx-auto flex max-w-300 flex-wrap items-center justify-between gap-x-3 gap-y-4 px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-4 md:px-8 lg:flex-nowrap lg:gap-x-8 lg:py-5">
+          {/* From `md`, nudged down 3px: the tagline has no descenders, so its ink ends above its
+              box and the centred pair looked high (owner, 2026-10-15). A transform, so the header
+              height doesn't change. */}
           <Link
             to="/"
             aria-label="Deep Cuts, go to Home"
-            className="inline-flex min-h-11 shrink-0 items-center"
+            className="inline-flex min-h-11 shrink-0 flex-col items-start justify-center gap-1 md:translate-y-0.75"
           >
             <Logo decorative className="h-9 w-auto md:h-10" />
+            {/* The tagline, from `md` only: phones keep their header height (owner, 2026-10-15).
+                The link's aria-label already names it, so screen readers hear "Deep Cuts" once. */}
+            <span className="hidden font-label text-xs leading-none tracking-wider text-fg-muted md:block">
+              {TAGLINE}
+            </span>
           </Link>
           {/* Grows to fill the row up to a readable width; the auto margins then centre it.
             `min-w-0` lets it shrink below the input's built-in width (else it overflows at 320px). */}
