@@ -85,6 +85,9 @@ interface Settings {
   perspective: number
   /** Corner radius on the box's faces, in px. */
   radius: number
+  /** The box's drop shadow: how far right and down it falls, in px. */
+  shadowX: number
+  shadowY: number
   /** Touch: tilt the boxes as they scroll past (phones only). */
   scroll: boolean
   /** Show the scroll tilt on this screen too, to try it with a mouse wheel. */
@@ -100,7 +103,7 @@ const DEFAULTS: Settings = {
   band: 0,
   wrap: true,
   spineTint: 0.6,
-  artShift: 0.09,
+  artShift: 0.1,
   bandPos: 'bottom',
   bandColor: 'genre',
   bandText: 0.16,
@@ -123,6 +126,8 @@ const DEFAULTS: Settings = {
   lift: 2,
   perspective: 1100,
   radius: 3,
+  shadowX: 10,
+  shadowY: 12,
   scroll: false,
   scrollPreview: false,
   freeze: false,
@@ -196,6 +201,8 @@ export function VhsLabPage() {
     '--vhs-lift': `${-s.lift}px`,
     '--vhs-perspective': `${s.perspective}px`,
     '--vhs-radius': `${s.radius}px`,
+    '--vhs-shadow-x': `${s.shadowX}px`,
+    '--vhs-shadow-y': `${s.shadowY}px`,
   } as CSSProperties
   const freeze = s.freeze || tuning === 'keyboard'
   const scrollPreview = s.scroll && (s.scrollPreview || tuning === 'touch')
@@ -281,6 +288,8 @@ const SLIDERS: Record<Section, Slider[]> = {
     ['restX', 'Tilt at rest', -10, 10, 1, '°'],
     ['perspective', 'Perspective', 500, 2500, 50, 'px'],
     ['radius', 'Corner radius', 0, 10, 0.5, 'px'],
+    ['shadowX', 'Shadow to the right', 0, 24, 1, 'px'],
+    ['shadowY', 'Shadow downward', 0, 24, 1, 'px'],
   ],
   mouse: [
     ['leanY', 'Turn at the sides', 0, 40, 1, '°'],
@@ -338,7 +347,7 @@ function Controls({
     }
   }, [onTuning])
 
-  const summary = `shape=${s.aspect} band=${s.band}/${s.bandPos}/${s.bandColor}/${s.bandText} wrap=${s.wrap ? `on/${s.spineTint}/shift ${s.artShift}` : 'off'} stretch=${s.stretch} grain=${s.grainAlpha}/${s.grainFreq}/${s.grainOctaves}oct/${s.grainSize}px/${s.grainBlend}/${s.grainTint} matte=${s.matte} wear=${s.wear} depth=${s.depth} rest=${s.restY}°/${s.restX}° mouse=${s.leanY}°/${s.leanX}° focus=${s.focusY}°/${s.focusX}° scroll=${s.scroll ? `${s.scrollX}°` : 'off'} lift=${s.lift}px perspective=${s.perspective}px radius=${s.radius}px`
+  const summary = `shape=${s.aspect} band=${s.band}/${s.bandPos}/${s.bandColor}/${s.bandText} wrap=${s.wrap ? `on/${s.spineTint}/shift ${s.artShift}` : 'off'} stretch=${s.stretch} grain=${s.grainAlpha}/${s.grainFreq}/${s.grainOctaves}oct/${s.grainSize}px/${s.grainBlend}/${s.grainTint} matte=${s.matte} wear=${s.wear} depth=${s.depth} rest=${s.restY}°/${s.restX}° mouse=${s.leanY}°/${s.leanX}° focus=${s.focusY}°/${s.focusX}° scroll=${s.scroll ? `${s.scrollX}°` : 'off'} lift=${s.lift}px perspective=${s.perspective}px radius=${s.radius}px shadow=${s.shadowX}/${s.shadowY}px`
 
   // One section of the panel. Its `data-section` tells the listeners above which motion you're
   // tuning.
