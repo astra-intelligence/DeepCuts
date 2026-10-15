@@ -1,5 +1,5 @@
-// Recommendation scorer v3 (ADR-0026, ADR-0028, ADR-0032, ADR-0037, ADR-0038, ADR-0043): turns a
-// person's tags and Top Ten into ranked film picks.
+// Recommendation scorer v4 (ADR-0026, ADR-0028, ADR-0032, ADR-0037, ADR-0038, ADR-0043,
+// ADR-0044): turns a person's tags and Top Ten into ranked film picks.
 //
 // How it works, in four steps:
 // 1. Candidates: every film TMDB recommends for any film you liked, the well-voted films in a
@@ -12,7 +12,13 @@
 //    series of the films you liked. Your Top Ten films count as likes that weigh TOP_TEN_WEIGHT
 //    (ADR-0043), so a favourite pulls a little harder than an ordinary like.
 // 3. Score: each candidate gets twelve part scores between 0 and 1 (see DEFAULT_WEIGHTS), which
-//    are combined with the weights into one score. "% match" is that score × 100.
+//    are combined with the weights into one score. v4 (ADR-0044) makes each part tell candidates
+//    apart instead of giving them all the same middling value: support on a square-root scale,
+//    rating ranked among the candidates, decade and language measured as how much more your likes
+//    lean that way than the candidates do, and genre by the best-matching genre. A film that shares
+//    a director, writer, actor, studio, series or keywords with a film you disliked loses up to
+//    DISLIKE_PENALTY. "% match" stretches the scores across MATCH_FLOOR–MATCH_CEILING, so the
+//    best candidate reads high and a weak one reads low.
 //    Keywords, credits and studios need one extra details call per candidate, so the caller
 //    fetches them only for the top candidates (`TasteInput.details`) and scores again: a re-rank
 //    (ADR-0028). Candidates without details score 0 on those parts. A film in the series of one
@@ -225,12 +231,41 @@ export function normalizeWeights(weights: Weights): Weights {
   ) as Weights
 }
 
+/**
+ * The most a film loses for looking like the films you disliked (ADR-0044): taken off its
+ * weighted score when it reaches PENALTY_HITS overlaps, proportionally for fewer. 0.15 is about
+ * what a shared director and writer add together, so a Nope can cancel a credit match but not
+ * bury a film that's strong on everything else.
+ */
+export const DISLIKE_PENALTY = 0.15
+
+/**
+ * Overlaps with disliked films for the full penalty (ADR-0044). Each counts once: a director,
+ * writer, top-billed actor, non-major studio or series of a disliked film, or sharing at least
+ * PENALTY_KEYWORDS keywords with one. Two, so one shared actor alone costs only half.
+ */
+export const PENALTY_HITS = 2
+
+/** Keywords a film must share with one disliked film for that to count as an overlap. */
+export const PENALTY_KEYWORDS = 2
+
+/**
+ * "% match" runs from MATCH_FLOOR (the weakest candidate) to MATCH_CEILING (the best), a straight
+ * line between them (ADR-0044). Raw scores bunch up (a weighted average of many middling parts),
+ * which made every pick read alike; the stretch keeps the order and makes the gaps visible. The ceiling
+ * stays below 100 because no pick is a sure thing.
+ */
+export const MATCH_FLOOR = 30
+export const MATCH_CEILING = 95
+
 /** Optional settings for `recommend` (the weights lab passes its own). */
 export interface RecommendOptions {
   /** Defaults to DEFAULT_WEIGHTS. Should sum to 1 (see normalizeWeights). */
   weights?: Weights
   /** How much each repeat of a genre lowers a film's rank. Defaults to DIVERSITY_PENALTY. */
   diversityPenalty?: number
+  /** The most a film loses for overlapping your dislikes. Defaults to DISLIKE_PENALTY. */
+  dislikePenalty?: number
   /** How many picks to return. Defaults to 20. */
   limit?: number
 }
@@ -243,9 +278,12 @@ const MEAN_RATING = 6.5
 /** One recommended film, with its score and the reasons for it. */
 export interface Pick {
   film: ScorerFilm
-  /** 0–1, before the diversity adjustment. */
+  /** 0–1: the weighted parts minus the dislike penalty, before the diversity adjustment. */
   score: number
-  /** Whole-number percentage shown to the user: score × 100, no inflation. */
+  /**
+   * Whole-number percentage shown to the user: the score stretched across MATCH_FLOOR to
+   * MATCH_CEILING among all the candidates (ADR-0044), so it ranks the same as `score`.
+   */
   match: number
   /** Titles of liked (or Top Ten) films that recommended it, at most two. */
   because: string[]
@@ -263,6 +301,13 @@ export interface Pick {
   explore?: true
   /** The twelve part scores (0–1), shown in the weights lab. */
   parts: Record<ScorePart, number>
+  /**
+   * How much it looks like the films you disliked, 0–1 (ADR-0044): overlaps ÷ PENALTY_HITS,
+   * capped at 1. The score loses `penalty × DISLIKE_PENALTY`.
+   */
+  penalty: number
+  /** Set when it overlaps a disliked film: the first overlap and that film's title. */
+  nearDisliked?: { overlap: string; disliked: string }
 }
 
 // A film under consideration, before scoring: how many of your likes suggest it, and which.
@@ -394,6 +439,89 @@ function shareOf<T>(values: readonly { value: T; weight: number }[], value: T): 
   return matching / total
 }
 
+// A film's vote-weighted rating (see MIN_VOTES above).
+function ratingOf(f: ScorerFilm): number {
+  const v = f.voteCount
+  return (v / (v + MIN_VOTES)) * f.voteAverage + (MIN_VOTES / (v + MIN_VOTES)) * MEAN_RATING
+}
+
+/**
+ * Where `value` falls among `sorted` (ascending), 0 for the lowest to 1 for the highest. Equal
+ * values share the middle of their places, so ties score the same. One value alone is 0.5.
+ */
+function rankAmong(sorted: readonly number[], value: number): number {
+  if (sorted.length < 2) return 0.5
+  const below = sorted.filter((v) => v < value).length
+  const equal = sorted.filter((v) => v === value).length
+  return (below + (equal - 1) / 2) / (sorted.length - 1)
+}
+
+/**
+ * How much more your likes lean to `value` (a decade or language) than the candidates do, as
+ * 0–1 (ADR-0044). The lift is your likes' share ÷ the candidates' share: 1 when they match (no
+ * evidence either way, 0.5), above 1 when you seek it out, 0 when none of your likes have it.
+ * `lift / (1 + lift)` maps it into 0–1: a lift of 3 is 0.75. `candidates` always includes the
+ * film being scored, so its share is never 0.
+ */
+function lean<T>(
+  liked: readonly { value: T; weight: number }[],
+  candidates: readonly { value: T; weight: number }[],
+  value: T,
+): number {
+  const lift = shareOf(liked, value) / shareOf(candidates, value)
+  return lift / (1 + lift)
+}
+
+// The people, studios, series and keywords of the films you disliked, each with a disliked
+// film's title, for the dislike penalty (ADR-0044). Disliked films come with their details (the
+// caller loads every tagged film's), so this costs no extra calls.
+function dislikeProfile(disliked: readonly ScorerFilm[]) {
+  const series = new Map<number, string>()
+  for (const f of disliked) if (f.seriesId) series.set(f.seriesId, f.title)
+  return {
+    directors: likedBy(disliked, (f) => f.directors ?? []),
+    writers: likedBy(disliked, (f) => f.writers ?? []),
+    cast: likedBy(disliked, (f) => f.cast ?? []),
+    studios: likedBy(disliked, (f) => indie(f.companies)),
+    series,
+    keywords: disliked.map((f) => ({
+      title: f.title,
+      keywordIds: new Set((f.keywordIds ?? []).filter((k) => !GENERIC_KEYWORDS.has(k))),
+    })),
+  }
+}
+
+/**
+ * Each way a candidate looks like a film you disliked (ADR-0044), at most one per kind: a shared
+ * director, writer, top-billed actor, non-major studio or series, or PENALTY_KEYWORDS keywords
+ * in common with one disliked film. Credits and keywords need the candidate's details, so only
+ * the re-ranked top candidates can lose points for them; a series is known for more.
+ */
+function dislikedOverlaps(
+  f: ScorerFilm,
+  details: FilmDetails | undefined,
+  dislikes: ReturnType<typeof dislikeProfile>,
+): { overlap: string; disliked: string }[] {
+  const found: { overlap: string; disliked: string }[] = []
+  const credit = (people: readonly Person[], disliked: ReadonlyMap<number, string>) => {
+    const shared = firstShared(people, disliked)
+    if (shared) found.push({ overlap: shared.name, disliked: shared.liked })
+  }
+  credit(details?.directors ?? [], dislikes.directors)
+  credit(details?.writers ?? [], dislikes.writers)
+  credit(details?.cast ?? [], dislikes.cast)
+  credit(indie(details?.companies), dislikes.studios)
+  const seriesId = f.seriesId ?? details?.seriesId
+  const series = seriesId ? dislikes.series.get(seriesId) : undefined
+  if (series) found.push({ overlap: 'the same series', disliked: series })
+  const keywordIds = details?.keywordIds ?? []
+  const alike = dislikes.keywords.find(
+    (d) => keywordIds.filter((k) => d.keywordIds.has(k)).length >= PENALTY_KEYWORDS,
+  )
+  if (alike) found.push({ overlap: 'shared keywords', disliked: alike.title })
+  return found
+}
+
 // A film's companies without the majors (MAJOR_STUDIOS), which say little about taste.
 const indie = (companies: readonly Person[] = []) =>
   companies.filter((c) => !MAJOR_STUDIOS.has(c.id))
@@ -416,13 +544,21 @@ function firstShared(people: readonly Person[], liked: ReadonlyMap<number, strin
  * Ranks films for a person: the main entry point (Discover and the weights lab call it).
  * Returns at most `limit` picks, best first; an empty list when there are no likes yet.
  */
-export function recommend(
+export function recommend(input: TasteInput, options: RecommendOptions = {}): Pick[] {
+  const { diversityPenalty = DIVERSITY_PENALTY, limit = 20 } = options
+  const scored = scoreCandidates(input, options)
+  const likedFilms = input.liked.map((l) => l.film)
+  return rank(scored, input, likedFilms, genreProfile(input), diversityPenalty, limit)
+}
+
+/**
+ * Every candidate with its score and parts, best score first and not yet spread out by the
+ * ranking rules (steps 1–3). The weights lab uses it to show how spread out the scores are
+ * across all candidates, not just the top 20 (ADR-0044). Empty when there are no likes.
+ */
+export function scoreCandidates(
   input: TasteInput,
-  {
-    weights = DEFAULT_WEIGHTS,
-    diversityPenalty = DIVERSITY_PENALTY,
-    limit = 20,
-  }: RecommendOptions = {},
+  { weights = DEFAULT_WEIGHTS, dislikePenalty = DISLIKE_PENALTY }: RecommendOptions = {},
 ): Pick[] {
   // Step 1: candidates. Without likes there are none, and nothing to recommend.
   const candidates = [...collectCandidates(input).values()]
@@ -437,6 +573,13 @@ export function recommend(
   }))
   const likedLanguages = input.liked.map((l) => ({ value: l.film.language, weight: weightOf(l) }))
   const maxSupport = Math.max(...candidates.map((c) => c.support))
+  // How common each decade and language is among the candidates, for the "lean" parts below.
+  const candidateDecades = candidates.map((c) => ({ value: decadeOf(c.film.year), weight: 1 }))
+  const candidateLanguages = candidates.map((c) => ({ value: c.film.language, weight: 1 }))
+  // Every candidate's vote-weighted rating, sorted, for ranking each one among the rest.
+  const ratings = candidates.map((c) => ratingOf(c.film)).sort((a, b) => a - b)
+  // What your dislikes look like, for the penalty (ADR-0044).
+  const dislikes = dislikeProfile(input.disliked)
   const maxPopularity = Math.max(...candidates.map((c) => c.film.popularity))
   // The series of the films you liked, each with the liked film's title.
   const likedBySeries = new Map<number, string>()
@@ -486,13 +629,11 @@ export function recommend(
   const scored = candidates.map((c): Pick => {
     const f = c.film
     const details = input.details?.get(f.id)
-    // Genre fit: the average of your profile's weight (−1…1) for each of the film's genres.
+    // Genre fit (ADR-0044): the film's best genre in your profile (−1…1), less its worst if
+    // that's one you dislike. The average used before let an untagged second genre halve a
+    // horror-comedy's fit for a horror fan; a disliked genre still pulls it down.
     const genres = f.genreIds.map((g) => profile.get(g) ?? 0)
-    const genreMean = genres.length ? genres.reduce((a, b) => a + b, 0) / genres.length : 0
-    // Quality: the vote-weighted rating (see MIN_VOTES above).
-    const v = f.voteCount
-    const rating =
-      (v / (v + MIN_VOTES)) * f.voteAverage + (MIN_VOTES / (v + MIN_VOTES)) * MEAN_RATING
+    const genreFit = Math.max(0, ...genres) + Math.min(0, ...genres)
     const decade = decadeOf(f.year)
     const credits = comparedWith(c)
     const director = firstShared(details?.directors ?? [], credits.directors)
@@ -501,19 +642,26 @@ export function recommend(
     const studio = firstShared(indie(details?.companies), credits.studios)
     const seriesId = likedSeriesOf(c)
     const series = seriesId === null ? undefined : likedBySeries.get(seriesId)
+    const overlaps = dislikedOverlaps(f, details, dislikes)
     const parts: Record<ScorePart, number> = {
-      // Relative to the best-supported candidate, so the top one always scores 1.
-      support: c.support / maxSupport,
+      // Relative to the best-supported candidate, so the top one always scores 1. On a square-root
+      // scale (ADR-0044): one hugely-suggested film used to push everything else near 0, so 2
+      // suggestions and 3 looked the same; now they don't.
+      support: Math.sqrt(c.support / maxSupport),
       // Liked genres lift a film from neutral (0.5) up to 1. Disliked genres lower it only to
       // GENRE_FLOOR, so a genre can lose ground but is never ruled out (ADR-0032).
-      genre: genreMean >= 0 ? (1 + genreMean) / 2 : 0.5 + (0.5 - GENRE_FLOOR) * genreMean,
-      // A rating of 5 or less scores 0; 9 or more scores 1.
-      quality: clamp01((rating - 5) / 4),
+      genre: genreFit >= 0 ? (1 + genreFit) / 2 : 0.5 + (0.5 - GENRE_FLOOR) * genreFit,
+      // Its rating's place among the candidates' (ADR-0044): the best-rated candidate scores 1,
+      // the worst 0. TMDB ratings cluster around 6–7.5, which a fixed 5–9 scale left in the middle.
+      quality: rankAmong(ratings, ratingOf(f)),
       // Lesser-known films score higher; log scale so one blockbuster doesn't flatten the rest.
       deepCut: maxPopularity > 0 ? 1 - Math.log1p(f.popularity) / Math.log1p(maxPopularity) : 0.5,
-      // The share of your likes from the same decade, and in the same original language.
-      decade: decade === null ? 0 : shareOf(likedDecades, decade),
-      language: f.language ? shareOf(likedLanguages, f.language) : 0,
+      // How much more your likes lean to its decade, and its original language, than the
+      // candidates do (ADR-0044). When nearly all candidates are English-language, an English film
+      // is no evidence of anything, so it's neutral; a decade you like more than the candidates
+      // are scores high. Unknown, or none of your likes: 0.
+      decade: decade === null ? 0 : lean(likedDecades, candidateDecades, decade),
+      language: f.language ? lean(likedLanguages, candidateLanguages, f.language) : 0,
       // Relative to the best keyword match among candidates; 0 without loaded keywords.
       keywords: maxKeywordRaw > 0 ? keywordRaw(c) / maxKeywordRaw : 0,
       // All or nothing: a director, writer or series you've already liked, or not.
@@ -523,14 +671,21 @@ export function recommend(
       cast: actor ? 1 : 0,
       studio: studio ? 1 : 0,
     }
-    // The weighted sum of the parts. With weights summing to 1 this is already 0–1.
-    const score = clamp01(SCORE_PARTS.reduce((sum, p) => sum + weights[p] * parts[p], 0))
+    // The weighted sum of the parts (with weights summing to 1 it's already 0–1), less the
+    // dislike penalty: none for no overlaps, all of it from PENALTY_HITS overlaps on.
+    const penalty = Math.min(1, overlaps.length / PENALTY_HITS)
+    const weighted = SCORE_PARTS.reduce((sum, p) => sum + weights[p] * parts[p], 0)
+    const score = clamp01(weighted - dislikePenalty * penalty)
+    const [near] = overlaps
     return {
       film: f,
       score,
-      match: Math.round(score * 100),
+      // Filled in below, once every candidate has a score to stretch against.
+      match: 0,
       because: c.because.slice(0, 2),
       parts,
+      penalty,
+      ...(near && { nearDisliked: near }),
       ...(director && { sameDirector: { director: director.name, liked: director.liked } }),
       ...(writer && { sameWriter: { writer: writer.name, liked: writer.liked } }),
       ...(series && { sameSeries: { liked: series } }),
@@ -539,7 +694,19 @@ export function recommend(
     }
   })
 
-  return rank(scored, input, likedFilms, profile, diversityPenalty, limit)
+  // "% match" (ADR-0044): each score's place between the weakest and the best candidate,
+  // stretched across MATCH_FLOOR–MATCH_CEILING. With one candidate (or all tied) there's nothing
+  // to stretch against, so it's the score in percent.
+  const scores = scored.map((p) => p.score)
+  const low = Math.min(...scores)
+  const high = Math.max(...scores)
+  for (const p of scored)
+    p.match = Math.round(
+      high > low
+        ? MATCH_FLOOR + ((MATCH_CEILING - MATCH_FLOOR) * (p.score - low)) / (high - low)
+        : p.score * 100,
+    )
+  return scored.sort((a, b) => b.score - a.score || a.film.id - b.film.id)
 }
 
 // Step 4: rank greedily, one pick at a time. Each round takes the best remaining candidate after

@@ -18,6 +18,7 @@ import { crewOf, releaseYear, type MovieDetail, type MovieSummary } from '../api
 import {
   keywordsToSearch,
   recommend,
+  scoreCandidates,
   TOP_TEN_WEIGHT,
   type FilmDetails,
   type Pick,
@@ -92,6 +93,11 @@ export interface Taste {
   loading: boolean
   /** Scores the taste, keeping picks whose TMDB summary is known (for posters and links). */
   score: (options?: RecommendOptions) => Recommendation[]
+  /**
+   * Every candidate, scored but not ranked (best score first), for the weights lab's spread panel
+   * (ADR-0044).
+   */
+  candidates: (options?: RecommendOptions) => Recommendation[]
 }
 
 /**
@@ -205,11 +211,16 @@ export function useTaste(): Taste {
       keywordQueries.some((q) => q.isPending) ||
       topDetails.some((q) => q.isPending),
     // Scoring a few hundred candidates is well under a millisecond, so it simply runs each render.
-    score: (options) =>
-      recommend(reranked, options).flatMap(({ film, ...rest }) => {
-        const movie = summaries.get(film.id)
-        return movie ? [{ ...rest, movie }] : []
-      }),
+    score: (options) => withSummaries(recommend(reranked, options)),
+    candidates: (options) => withSummaries(scoreCandidates(reranked, options)),
+  }
+
+  // Swaps each pick's scorer film for TMDB's summary, dropping any without one.
+  function withSummaries(picks: Pick[]): Recommendation[] {
+    return picks.flatMap(({ film, ...rest }) => {
+      const movie = summaries.get(film.id)
+      return movie ? [{ ...rest, movie }] : []
+    })
   }
 }
 

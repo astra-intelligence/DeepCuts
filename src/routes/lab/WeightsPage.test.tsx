@@ -35,22 +35,40 @@ describe('weights lab (ADR-0026)', () => {
     expect(support).toHaveAccessibleDescription(
       'How many of your liked films recommend it, or share its series.',
     )
-    // Twelve score parts (ADR-0032, ADR-0038) plus genre variety.
-    expect(screen.getAllByRole('slider')).toHaveLength(13)
+    // Twelve score parts (ADR-0032, ADR-0038), genre variety and the dislike penalty (ADR-0044).
+    expect(screen.getAllByRole('slider')).toHaveLength(14)
+    expect(screen.getByRole('slider', { name: 'Dislike penalty' })).toHaveValue('15')
     expect(screen.getByRole('slider', { name: 'Same writer' })).toHaveValue('5')
     expect(screen.getByRole('slider', { name: 'Same series' })).toHaveValue('7')
 
-    const table = await screen.findByRole('table')
+    // The picks table comes first; the score spread table follows it.
+    const [table] = await screen.findAllByRole('table')
+    if (!table) throw new Error('no picks table')
     const rows = within(table).getAllByRole('row').slice(1)
     expect(rows.length).toBeGreaterThan(0)
     // At the defaults nothing has moved.
     for (const row of rows) expect(row).toHaveTextContent(/^1?\d.*–\d+%/)
     expect(screen.getByText(/support: 0\.17/)).toBeInTheDocument()
+    expect(screen.getByText(/support: 0\.17/)).toHaveTextContent('dislikePenalty: 0.15')
+    expect(within(table).getByRole('columnheader', { name: /Avoid/ })).toBeInTheDocument()
+  })
+
+  it('shows how spread out the scores are (ADR-0044)', async () => {
+    await likeThenOpen('/lab/weights')
+    const heading = await screen.findByRole('heading', { name: 'Score spread' })
+    expect(heading).toBeVisible()
+    expect(screen.getByText(/run from \d+% to \d+% match/)).toBeInTheDocument()
+    const tables = await screen.findAllByRole('table')
+    const spread = tables.at(-1)
+    if (!spread) throw new Error('no spread table')
+    // A row per part, plus the dislike penalty.
+    expect(within(spread).getAllByRole('row')).toHaveLength(1 + 12 + 1)
+    expect(within(spread).getByRole('rowheader', { name: 'Dislike penalty' })).toBeInTheDocument()
   })
 
   it('keeps settings in the URL, scales them to 100%, and ignores bad values', async () => {
     await likeThenOpen(
-      '/lab/weights?support=50&genre=50&quality=0&deepCut=0&decade=0&language=0&keywords=0&director=0&writer=0&series=0&cast=0&studio=0&diversity=999',
+      '/lab/weights?support=50&genre=50&quality=0&deepCut=0&decade=0&language=0&keywords=0&director=0&writer=0&series=0&cast=0&studio=0&diversity=999&penalty=30',
     )
     expect(await screen.findByRole('slider', { name: 'Genre fit' })).toHaveValue('50')
     // Out-of-range diversity falls back to the default 3.
@@ -58,6 +76,7 @@ describe('weights lab (ADR-0026)', () => {
     const settings = screen.getByText(/support: 0\.50/)
     expect(settings).toHaveTextContent('genre: 0.50')
     expect(settings).toHaveTextContent('diversityPenalty: 0.03')
+    expect(settings).toHaveTextContent('dislikePenalty: 0.30')
   })
 
   it('updates the URL from the keyboard and resets to the defaults', async () => {
