@@ -1,5 +1,7 @@
 // The weights lab (/lab/weights, dev server only): sliders for the recommendation scorer's
 // weights. Like every lab it never ships: the route only exists under `npm run dev` (router.tsx).
+// Scorer v4 (ADR-0044) adds the dislike penalty slider, an "Avoid" column and the "Score spread"
+// panel, which shows which parts actually tell your candidates apart.
 import { useState } from 'react'
 import { withToast } from '../../notify'
 import {
@@ -16,8 +18,10 @@ import { releaseYear } from '../../api/tmdb'
 import { EmptyState } from '../../components/EmptyState'
 import { HOME } from '../../config/features'
 import { PageHeading } from '../../components/PageHeading'
+import { matchRange, partSpreads, type PartSpread } from '../../domain/scoreSpread'
 import {
   DEFAULT_WEIGHTS,
+  DISLIKE_PENALTY,
   DIVERSITY_PENALTY,
   normalizeWeights,
   SCORE_PARTS,
@@ -36,6 +40,8 @@ const LIMIT = 20
 const toPercent = (n: number) => Math.round(n * 100)
 // The URL key for the genre-variety slider (the scorer's diversity penalty).
 const DIVERSITY_KEY = 'diversity'
+// The URL key for the dislike penalty slider (ADR-0044).
+const PENALTY_KEY = 'penalty'
 
 // Plain-language names for the score parts: slider label, short table header, and hint.
 const PARTS: Record<ScorePart, { label: string; short: string; hint: string }> = {
@@ -101,16 +107,24 @@ const paramsSchema = z.object({
     SCORE_PARTS.map((p) => [p, level(toPercent(DEFAULT_WEIGHTS[p]))]),
   ) as Record<ScorePart, ReturnType<typeof level>>),
   [DIVERSITY_KEY]: level(toPercent(DIVERSITY_PENALTY), 20),
+  [PENALTY_KEY]: level(toPercent(DISLIKE_PENALTY), 40),
 })
+
+// The spread panel's names: the score parts', plus the dislike penalty.
+const SPREAD_LABELS: Record<PartSpread['part'], string> = {
+  ...(Object.fromEntries(SCORE_PARTS.map((p) => [p, PARTS[p].label])) as Record<ScorePart, string>),
+  penalty: 'Dislike penalty',
+}
 
 /** The weights lab page. Dev server only (`FEATURES.labs`). */
 export function WeightsPage() {
   const [params, setParams] = useSearchParams()
-  const { diversity, ...levels } = paramsSchema.parse(Object.fromEntries(params))
+  const { diversity, penalty, ...levels } = paramsSchema.parse(Object.fromEntries(params))
   const weights = normalizeWeights(levels)
   const diversityPenalty = diversity / 100
+  const dislikePenalty = penalty / 100
   const taste = useTaste()
-  const tuned = taste.score({ weights, diversityPenalty, limit: LIMIT })
+  const tuned = taste.score({ weights, diversityPenalty, dislikePenalty, limit: LIMIT })
   const baseline = taste.score({ limit: LIMIT })
   // Today's default ranking, to show how far each film moved.
   const baselineRank = new Map(baseline.map((r, i) => [r.movie.id, i]))
@@ -119,7 +133,7 @@ export function WeightsPage() {
   const allZero = SCORE_PARTS.every((p) => levels[p] === 0)
 
   // Writes one slider's value into the URL. `replace` avoids a history entry per slider step.
-  function set(key: ScorePart | typeof DIVERSITY_KEY, value: number) {
+  function set(key: ScorePart | typeof DIVERSITY_KEY | typeof PENALTY_KEY, value: number) {
     setParams(
       (prev) => {
         const next = new URLSearchParams(prev)
@@ -171,7 +185,18 @@ export function WeightsPage() {
               max={20}
               onChange={(v) => set(DIVERSITY_KEY, v)}
             />
-            <Summary weights={weights} diversityPenalty={diversityPenalty} />
+            <WeightSlider
+              label="Dislike penalty"
+              hint="The most a film loses for sharing a director, writer, actor, studio, series or keywords with a film you disliked."
+              value={penalty}
+              max={40}
+              onChange={(v) => set(PENALTY_KEY, v)}
+            />
+            <Summary
+              weights={weights}
+              diversityPenalty={diversityPenalty}
+              dislikePenalty={dislikePenalty}
+            />
           </section>
 
           <section aria-labelledby="picks" className="min-w-0">
@@ -193,7 +218,13 @@ export function WeightsPage() {
                 Your likes don’t recommend any films you haven’t tagged yet. Like a few more films.
               </EmptyState>
             ) : (
-              <PicksTable picks={tuned} baselineRank={baselineRank} />
+              <>
+                <PicksTable picks={tuned} baselineRank={baselineRank} />
+                <SpreadPanel
+                  picks={tuned}
+                  candidates={taste.candidates({ weights, dislikePenalty })}
+                />
+              </>
             )}
             {dropped.length > 0 && (
               <p className="mt-3 text-sm text-fg-muted">
@@ -269,10 +300,19 @@ function WeightSlider({
 }
 
 /** The current settings as code, ready to paste into DEFAULT_WEIGHTS (or send to the developer). */
-function Summary({ weights, diversityPenalty }: { weights: Weights; diversityPenalty: number }) {
+function Summary({
+  weights,
+  diversityPenalty,
+  dislikePenalty,
+}: {
+  weights: Weights
+  diversityPenalty: number
+  dislikePenalty: number
+}) {
   const text = [
     ...SCORE_PARTS.map((p) => `${p}: ${weights[p].toFixed(2)}`),
     `diversityPenalty: ${diversityPenalty.toFixed(2)}`,
+    `dislikePenalty: ${dislikePenalty.toFixed(2)}`,
   ].join('\n')
 
   function copy() {
@@ -343,6 +383,14 @@ function PicksTable({
                 </abbr>
               </th>
             ))}
+            <th scope="col" className="px-3 py-2 font-bold">
+              <abbr
+                title="Dislike penalty: how much it looks like films you disliked"
+                className="no-underline"
+              >
+                Avoid
+              </abbr>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -366,6 +414,18 @@ function PicksTable({
                   {toPercent(r.parts[p])}
                 </td>
               ))}
+              <td className="px-3 py-2 text-fg-muted">
+                {r.nearDisliked ? (
+                  <span title={`${r.nearDisliked.overlap}, like ${r.nearDisliked.disliked}`}>
+                    {toPercent(r.penalty)}
+                    <span className="sr-only">
+                      : {r.nearDisliked.overlap}, like {r.nearDisliked.disliked}
+                    </span>
+                  </span>
+                ) : (
+                  toPercent(r.penalty)
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -389,5 +449,71 @@ function Change({ from, to }: { from: number | undefined; to: number }) {
         {moved > 0 ? 'Up' : 'Down'} {Math.abs(moved)}
       </span>
     </span>
+  )
+}
+
+/**
+ * How spread out the scores are (ADR-0044): the match range of the top picks, and each part's
+ * spread across every candidate. A part that barely varies only lifts every score equally, so it
+ * can't change the order: lowering its weight changes nothing but the raw scores.
+ */
+function SpreadPanel({
+  picks,
+  candidates,
+}: {
+  picks: Recommendation[]
+  candidates: Recommendation[]
+}) {
+  const range = matchRange(picks)
+  const spreads = partSpreads(candidates)
+  return (
+    <section aria-labelledby="spread" className="mt-8">
+      <h2 id="spread" className="text-lg font-bold">
+        Score spread
+      </h2>
+      {range && (
+        <p className="mb-2.5 text-sm text-fg-muted">
+          Your top {picks.length} run from {range.low}% to {range.high}% match (middle{' '}
+          {range.median}%). Below, each part across all {candidates.length} candidates: one that
+          barely varies can’t change the order. Keywords and credits only count for the top 20
+          candidates, so they look flatter here than they are.
+        </p>
+      )}
+      <div className="overflow-x-auto border-2 border-card-border">
+        <table className="w-full text-left text-sm tabular-nums">
+          <thead className="bg-surface-raised text-fg-muted">
+            <tr>
+              <th scope="col" className="px-3 py-2 font-bold">
+                Part
+              </th>
+              <th scope="col" className="px-3 py-2 font-bold">
+                Low
+              </th>
+              <th scope="col" className="px-3 py-2 font-bold">
+                High
+              </th>
+              <th scope="col" className="px-3 py-2 font-bold">
+                Spread
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {spreads.map((s) => (
+              <tr key={s.part} className="border-t border-border">
+                <th scope="row" className="px-3 py-2 font-bold">
+                  {SPREAD_LABELS[s.part]}
+                </th>
+                <td className="px-3 py-2 text-fg-muted">{toPercent(s.low)}</td>
+                <td className="px-3 py-2 text-fg-muted">{toPercent(s.high)}</td>
+                <td className="px-3 py-2">
+                  {toPercent(s.spread)}
+                  {s.flat && <span className="ml-2 text-fg-muted">barely varies</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   )
 }
