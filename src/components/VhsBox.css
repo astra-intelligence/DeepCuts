@@ -89,8 +89,8 @@
        the width). The strip on the spine only shows when the box turns. --vhs-spine-tint darks
        the art on the spine (0 = none, 1 = the plain dark spine) so its printing stays legible.
        --vhs-art-shift slides the wrapped art right (a share of the box's width) so the front
-       shows it closer to centred: the spine's outer edge then shows plain spine, and the same
-       amount is trimmed from the art's right edge. Owner's choice (2026-10-15): wrapped, tint
+       shows it closer to centred: the strip on the spine stretches sideways to still cover the
+       whole spine, and the same amount is trimmed from the art's right edge. Owner's choice (2026-10-15): wrapped, tint
        0.6, a slight shift, on a 1.7 box. There the cover and spine together are a little wider
        than the poster's own shape, so with full stretch it's about 5% wider than natural, and
        about 8% is trimmed from its right edge. */
@@ -159,6 +159,28 @@
     --art-left: calc((var(--surface-w) - var(--art-w)) / 2);
     /* The wrapped art's slide to the right (--vhs-art-shift; no slide unless wrapped). */
     --art-shift: calc(100cqw * var(--vhs-art-shift) * var(--vhs-wrap));
+    /* The spine's strip of the wrapped art, stretched sideways to fill the whole spine when the
+       shift leaves a gap at its outer edge (owner, 2026-10-15), and still meeting the cover at
+       the fold. Plain numbers (shares of the box's width) rather than lengths, because dividing
+       one length by another isn't supported everywhere yet. --sp-left: where the art would
+       start on the spine; --sp-a0: how much of the art lies beyond the spine's outer edge (when
+       cropped); --sp-scale: the stretch that makes the rest span the spine (1 with no gap). */
+    --sp-surface: calc(1 + var(--vhs-depth) * var(--vhs-wrap));
+    --sp-art-h: calc(var(--vhs-aspect) - var(--vhs-band) * (var(--vhs-aspect) - 1.5));
+    --sp-art-w: max(
+      var(--sp-surface),
+      calc(
+        var(--sp-surface) + (1 - var(--vhs-stretch)) * (var(--sp-art-h) / 1.5 - var(--sp-surface))
+      )
+    );
+    --sp-left: calc(
+      var(--vhs-depth) * (1 - var(--vhs-wrap)) + (var(--sp-surface) - var(--sp-art-w)) / 2 +
+        var(--vhs-art-shift) * var(--vhs-wrap)
+    );
+    --sp-a0: max(0, calc(var(--sp-left) * -1));
+    --sp-scale: calc(
+      var(--vhs-depth) / max(0.01, calc(var(--vhs-depth) - var(--sp-left) - var(--sp-a0)))
+    );
     --still-y: var(--vhs-rest-y);
     --still-x: var(--vhs-rest-x);
     --turn-y: var(--still-y);
@@ -349,13 +371,14 @@
     box-shadow: inset 0 0 calc(var(--d) * 0.12)
       color-mix(in srgb, var(--color-vhs-box-card) 30%, transparent);
   }
-  /* The wrapped poster's strip on the spine (--vhs-wrap): the same poster, placed where it
-     continues from the cover, level with it (below a band on top). Hidden when not wrapping. */
+  /* The wrapped poster's strip on the spine (--vhs-wrap): the same poster, continuing from the
+     cover at the fold and stretched to reach the spine's outer edge (--sp-scale), level with
+     the cover's art (below a band on top). Hidden when not wrapping. */
   .vhs-spine-art {
     position: absolute;
     top: calc(var(--band-h) * (1 - var(--vhs-band-order)) / 2);
-    left: calc(var(--d) - var(--wrap-d) + var(--art-left) + var(--art-shift));
-    width: var(--art-w);
+    left: calc(100cqw * var(--sp-a0) * var(--sp-scale) * -1);
+    width: calc(var(--art-w) * var(--sp-scale));
     max-width: none;
     height: var(--art-h);
     object-fit: fill;
