@@ -4,8 +4,8 @@
 // practice accounts keep their Top Ten in this browser, passkey accounts on the server, and the
 // signed-out store is empty and refuses writes. Methods are async because the server one is.
 //
-// Only adding and removing exist for now. Reordering and replacing a film in a full list come with
-// the Top Ten management screen (ADR-0033); they'll be new methods here.
+// Adding, removing and reordering (ADR-0041) exist. Replacing a film in a full list comes with the
+// rest of the Top Ten management screen (ADR-0033); it'll be a new method here.
 import { z } from 'zod'
 import { TOP_TEN_SIZE, type TopTenList } from '../domain/topTen'
 
@@ -29,4 +29,10 @@ export interface TopTenRepository {
   add(tmdbId: number): Promise<TopTenList>
   /** Removes a film (the films below it move up) and returns the new list. */
   remove(tmdbId: number): Promise<TopTenList>
+  /**
+   * Saves a new order for the same films (ADR-0041) and returns it. Rejects with
+   * `TopTenChangedError` when `order` adds, drops or repeats a film, which means the stored list
+   * changed elsewhere (another tab or device) since it was read.
+   */
+  reorder(order: TopTenList): Promise<TopTenList>
 }

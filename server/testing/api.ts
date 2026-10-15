@@ -13,7 +13,7 @@ import {
 } from '../accounts/auth.ts'
 import type { AccountsEnv } from '../accounts/d1.ts'
 import { changeTag, importTags, listTags } from '../accounts/tags.ts'
-import { changeTopTen, listTopTen } from '../accounts/topTen.ts'
+import { changeTopTen, listTopTen, saveTopTenOrder } from '../accounts/topTen.ts'
 import { guardApi } from '../apiGuard.ts'
 import { route } from '../http.ts'
 import type { RateLimiterBinding } from '../rateLimit.ts'
@@ -71,6 +71,7 @@ export const ROUTES = {
       GET: ({ request, env }) => listTopTen(request, env),
       PUT: ({ request, env }) => changeTopTen(request, env),
       DELETE: ({ request, env }) => changeTopTen(request, env),
+      PATCH: ({ request, env }) => saveTopTenOrder(request, env),
     }),
   ],
 } as const

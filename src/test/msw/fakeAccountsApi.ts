@@ -8,7 +8,7 @@ import { createTopTenRepository } from '../../adapters/createTopTenRepository'
 import type { TagRecord, TagRepository } from '../../adapters/TagRepository'
 import type { TopTenRepository } from '../../adapters/TopTenRepository'
 import { SYSTEM_TAGS, type SystemTag } from '../../domain/tagRules'
-import { TopTenFullError, type TopTenList } from '../../domain/topTen'
+import { TopTenChangedError, TopTenFullError, type TopTenList } from '../../domain/topTen'
 
 type User = { id: string; name: string }
 
@@ -144,6 +144,17 @@ export function createFakeAccountsApi(now: () => string = () => new Date().toISO
       if (!state.signedIn) return signedOut()
       const { tmdbId } = (await request.json()) as { tmdbId: number }
       return HttpResponse.json({ films: await topTenOf(state.signedIn.id).remove(tmdbId) })
+    }),
+    http.patch('/api/top-ten', async ({ request }) => {
+      if (!state.signedIn) return signedOut()
+      const { ids } = (await request.json()) as { ids: number[] }
+      try {
+        return HttpResponse.json({ films: await topTenOf(state.signedIn.id).reorder(ids) })
+      } catch (e) {
+        if (e instanceof TopTenChangedError)
+          return HttpResponse.json({ error: 'top_ten_changed' }, { status: 409 })
+        throw e
+      }
     }),
   ]
 

@@ -544,6 +544,47 @@ describe('Top Ten (ADR-0036)', () => {
     expect(await films(client)).toEqual([])
   })
 
+  it('saves a new order with PATCH, rewriting positions 1…n (ADR-0041)', async () => {
+    const client = await signedIn()
+    for (const id of [1, 2, 3]) await client.call('PUT', '/api/top-ten', { tmdbId: id })
+    const res = await client.call('PATCH', '/api/top-ten', { ids: [3, 1, 2] })
+    expect(res.status).toBe(200)
+    expect(res.body.films).toEqual([3, 1, 2])
+    expect(db.rows('top_ten').map((r) => [r.tmdb_id, r.position])).toEqual([
+      [3, 1],
+      [1, 2],
+      [2, 3],
+    ])
+    expect(await films(client)).toEqual([3, 1, 2])
+  })
+
+  it('refuses an order that adds, drops or swaps in a film with 409 top_ten_changed', async () => {
+    const client = await signedIn()
+    for (const id of [1, 2, 3]) await client.call('PUT', '/api/top-ten', { tmdbId: id })
+    for (const ids of [[1, 2, 3, 4], [1, 2], [1, 2, 9]]) {
+      const res = await client.call('PATCH', '/api/top-ten', { ids })
+      expect(res.status).toBe(409)
+      expect(res.body).toEqual({ error: 'top_ten_changed' })
+    }
+    // Repeats, eleven ids, or ids that aren't film ids are malformed, not a changed list.
+    const eleven = Array.from({ length: 11 }, (_, i) => i + 1)
+    for (const body of [{}, { ids: [1, 1, 2] }, { ids: eleven }, { ids: [3, 1, -2] }, { ids: 3 }])
+      expect((await client.call('PATCH', '/api/top-ten', body)).status).toBe(400)
+    expect(await films(client)).toEqual([1, 2, 3])
+  })
+
+  it("reorders only the signed-in user's list, ignoring a user id sent by the client", async () => {
+    const a = await signedIn()
+    const b = await signedIn()
+    const aId = (await a.call('GET', '/api/auth/session')).body.id
+    for (const id of [1, 2]) await a.call('PUT', '/api/top-ten', { tmdbId: id })
+    for (const id of [1, 2]) await b.call('PUT', '/api/top-ten', { tmdbId: id })
+    await b.call('PATCH', '/api/top-ten', { ids: [2, 1], userId: aId })
+    expect(await films(a)).toEqual([1, 2])
+    expect(await films(b)).toEqual([2, 1])
+    expect((await createClient(env).call('PATCH', '/api/top-ten', { ids: [] })).status).toBe(401)
+  })
+
   it('never caches answers', async () => {
     const client = await signedIn()
     const res = await client.call('GET', '/api/top-ten')
