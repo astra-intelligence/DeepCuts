@@ -73,7 +73,7 @@
        (1 = all of it, squashed sideways) and the rest is cropped evenly from the sides. The owner
        chose 1 (2026-10-15): the whole poster always shows, nothing cut off, at the cost of
        squashing it to 75% of its width (TMDB has no taller artwork to use instead). */
-    --vhs-aspect: 1.87;
+    --vhs-aspect: 1.7;
     --vhs-stretch: 1;
 
     /* The cover band: a printed strip with the film's title, like a real sleeve's, that takes
@@ -91,8 +91,9 @@
        --vhs-art-shift slides the wrapped art right (a share of the box's width) so the front
        shows it closer to centred: the spine's outer edge then shows plain spine, and the same
        amount is trimmed from the art's right edge. Owner's choice (2026-10-15): wrapped, tint
-       0.6, a slight shift, on a 1.87 box, which with full stretch leaves the poster at about
-       96% of its width, with about 8% trimmed from its right edge. */
+       0.6, a slight shift, on a 1.7 box. There the cover and spine together are a little wider
+       than the poster's own shape, so with full stretch it's about 5% wider than natural, and
+       about 8% is trimmed from its right edge. */
     --vhs-wrap: 1;
     --vhs-spine-tint: 0.6;
     --vhs-art-shift: 0.1;

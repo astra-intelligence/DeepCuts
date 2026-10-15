@@ -98,7 +98,7 @@ interface Settings {
 
 // Starting values: the approved design (src/components/VhsBox.css).
 const DEFAULTS: Settings = {
-  aspect: 1.87,
+  aspect: 1.7,
   stretch: 1,
   band: 0,
   wrap: true,
