@@ -12,13 +12,39 @@ The source of truth for this repo is the files in it, not chat history.
 - The owner approves every technology and design choice. Propose options with a recommendation; never decide alone.
 - `npm run verify` must pass before every commit. It runs lint, typecheck, contrast, coverage, build and the dist secret check.
 - Tokens follow Brad Frost's tiers (ADR-0027); the Tailwind theme is generated from them, so a class name is a token name. Use component tokens where they exist (`bg-card-bg`, `rounded-button`), else semantic ones (`text-fg-muted`, `rounded-container`). Raw colors and the raw radius/shadow scale fail lint. Change tokens in `tokens/`, never `src/styles/`.
-- Style with Tailwind classes. A component whose look classes can't express readably (e.g. the 3D `VhsBox`) gets a co-located stylesheet (`X.css`, imported by `X.tsx`) that starts with `@reference "../index.css";`, keeps its rules in `@layer components`, uses tokens through `@apply` (type, spacing), `--theme()` (motion and other build-time values) and the theme's color variables (runtime), and never raw `--dc-*` variables. It loads with its component's code instead of on every page.
+- Style with Tailwind classes. A component whose look classes can't express readably (e.g. the 3D `VhsBox`) gets a co-located stylesheet (`X.css`, imported by `X.tsx`) that starts with an `@reference` to `src/index.css` (relative, e.g. `@reference "../../index.css";`), keeps its rules in `@layer components`, uses tokens through `@apply` (type, spacing), `--theme()` (motion and other build-time values) and the theme's color variables (runtime), and never raw `--dc-*` variables. It loads with its component's code instead of on every page.
 - Comment generously so the owner can read the code. Every new file starts with a short header saying what it is for and how it fits (with its ADR). Every exported function, component, hook and type gets a doc comment in plain language. Inside, comment each step of non-obvious logic and the _why_ behind rules, numbers and workarounds. Skip comments that only repeat the code.
-- Every shared component in `src/components/` gets a Storybook story (`X.stories.tsx`) covering its states; `npm run storybook:test` (CI) runs axe on every story.
+- Every component in `src/components/`, and every page-private component with visual states, gets a Storybook story (`X.stories.tsx`) covering its states, titled after its folder (`Components/UI/Icon`, `Pages/Discover/PickActions`); `npm run storybook:test` (CI) runs axe on every story.
 - Browser storage only in `src/adapters/local/`. No `dangerouslySetInnerHTML`. Validate external data with Zod.
 - Secrets never go in `VITE_*` vars.
 - Responsive, mobile-first (ADR-0021): base styles target 390px; enhance with `md:`/`lg:`; no horizontal overflow at 320px.
 - Save tokens: prefer local scripts and CLIs over LLM generation; keep output terse.
+
+## Where files go (ADR-0046)
+
+One rule: **a file lives next to the only thing that uses it; once two or more places use it, it moves to the shared folder for its kind.**
+
+| Folder                   | What goes in it                                                                                                                                                                          |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/routes/<page>/`     | A page (`DiscoverPage.tsx`) and everything only that page uses: its private components, helpers, CSS, stories and tests. Folder names are the page name in kebab-case (`movie-detail/`). |
+| `src/routes/` (root)     | Route plumbing the router imports directly: layouts, guards and fallbacks (`AppLayout`, `RequireAccount`, `IndexRoute`, `PlaceholderPages`).                                             |
+| `src/components/ui/`     | Shared building blocks that know nothing about films or accounts: they would work in any app (`Icon`, `Eyebrow`, `EmptyState`).                                                          |
+| `src/components/layout/` | The app shell: the frame and bands around page content (logo, ticker band, account chip, footer, toasts).                                                                                                      |
+| `src/components/movie/`  | Shared components and display helpers that show or act on a film (`VhsBox`, `CassetteCard`, `TagToggle`, `tagDisplay.ts`).                                                               |
+| `src/hooks/`             | Shared React hooks that aren't about one component.                                                                                                                                      |
+| `src/domain/`            | Pure product logic (no React, no browser APIs): tags, ranking, the scorer. Also used by `server/`.                                                                                       |
+| `src/adapters/`          | Storage and session ports and their local and Cloudflare implementations (ADR-0013, ADR-0031).                                                                                           |
+| `src/session/`           | React Query hooks over the signed-in account's data (tags, Top Ten, recommendations).                                                                                                    |
+| `src/api/`               | The TMDB client and its queries.                                                                                                                                                         |
+| `src/config/`            | Static app configuration and content (feature flags, brand, the three panels).                                                                                                           |
+| `src/test/`              | Test setup, MSW handlers and fixtures.                                                                                                                                                   |
+| `server/`                | Node and Workers code: security headers, rate limiting, `tmdb/` (the TMDB proxy) and `accounts/`.                                                                                        |
+| `scripts/`               | Build, check and deploy scripts.                                                                                                                                                         |
+
+- A file's tests (`X.test.ts`), stories (`X.stories.tsx`) and stylesheet (`X.css`) sit next to it.
+- No `index.ts` barrel files and no folder per component: import the file itself.
+- Imports in `src/`: `./x` within the folder (or below it), `@/x` (meaning `src/x`) for anything else. `../` fails lint. `src/domain/`, `src/adapters/` and `src/test/msw/` are the exception: `server/`, `functions/` and Playwright import them, and those tools don't know `@/`, so they keep relative imports (also enforced by lint).
+- When a page-private file gains a second user, move it to the shared folder in the same PR.
 
 ## Version control
 
