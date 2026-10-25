@@ -61,8 +61,8 @@
     "@cloudflare/workers-types": "5.20261012.1",
     "@eslint/js": "^9.39.5",
     "@playwright/test": "^1.64.0",
-    "@storybook/addon-a11y": "^10.6.1",
-    "@storybook/react-vite": "^10.6.1",
+    "@storybook/addon-a11y": "^10.6.3",
+    "@storybook/react-vite": "^10.6.3",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
@@ -82,7 +82,7 @@
     "prettier": "^3.9.10",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "rollup-plugin-visualizer": "^7.1.1",
-    "storybook": "^10.6.1",
+    "storybook": "^10.6.3",
     "style-dictionary": "5.6.1",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
@@ -96,7 +96,8 @@
   },
   "overrides": {
     "miniflare": {
-      "sharp": "0.35.5"
+      "sharp": "0.35.5",
+      "undici": "7.30.1"
     }
   }
 }
