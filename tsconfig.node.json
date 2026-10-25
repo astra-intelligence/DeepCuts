@@ -1,5 +1,5 @@
 // TypeScript settings for code that runs in Node: config files, the local TMDB proxy (server/)
-// and the E2E tests (e2e/). Type-checking only.
+// the TypeScript build helpers in scripts/ and the E2E tests (e2e/). Type-checking only.
 {
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
@@ -29,6 +29,7 @@
     "playwright.storybook.config.ts",
     "playwright.cf.config.ts",
     "server",
+    "scripts/**/*.ts",
     "e2e",
     "storybook-tests",
     ".storybook"

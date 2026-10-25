@@ -9,7 +9,7 @@ import { onRequest, type Env } from '../functions/api/tmdb/[[path]]'
 import { onRequest as middleware } from '../functions/_middleware'
 import { onRequest as apiMiddleware, type ApiEnv } from '../functions/api/_middleware'
 import { productionHeaders } from './securityHeaders'
-import { tmdbProxyContract } from './tmdbProxy.contract'
+import { tmdbProxyContract } from './tmdb/proxy.contract'
 
 // A cache that never hits, so the contract sees the uncached behavior.
 const emptyCache = { match: async () => undefined, put: async () => undefined }

@@ -4,7 +4,7 @@
 // panel, which shows which parts actually tell your candidates apart. "Learn from your presses"
 // (ADR-0045) suggests weights fitted to your Want / Nope presses on Home's Discovery picks.
 import { useMemo, useState } from 'react'
-import { withToast } from '../../notify'
+import { withToast } from '@/notify'
 import {
   Button,
   Label,
@@ -15,12 +15,12 @@ import {
 } from 'react-aria-components'
 import { Link, useSearchParams } from 'react-router'
 import { z } from 'zod'
-import { releaseYear } from '../../api/tmdb'
-import { EmptyState } from '../../components/EmptyState'
-import { HOME } from '../../config/features'
-import { PageHeading } from '../../components/PageHeading'
-import { learnWeights, MIN_EACH, MIN_PRESSES } from '../../domain/learnWeights'
-import { matchRange, partSpreads, type PartSpread } from '../../domain/scoreSpread'
+import { releaseYear } from '@/api/tmdb'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { HOME } from '@/config/features'
+import { PageHeading } from '@/components/ui/PageHeading'
+import { learnWeights, MIN_EACH, MIN_PRESSES } from '@/domain/learnWeights'
+import { matchRange, partSpreads, type PartSpread } from '@/domain/scoreSpread'
 import {
   DEFAULT_WEIGHTS,
   DISLIKE_PENALTY,
@@ -30,9 +30,9 @@ import {
   SCORE_PARTS,
   type ScorePart,
   type Weights,
-} from '../../domain/scorer'
-import { useFeedbackLog } from '../../session/useFeedbackLog'
-import { useTaste, type Recommendation } from '../../session/useRecommendations'
+} from '@/domain/scorer'
+import { useFeedbackLog } from '@/session/useFeedbackLog'
+import { useTaste, type Recommendation } from '@/session/useRecommendations'
 
 // The weights lab (ADR-0026 follow-up): the owner tunes the scorer against their own tags and
 // sees the picks re-rank live. Settings live in the URL (whole numbers, so links stay readable):

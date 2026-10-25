@@ -93,6 +93,24 @@ Sessions last 30 days and renew on use; the cookie is `__Host-dc_session` (`Http
 
 `npm run invite -- --remote --base https://deep-cuts.example` writes to the real database. It's for the owner only, after go-live (see the checklist).
 
+## Project structure
+
+```
+src/
+  routes/<page>/   one folder per page, with everything only that page uses
+  components/      shared components: ui/ (generic), layout/ (app shell), movie/ (films)
+  hooks/ domain/ adapters/ session/ api/ config/ test/
+server/            Node + Workers code: headers, rate limiting, tmdb/ proxy, accounts/
+functions/         Cloudflare Pages Functions (the hosted API)
+workers/           the rate-limit Worker
+scripts/           build, check and deploy scripts
+tokens/            design tokens (source for the Tailwind theme)
+e2e/               Playwright tests
+docs/              ADRs, design notes, security
+```
+
+Rules for where a file goes, and how imports are written (`@/` means `src/`), are in [AGENTS.md](AGENTS.md#where-files-go-adr-0046) (ADR-0046).
+
 ## Configuration
 
 Most config files explain themselves in comments. These formats can't hold comments, so they're described here:

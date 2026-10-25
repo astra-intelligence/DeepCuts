@@ -10,15 +10,19 @@ import { RouteError } from './routes/PlaceholderPages'
 import { RequireAccount } from './routes/RequireAccount'
 
 // Each loader imports one page module and hands React Router its component.
-const search = async () => ({ Component: (await import('./routes/SearchPage')).SearchPage })
+const search = async () => ({ Component: (await import('./routes/search/SearchPage')).SearchPage })
 // `/`: the landing page signed out, Home signed in (ADR-0035).
 const index = async () => ({ Component: (await import('./routes/IndexRoute')).IndexRoute })
-const lists = async () => ({ Component: (await import('./routes/ListsPage')).ListsPage })
-const account = async () => ({ Component: (await import('./routes/AccountPage')).AccountPage })
-const signIn = async () => ({ Component: (await import('./routes/SignInPage')).SignInPage })
-const register = async () => ({ Component: (await import('./routes/RegisterPage')).RegisterPage })
+const lists = async () => ({ Component: (await import('./routes/lists/ListsPage')).ListsPage })
+const account = async () => ({
+  Component: (await import('./routes/account/AccountPage')).AccountPage,
+})
+const signIn = async () => ({ Component: (await import('./routes/auth/SignInPage')).SignInPage })
+const register = async () => ({
+  Component: (await import('./routes/auth/RegisterPage')).RegisterPage,
+})
 const detail = async () => ({
-  Component: (await import('./routes/MovieDetailPage')).MovieDetailPage,
+  Component: (await import('./routes/movie-detail/MovieDetailPage')).MovieDetailPage,
 })
 const tune = async () => ({ Component: (await import('./routes/tune/TunePage')).TunePage })
 // Labs: design and tuning tools for the owner, on the dev server only (FEATURES.labs). In a

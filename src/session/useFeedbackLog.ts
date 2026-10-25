@@ -3,7 +3,7 @@
 // (tagScope), so switching accounts never mixes presses. Signed out there are no tuned picks to
 // press on, so there's no log.
 import { useMemo } from 'react'
-import { createLocalFeedbackLog, type FeedbackLog } from '../adapters/local/LocalFeedbackLog'
+import { createLocalFeedbackLog, type FeedbackLog } from '@/adapters/local/LocalFeedbackLog'
 import { useSession } from './SessionContext'
 import { tagScope } from './tagQueries'
 

@@ -1,6 +1,6 @@
 // Tests for the retry rule: one retry for ordinary failures, none for a rate-limit 429.
 import { describe, expect, it } from 'vitest'
-import { TagApiError } from '../adapters/cloudflare/CloudflareTagRepository'
+import { TagApiError } from '@/adapters/cloudflare/CloudflareTagRepository'
 import { shouldRetry } from './retry'
 import { TmdbError } from './tmdb'
 

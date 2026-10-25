@@ -1,7 +1,7 @@
 // Build plugin: stops Sonner (the toast library, src/notify.ts) from adding its stylesheet as an
 // inline <style> tag. The CSP allows styles from this app only (style-src 'self', ADR-0008), so
 // the browser blocks that tag and logs two CSP errors on every page that loads toasts. The app
-// imports the same stylesheet as a normal CSS file instead (src/components/SonnerToaster.tsx).
+// imports the same stylesheet as a normal CSS file instead (src/components/layout/SonnerToaster.tsx).
 //
 // Build only: the dev server sends no CSP, and pre-bundles libraries without running plugins.
 import type { Plugin } from 'vite'

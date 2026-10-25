@@ -1,5 +1,5 @@
 {
-  "$description": "Exact colors of the Halloween logo (docs/design/halloween/). Used ONLY by the Halloween logo, shown every October (src/components/HalloweenLogo.tsx). At rest the wordmark keeps the standard logo colors (logo.json); these are the decorations and the lit-up hover state.",
+  "$description": "Exact colors of the Halloween logo (docs/design/halloween/). Used ONLY by the Halloween logo, shown every October (src/components/layout/HalloweenLogo.tsx). At rest the wordmark keeps the standard logo colors (logo.json); these are the decorations and the lit-up hover state.",
   "brand": {
     "$type": "color",
     "halloween": {

@@ -4,7 +4,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { describe, expect, it } from 'vitest'
-import { renderRoute } from '../../test/renderRoute'
+import { renderRoute } from '@/test/renderRoute'
 
 describe('tune my picks (onboarding)', () => {
   it('is hidden while the feature flag is off: /tune goes home, no header link', async () => {

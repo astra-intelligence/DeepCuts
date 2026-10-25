@@ -3,9 +3,9 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { describe, expect, it } from 'vitest'
-import { createLocalFeedbackLog } from '../../adapters/local/LocalFeedbackLog'
-import { SCORE_PARTS, SCORER_VERSION, type ScorePart } from '../../domain/scorer'
-import { renderRoute } from '../../test/renderRoute'
+import { createLocalFeedbackLog } from '@/adapters/local/LocalFeedbackLog'
+import { SCORE_PARTS, SCORER_VERSION, type ScorePart } from '@/domain/scorer'
+import { renderRoute } from '@/test/renderRoute'
 
 /** Likes The Thing on its Detail page, then opens `path`, as a person would. */
 async function likeThenOpen(path: string, options: Parameters<typeof renderRoute>[1] = {}) {

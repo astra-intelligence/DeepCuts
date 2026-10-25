@@ -21,7 +21,7 @@ const color = {
   red: tokens['brand-logo-red'],
   bone: tokens['brand-logo-bone'],
   ink: tokens['brand-logo-ink'],
-  // The Halloween icon (October; src/components/seasonalLogos.ts) wears the lit Halloween
+  // The Halloween icon (October; src/components/layout/seasonalLogos.ts) wears the lit Halloween
   // wordmark's colors: purple and orange blocks, an orange D.
   litDeep: tokens['brand-halloween-lit-deep'],
   litCuts: tokens['brand-halloween-lit-cuts'],

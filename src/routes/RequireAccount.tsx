@@ -8,8 +8,8 @@
 // leave, so they go to the landing page, not to a sign-in prompt for the page they just left.
 import { useState } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router'
-import { HOME } from '../config/features'
-import { useSession } from '../session/SessionContext'
+import { HOME } from '@/config/features'
+import { useSession } from '@/session/SessionContext'
 
 /** A layout route: renders its child route when signed in, otherwise redirects (see above). */
 export function RequireAccount() {

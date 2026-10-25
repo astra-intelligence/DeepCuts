@@ -6,8 +6,8 @@
 // Quick presses queue up (one mutation scope per list), and only the last answer is written to
 // the cache, so the films don't jump back while saves catch up.
 import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query'
-import { ListChangedError, type RankedList } from '../domain/ranking'
-import { notify } from '../notify'
+import { ListChangedError, type RankedList } from '@/domain/ranking'
+import { notify } from '@/notify'
 
 /**
  * A mutation that saves a new order: `useOrderMutation(…).mutate(order)`.

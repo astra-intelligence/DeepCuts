@@ -5,7 +5,7 @@
 // store's answer *is* the new list, so it goes straight into the cache with no re-fetch.
 // Reordering (ADR-0041) updates the cache first, so a film moves the moment it's pressed.
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { TopTenFullError } from '../domain/topTen'
+import { TopTenFullError } from '@/domain/topTen'
 import { useSession } from './SessionContext'
 import { tagScope } from './tagQueries'
 import { useOrderMutation } from './useOrderMutation'

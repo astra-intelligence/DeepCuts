@@ -3,18 +3,18 @@
 //
 // The design was tuned here and approved on 2026-10-09 (shape, finish and angles retuned on
 // 2026-10-15); its values now live in
-// src/components/VhsBox.css and the vhs-box tokens. The lab stays as a tuning tool: it renders the
+// src/components/movie/VhsBox.css and the vhs-box tokens. The lab stays as a tuning tool: it renders the
 // real component and only overrides the `--vhs-*` CSS variables on its wrapper, so what you see
 // here is exactly what Discover would show with those values. It isn't linked from the app,
 // and the route only exists under `npm run dev` (see router.tsx), so it never ships.
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { movieQueries } from '../../api/queries'
-import { releaseYear, type MovieSummary } from '../../api/tmdb'
-import { PageHeading } from '../../components/PageHeading'
-import { VhsBox } from '../../components/VhsBox'
-import { genreTone, primaryGenreName } from '../../domain/genres'
+import { movieQueries } from '@/api/queries'
+import { releaseYear, type MovieSummary } from '@/api/tmdb'
+import { PageHeading } from '@/components/ui/PageHeading'
+import { VhsBox } from '@/components/movie/VhsBox'
+import { genreTone, primaryGenreName } from '@/domain/genres'
 import './vhs-lab.css'
 
 /** How the grain mixes with the poster (CSS mix-blend-mode). */
@@ -96,7 +96,7 @@ interface Settings {
   freeze: boolean
 }
 
-// Starting values: the approved design (src/components/VhsBox.css).
+// Starting values: the approved design (src/components/movie/VhsBox.css).
 const DEFAULTS: Settings = {
   aspect: 1.7,
   stretch: 1,

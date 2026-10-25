@@ -13,8 +13,8 @@
 //    the scorer ranks again with them. Every call is the same cached details query the Detail
 //    page uses, so opening a recommended film afterwards costs nothing.
 import { useQueries, useQuery } from '@tanstack/react-query'
-import { movieQueries } from '../api/queries'
-import { crewOf, releaseYear, type MovieDetail, type MovieSummary } from '../api/tmdb'
+import { movieQueries } from '@/api/queries'
+import { crewOf, releaseYear, type MovieDetail, type MovieSummary } from '@/api/tmdb'
 import {
   keywordsToSearch,
   recommend,
@@ -25,7 +25,7 @@ import {
   type RecommendOptions,
   type ScorerFilm,
   type TasteInput,
-} from '../domain/scorer'
+} from '@/domain/scorer'
 import { useTagQueries } from './tagQueries'
 import { useTopTen } from './topTenQueries'
 

@@ -56,8 +56,8 @@ for (const [path, { tier, file, value }] of tokens) {
 // ---- 2. Code ---------------------------------------------------------------------------------
 const ALLOWED = {
   'src/index.css': /--dc-color-/,
-  'src/components/Logo.tsx': /--dc-brand-/,
-  'src/components/HalloweenLogo.css': /--dc-brand-/,
+  'src/components/layout/Logo.tsx': /--dc-brand-/,
+  'src/components/layout/HalloweenLogo.css': /--dc-brand-/,
 }
 const IGNORE = /^src\/styles\//
 const RAW_SCALE =

@@ -1,13 +1,14 @@
 /// <reference types="vitest/config" />
 // Vite configuration: the dev server, the production build, the local TMDB proxy, security
 // headers, and the unit-test runner (Vitest reads its settings from `test` below).
+import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { defineConfig, loadEnv } from 'vite'
 import { baseHeaders, contentSecurityPolicy } from './server/securityHeaders.ts'
 import { sonnerStyles } from './server/sonnerStyles.ts'
-import { tmdbProxy } from './server/tmdbProxy.ts'
+import { tmdbProxy } from './server/tmdb/proxy.ts'
 
 // Security headers (ADR-0008), defined once in server/securityHeaders.ts. CSP is applied to
 // `vite preview` (the production build); the dev server needs inline scripts for React Fast
@@ -27,6 +28,9 @@ export default defineConfig(({ mode }) => ({
     mode === 'analyze' &&
       visualizer({ filename: 'build/bundle-report.html', gzipSize: true, template: 'treemap' }),
   ],
+  // `@/x` means `src/x`, matching `paths` in tsconfig.app.json. Vitest and Storybook build with this
+  // config, so they resolve it too.
+  resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   server: { headers: baseHeaders },
   preview: { headers: { ...baseHeaders, 'Content-Security-Policy': contentSecurityPolicy } },
   // Fonts are never inlined as data: URIs, which the CSP's font-src 'self' would block.
@@ -60,7 +64,7 @@ export default defineConfig(({ mode }) => ({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.test.{ts,tsx}', 'server/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}', 'server/**/*.test.ts', 'scripts/**/*.test.ts'],
     // Screen tests drive a whole page through user events; under coverage on a busy machine a few
     // took 5–7 s (Vitest's default limit is 5 s). 15 s still catches a real hang.
     testTimeout: 15_000,
@@ -72,7 +76,7 @@ export default defineConfig(({ mode }) => ({
     // `npm run coverage` fails if tests cover less than these minimums.
     coverage: {
       provider: 'v8',
-      include: ['src/**/*.{ts,tsx}', 'server/**/*.ts', 'functions/**/*.ts'],
+      include: ['src/**/*.{ts,tsx}', 'server/**/*.ts', 'functions/**/*.ts', 'scripts/**/*.ts'],
       exclude: [
         'src/main.tsx',
         'src/**/*.test.{ts,tsx}',
@@ -83,6 +87,7 @@ export default defineConfig(({ mode }) => ({
         // Dev-only design labs (router.tsx): prototypes that never ship.
         'src/routes/lab/**',
         'server/**/*.test.ts',
+        'scripts/**/*.test.ts',
         'server/**/*.contract.ts',
       ],
       thresholds: {
