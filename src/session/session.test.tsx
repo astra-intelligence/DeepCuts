@@ -4,8 +4,8 @@ import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-quer
 import { act, renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createLocalTagRepository } from '../adapters/local/LocalTagRepository'
-import { createMockSessionProvider } from '../adapters/local/MockSessionProvider'
+import { createLocalTagRepository } from '@/adapters/local/LocalTagRepository'
+import { createMockSessionProvider } from '@/adapters/local/MockSessionProvider'
 
 const accountTags = () => createLocalTagRepository(undefined, undefined, 'account-demo-tags')
 import { AppSessionProvider } from './AppSessionProvider'

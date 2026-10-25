@@ -2,7 +2,7 @@
 // the page sign-in started from (ADR-0025, ADR-0031).
 import { useLocation } from 'react-router'
 import { z } from 'zod'
-import { HOME } from '../config/features'
+import { HOME } from '@/config/features'
 
 // The `from` path a link passes in history state. History state is untrusted: only same-app
 // paths are allowed ("/lists", not "//evil.example" or "https://…").

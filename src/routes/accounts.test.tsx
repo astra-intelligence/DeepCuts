@@ -6,11 +6,11 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createCloudflareSessionProvider } from '../adapters/cloudflare/CloudflareSessionProvider'
-import { SIGNED_OUT, type Session } from '../adapters/SessionProvider'
-import { createFakeAccountsApi } from '../test/msw/fakeAccountsApi'
-import { server } from '../test/msw/server'
-import { findToast, renderRoute } from '../test/renderRoute'
+import { createCloudflareSessionProvider } from '@/adapters/cloudflare/CloudflareSessionProvider'
+import { SIGNED_OUT, type Session } from '@/adapters/SessionProvider'
+import { createFakeAccountsApi } from '@/test/msw/fakeAccountsApi'
+import { server } from '@/test/msw/server'
+import { findToast, renderRoute } from '@/test/renderRoute'
 
 vi.mock('@simplewebauthn/browser', () => ({
   startRegistration: vi.fn(async () => ({ id: 'cred', type: 'public-key' })),

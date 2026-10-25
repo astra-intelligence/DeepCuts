@@ -5,9 +5,9 @@
 // shows the other store's cached tags.
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
-import type { Session } from '../adapters/SessionProvider'
-import type { TagRepository } from '../adapters/TagRepository'
-import { restoreSteps, type SystemTag } from '../domain/tagRules'
+import type { Session } from '@/adapters/SessionProvider'
+import type { TagRepository } from '@/adapters/TagRepository'
+import { restoreSteps, type SystemTag } from '@/domain/tagRules'
 import { useSession } from './SessionContext'
 import { useOrderMutation } from './useOrderMutation'
 

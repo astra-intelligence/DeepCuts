@@ -2,7 +2,7 @@
 // it returns a promise (e.g. no clipboard outside a secure context).
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { AppToaster } from './components/AppToaster'
+import { AppToaster } from './components/layout/AppToaster'
 import { withToast } from './notify'
 import { findToast } from './test/renderRoute'
 

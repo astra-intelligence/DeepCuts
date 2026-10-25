@@ -48,6 +48,49 @@ export default defineConfig([
       ],
     },
   },
+  // Import paths (AGENTS.md, "Where files go"): in the app, `./x` stays inside the folder and `@/x`
+  // (src/x) reaches anywhere else, so moving a file never breaks a chain of `../../`.
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { group: ['../*'], message: 'Import from outside this folder with @/ (src/).' },
+          ],
+        },
+      ],
+    },
+  },
+  // …except code that also runs outside Vite: the server and Pages Functions import src/domain and
+  // src/adapters, and Playwright imports src/test/msw. None of those tools know `@/`, so these
+  // folders keep plain relative imports.
+  {
+    files: [
+      'src/domain/**',
+      'src/adapters/**',
+      'src/test/msw/**',
+      'server/**',
+      'functions/**',
+      'workers/**',
+      'e2e/**',
+      'scripts/**',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/*'],
+              message: 'This code also runs outside Vite, which is the only tool that knows @/.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   {
     // Playwright fixtures call `use()`, which is not a React hook.
     files: ['e2e/**'],

@@ -1,6 +1,6 @@
 // The heading block shared by the onboarding steps.
 import type { ReactNode } from 'react'
-import { Eyebrow } from '../../components/Eyebrow'
+import { Eyebrow } from '@/components/ui/Eyebrow'
 
 /** Eyebrow + large heading shared by the onboarding steps. */
 export function Prompt({

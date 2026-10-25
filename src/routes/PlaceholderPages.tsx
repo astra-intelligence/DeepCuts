@@ -1,6 +1,6 @@
 // Fallback pages.
 import { Link } from 'react-router'
-import { HOME } from '../config/features'
+import { HOME } from '@/config/features'
 
 /** Shown for unknown URLs and when a page crashes, with a way back to Search. */
 export function RouteError() {

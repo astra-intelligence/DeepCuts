@@ -1,7 +1,7 @@
 // TMDB client (ADR-0002): the only code that fetches movie data.
 //
 // The browser never talks to TMDB directly: it calls our own `/api/tmdb/...` proxy, which adds
-// the secret API token on the server (server/tmdbProxy.ts). Every response is checked with a
+// the secret API token on the server (server/tmdb/proxy.ts). Every response is checked with a
 // Zod schema before the app uses it (ADR-0008, ADR-0015), so unexpected data fails safely here
 // instead of breaking a screen. Schemas only keep the fields the app actually uses.
 import { z } from 'zod'
@@ -86,7 +86,7 @@ export const movieDetailSchema = z.object({
     .optional()
     .catch(undefined),
   // The proxy trims credits to directors, writers and the five top-billed actors
-  // (server/tmdbCore.ts), so this stays small.
+  // (server/tmdb/core.ts), so this stays small.
   credits: z
     .object({
       crew: z.array(z.object({ id: z.number().int(), name: z.string(), job: z.string() })),

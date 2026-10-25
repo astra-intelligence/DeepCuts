@@ -10,9 +10,9 @@ import type {
   Session,
   SignInMethod,
   SignInMethodId,
-} from '../adapters/SessionProvider'
-import type { TagRepository } from '../adapters/TagRepository'
-import type { TopTenRepository } from '../adapters/TopTenRepository'
+} from '@/adapters/SessionProvider'
+import type { TagRepository } from '@/adapters/TagRepository'
+import type { TopTenRepository } from '@/adapters/TopTenRepository'
 
 /** What `useSession()` gives a component. */
 export interface SessionValue {

@@ -5,9 +5,10 @@
 // rate-limit Worker's wrangler.toml), so raising a cap or lowering the limit fails this test
 // instead of quietly cutting the feed short in production.
 import { describe, expect, it } from 'vitest'
+// eslint-disable-next-line no-restricted-imports -- the Worker's config lives outside src/, so @/ can't reach it
 import rateLimitConfig from '../../workers/rate-limit/wrangler.toml?raw'
-import { KEYWORD_SEARCHES } from '../domain/scorer'
-import { TOP_TEN_SIZE } from '../domain/topTen'
+import { KEYWORD_SEARCHES } from '@/domain/scorer'
+import { TOP_TEN_SIZE } from '@/domain/topTen'
 import { HOME_PICKS, LIMITS, MAX_SERIES, RERANK } from './useRecommendations'
 
 // Home's Discovery shelf: each pick needs its details for the credit lines. Counted in full: most

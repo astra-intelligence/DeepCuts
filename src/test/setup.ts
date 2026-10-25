@@ -5,9 +5,9 @@ import '@testing-library/jest-dom/vitest'
 import { cleanup, configure } from '@testing-library/react'
 import { toast } from 'sonner'
 import { afterAll, afterEach, beforeAll } from 'vitest'
-import { createLocalTagRepository } from '../adapters/local/LocalTagRepository'
-import { createLocalTopTenRepository } from '../adapters/local/LocalTopTenRepository'
-import { createMockSessionProvider } from '../adapters/local/MockSessionProvider'
+import { createLocalTagRepository } from '@/adapters/local/LocalTagRepository'
+import { createLocalTopTenRepository } from '@/adapters/local/LocalTopTenRepository'
+import { createMockSessionProvider } from '@/adapters/local/MockSessionProvider'
 import { server } from './msw/server'
 
 // findBy*/waitFor wait up to 3s instead of 1s. The first test in a file also loads its lazy page

@@ -4,7 +4,7 @@
 // CI never run it.
 //
 // What goes live is exactly what was reviewed and merged:
-// 1. Pre-flight (server/deployChecks.ts): on main, nothing uncommitted, the same commit as GitHub's
+// 1. Pre-flight (scripts/deployChecks.ts): on main, nothing uncommitted, the same commit as GitHub's
 //    main, and a real D1 database id in wrangler.toml. Any problem stops it before anything runs.
 // 2. A fresh build with real accounts on (VITE_ACCOUNTS=cloudflare, ADR-0031), so a stale or
 //    demo-only dist/ can never be uploaded by mistake.
@@ -14,7 +14,7 @@
 // a public preview URL for every branch.
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
-import { deployProblems } from '../server/deployChecks.ts'
+import { deployProblems } from './deployChecks.ts'
 
 if (process.env.DEEP_CUTS_DEPLOY !== '1') {
   console.error(

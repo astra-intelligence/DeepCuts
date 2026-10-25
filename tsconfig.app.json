@@ -26,7 +26,10 @@
     // Only TypeScript syntax that can simply be erased (no enums or namespaces), so the code also
     // runs with Node's built-in type stripping.
     "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    // `@/x` means `src/x` (Vite resolves it too, in vite.config.ts). Used for imports that leave
+    // the importing file's folder; see "Where files go" in AGENTS.md.
+    "paths": { "@/*": ["./src/*"] }
   },
   "include": ["src"]
 }

@@ -3,7 +3,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import { renderRoute } from '../test/renderRoute'
+import { renderRoute } from '@/test/renderRoute'
 
 describe('navigation', () => {
   it('goes Home from the logo, with no tab bar (ADR-0040)', async () => {

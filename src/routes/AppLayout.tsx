@@ -5,15 +5,15 @@
 // signed-in pages (ADR-0034).
 import { useRef } from 'react'
 import { Link, Outlet } from 'react-router'
-import { FEATURES } from '../config/features'
-import { AccountChip } from '../components/AccountChip'
-import { Icon } from '../components/Icon'
-import { Logo } from '../components/Logo'
-import { MovieSearch } from '../components/MovieSearch'
-import { SiteFooter } from '../components/SiteFooter'
-import { useHeaderHeight } from '../hooks/useHeaderHeight'
-import { useRouteFocus } from '../hooks/useRouteFocus'
-import { useSession } from '../session/SessionContext'
+import { FEATURES } from '@/config/features'
+import { AccountChip } from '@/components/layout/AccountChip'
+import { Icon } from '@/components/ui/Icon'
+import { Logo } from '@/components/layout/Logo'
+import { MovieSearch } from '@/components/movie/MovieSearch'
+import { SiteFooter } from '@/components/layout/SiteFooter'
+import { useHeaderHeight } from '@/hooks/useHeaderHeight'
+import { useRouteFocus } from '@/hooks/useRouteFocus'
+import { useSession } from '@/session/SessionContext'
 
 /**
  * "Skip to content": hidden until a keyboard user tabs to it, then jumps past the header to

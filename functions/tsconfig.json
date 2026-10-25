@@ -28,7 +28,7 @@
   "include": [
     ".",
     "../workers",
-    "../server/tmdbCore.ts",
+    "../server/tmdb/core.ts",
     "../server/rateLimit.ts",
     "../server/securityHeaders.ts",
     "../server/http.ts",

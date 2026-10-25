@@ -3,7 +3,7 @@
 import { screen, waitFor } from '@testing-library/react'
 import { act } from 'react'
 import { describe, expect, it } from 'vitest'
-import { renderRoute } from '../test/renderRoute'
+import { renderRoute } from '@/test/renderRoute'
 
 describe('useRouteFocus', () => {
   it('does not steal focus on first load', async () => {

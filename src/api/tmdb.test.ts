@@ -3,8 +3,8 @@
 // discover parameters) behave.
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
-import { movieFixture } from '../test/msw/fixtures'
-import { server } from '../test/msw/server'
+import { movieFixture } from '@/test/msw/fixtures'
+import { server } from '@/test/msw/server'
 import {
   certification,
   formatRuntime,
@@ -16,7 +16,7 @@ import {
   TmdbError,
   watchProvidersSchema,
 } from './tmdb'
-import { providersFixture } from '../test/msw/fixtures'
+import { providersFixture } from '@/test/msw/fixtures'
 
 describe('tmdb client', () => {
   it('validates and returns search results', async () => {
