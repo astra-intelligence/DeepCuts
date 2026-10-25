@@ -3,7 +3,7 @@
 // films in a grid that fills the row with VHS boxes and wraps as the list grows.
 import type { ReactNode, RefObject } from 'react'
 import { Link } from 'react-router'
-import { Eyebrow } from './Eyebrow'
+import { Eyebrow } from '@/components/ui/Eyebrow'
 
 /**
  * The shelf's film grid: as many boxes per row as fit at 128px or more on phones (two at 320 and

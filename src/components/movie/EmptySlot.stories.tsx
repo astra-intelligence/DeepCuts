@@ -4,7 +4,7 @@ import { fn } from 'storybook/test'
 import { EmptySlot } from './EmptySlot'
 
 const meta = {
-  title: 'Pages/Discover/EmptySlot',
+  title: 'Components/Movie/EmptySlot',
   component: EmptySlot,
   decorators: [
     (Story) => (

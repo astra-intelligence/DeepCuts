@@ -11,7 +11,7 @@ import { FeaturePanel } from './FeaturePanel'
 import { PanelArt } from './PanelArt'
 import { PANELS, type PanelId } from '@/config/panels'
 import { PageHeading } from '@/components/ui/PageHeading'
-import { Ticker } from '@/components/layout/Ticker'
+import { Ticker } from '@/components/ui/Ticker'
 
 // The ticker's lines (ADR-0040): one real sentence per feature, nothing invented.
 const TICKER = [

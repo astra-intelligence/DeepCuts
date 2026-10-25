@@ -11,7 +11,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { movieQueries } from '@/api/queries'
 import { summaryOf } from '@/api/tmdb'
 import { ReorderTile } from './ReorderTile'
-import { SHELF_GRID } from '@/components/ui/ShelfSection'
+import { SHELF_GRID } from './ShelfSection'
 import { moveInList, type RankedList } from '@/domain/ranking'
 
 /** Which button to focus again once a move has shown on screen. */

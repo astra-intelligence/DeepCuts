@@ -1,11 +1,11 @@
 // Stories for ShelfSection, one of Home's full-width shelves (ADR-0040 §6b), with the three kinds
 // of header meta Home uses.
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { EmptySlot } from '@/routes/discover/EmptySlot'
+import { EmptySlot } from './EmptySlot'
 import { SHELF_GRID, ShelfSection } from './ShelfSection'
 
 const meta = {
-  title: 'Components/UI/ShelfSection',
+  title: 'Components/Movie/ShelfSection',
   component: ShelfSection,
   args: {
     id: 'top-ten',

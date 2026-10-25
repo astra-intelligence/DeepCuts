@@ -24,26 +24,28 @@ The source of truth for this repo is the files in it, not chat history.
 
 One rule: **a file lives next to the only thing that uses it; once two or more places use it, it moves to the shared folder for its kind.**
 
-| Folder                   | What goes in it                                                                                                                                                                          |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/routes/<page>/`     | A page (`DiscoverPage.tsx`) and everything only that page uses: its private components, helpers, CSS, stories and tests. Folder names are the page name in kebab-case (`movie-detail/`). |
-| `src/routes/` (root)     | Route plumbing the router imports directly: layouts, guards and fallbacks (`AppLayout`, `RequireAccount`, `IndexRoute`, `PlaceholderPages`).                                             |
-| `src/components/ui/`     | Shared building blocks that know nothing about films or accounts: they would work in any app (`Icon`, `Eyebrow`, `EmptyState`).                                                          |
-| `src/components/layout/` | The app shell: the frame and bands around page content (logo, ticker band, account chip, footer, toasts).                                                                                |
-| `src/components/movie/`  | Shared components and display helpers that show or act on a film (`VhsBox`, `CassetteCard`, `TagToggle`, `tagDisplay.ts`).                                                               |
-| `src/hooks/`             | Shared React hooks that aren't about one component.                                                                                                                                      |
-| `src/domain/`            | Pure product logic (no React, no browser APIs): tags, ranking, the scorer. Also used by `server/`.                                                                                       |
-| `src/adapters/`          | Storage and session ports and their local and Cloudflare implementations (ADR-0013, ADR-0031).                                                                                           |
-| `src/session/`           | React Query hooks over the signed-in account's data (tags, Top Ten, recommendations).                                                                                                    |
-| `src/api/`               | The TMDB client and its queries.                                                                                                                                                         |
-| `src/config/`            | Static app configuration and content (feature flags, brand, the three panels).                                                                                                           |
-| `src/test/`              | Test setup, MSW handlers and fixtures.                                                                                                                                                   |
-| `server/`                | Node and Workers code: security headers, rate limiting, `tmdb/` (the TMDB proxy) and `accounts/`.                                                                                        |
-| `scripts/`               | Build, check and deploy scripts.                                                                                                                                                         |
+| Folder                   | What goes in it                                                                                                                                                                                              |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/routes/<page>/`     | A page (`DiscoverPage.tsx`) and everything only that page uses: its private components, helpers, CSS, stories and tests. Folder names are the page name in kebab-case (`movie-detail/`).                     |
+| `src/routes/` (root)     | Route plumbing the router imports directly: layouts, guards and fallbacks (`AppLayout`, `RequireAccount`, `IndexRoute`, `PlaceholderPages`), and screen tests that span several pages (`accounts.test.tsx`). |
+| `src/components/ui/`     | Shared building blocks that know nothing about films or accounts: they would work in any app (`Icon`, `Eyebrow`, `EmptyState`).                                                                              |
+| `src/components/layout/` | The app shell around every page: logo, skip link, account chip, footer, toasts.                                                                                                                              |
+| `src/components/movie/`  | Shared components and display helpers that show or act on a film (`VhsBox`, `CassetteCard`, `TagToggle`, `tagDisplay.ts`).                                                                                   |
+| `src/hooks/`             | React hooks used by two or more folders.                                                                                                                                                                     |
+| `src/domain/`            | Pure product logic (no React, no browser APIs): tags, ranking, the scorer. Also used by `server/`.                                                                                                           |
+| `src/adapters/`          | Storage and session ports and their local and Cloudflare implementations (ADR-0013, ADR-0031).                                                                                                               |
+| `src/session/`           | React Query hooks over the signed-in account's data (tags, Top Ten, recommendations).                                                                                                                        |
+| `src/api/`               | The TMDB client and its queries.                                                                                                                                                                             |
+| `src/config/`            | Static app configuration and content (feature flags, brand, the three panels).                                                                                                                               |
+| `src/test/`              | Test setup, MSW handlers and fixtures.                                                                                                                                                                       |
+| `server/`                | Node and Workers code: security headers, rate limiting, `tmdb/` (the TMDB proxy) and `accounts/`.                                                                                                            |
+| `scripts/`               | Build, check and deploy scripts.                                                                                                                                                                             |
+| `src/` (root)            | The entry points and app-wide singletons: `main.tsx`, `router.tsx`, `index.css`, `notify.ts` (toasts), `env.d.ts`. `src/styles/` is generated from `tokens/`; never edit it.                                 |
 
 - A file's tests (`X.test.ts`), stories (`X.stories.tsx`) and stylesheet (`X.css`) sit next to it.
 - No `index.ts` barrel files and no folder per component: import the file itself.
 - Imports in `src/`: `./x` within the folder (or below it), `@/x` (meaning `src/x`) for anything else. `../` fails lint. `src/domain/`, `src/adapters/` and `src/test/msw/` are the exception: `server/`, `functions/` and Playwright import them, and those tools don't know `@/`, so they keep relative imports (also enforced by lint).
+- A part used only by one shared component (e.g. `GenreSticker` inside `VhsBox`) sits beside it in the same shared folder. That follows the rule: it lives next to its only user.
 - When a page-private file gains a second user, move it to the shared folder in the same PR.
 
 ## Version control

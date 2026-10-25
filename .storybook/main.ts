@@ -4,7 +4,7 @@
 import type { StorybookConfig } from '@storybook/react-vite'
 
 const config: StorybookConfig = {
-  // Stories live next to their components: src/components/Button.stories.tsx, etc.
+  // Stories live next to their components: src/components/ui/Icon.stories.tsx, etc. (AGENTS.md, "Where files go").
   stories: ['../src/**/*.stories.@(ts|tsx)'],
   // The a11y panel runs axe on the open story; CI runs the same check on every story
   // (storybook-tests/a11y.spec.ts).

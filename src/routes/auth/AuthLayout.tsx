@@ -9,7 +9,7 @@ import { HOME } from '@/config/features'
 import { Logo } from '@/components/layout/Logo'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { useHeaderHeight } from '@/hooks/useHeaderHeight'
-import { SkipLink } from '@/routes/AppLayout'
+import { SkipLink } from '@/components/layout/SkipLink'
 
 /**
  * The shared frame of the account pages: skip link, Back + logo header, a narrow `<main>` and the

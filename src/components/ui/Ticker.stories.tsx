@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Ticker } from './Ticker'
 
 const meta = {
-  title: 'Components/Layout/Ticker',
+  title: 'Components/UI/Ticker',
   component: Ticker,
   // The band pulls itself out to the window edges and up against the header, so give it a page
   // column to sit in.
