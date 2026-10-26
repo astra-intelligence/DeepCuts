@@ -26,6 +26,7 @@ import { CassetteCard, type CassetteItem } from '@/components/movie/CassetteCard
 import { CassetteSkeleton, CassetteSkeletonRow } from '@/components/movie/CassetteSkeleton'
 import { EmptySlot } from '@/components/movie/EmptySlot'
 import { focusHeaderSearch } from './headerSearch'
+import { Icon } from '@/components/ui/Icon'
 import { PageHeading } from '@/components/ui/PageHeading'
 import { ReorderStatus, ReorderToggle } from '@/components/ui/ReorderToggle'
 import { useReorderMode } from '@/hooks/useReorderMode'
@@ -112,6 +113,8 @@ function TopTenShelf({ ids, loading }: { ids: readonly number[]; loading: boolea
       id="top-ten"
       feature={1}
       title={PANELS['top-ten'].title}
+      // The star the Top Ten wears on Detail, in its color (ADR-0035).
+      icon={<Icon name="star" className="size-10 shrink-0 text-favourite" />}
       // No "3 of 10 ranked" count (owner, 2026-10-13): the dashed rule runs to the edge instead.
       ref={scopeRef}
       meta={ids.length >= 2 && <ReorderToggle ref={toggleRef} active={active} onPress={toggle} />}
@@ -195,6 +198,8 @@ function WatchlistShelf({ ids, loading }: { ids: readonly number[]; loading: boo
       feature={2}
       title={PANELS.watchlist.title}
       to="/lists?tag=watchlist"
+      // The Want to see bookmark, in its tag color, so the shelf reads as that tag's list.
+      icon={<Icon name="bookmark" className="size-10 shrink-0 text-tag-watchlist" />}
     >
       {loading ? (
         <CassetteSkeletonRow />
