@@ -8,6 +8,7 @@ import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router'
 import { AppToaster } from './components/layout/AppToaster'
 import { applySeasonalFavicon } from './components/layout/seasonalLogos'
+import { createCloudflareSessionProvider } from './adapters/cloudflare/CloudflareSessionProvider'
 import { createMockSessionProvider } from './adapters/local/MockSessionProvider'
 import { shouldRetry } from './api/retry'
 import { AppSessionProvider } from './session/AppSessionProvider'
@@ -30,12 +31,12 @@ const router = createBrowserRouter(routes)
 // Which accounts the app uses (ADR-0031): with the build flag VITE_ACCOUNTS=cloudflare (not a
 // secret; set by `npm run preview:cf` and for the hosted build), real passkey accounts on the
 // server; otherwise the local mock, so `npm run dev` needs no setup.
-// Loaded on demand, so the passkey library is only downloaded by builds that use it.
+// Imported statically, so its code downloads with the entry instead of in a second round trip
+// before the first paint (ADR-0055). The flag is a build-time constant, so a mock build drops the
+// Cloudflare provider and still never ships the passkey library.
 const sessionProvider =
   import.meta.env.VITE_ACCOUNTS === 'cloudflare'
-    ? (
-        await import('./adapters/cloudflare/CloudflareSessionProvider')
-      ).createCloudflareSessionProvider()
+    ? createCloudflareSessionProvider()
     : createMockSessionProvider()
 // Read the saved session before the first render, so the app never flashes a guest state for
 // someone who is signed in.
