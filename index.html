@@ -7,7 +7,9 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="preconnect" href="https://image.tmdb.org" crossorigin />
+    <!-- Posters are plain <img> requests (no CORS), so the preconnect must be too: with
+         `crossorigin` the browser opens a separate connection the images never use. -->
+    <link rel="preconnect" href="https://image.tmdb.org" />
     <meta name="theme-color" content="#120d0a" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- The tagline is src/config/brand.ts's TAGLINE; keep the copies in step. The Landing page
