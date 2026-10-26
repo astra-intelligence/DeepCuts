@@ -24,7 +24,8 @@ describe('my lists', () => {
       'aria-current',
       'true',
     )
-    expect(screen.getByText(/will appear here/)).toBeInTheDocument()
+    // The empty message waits for the list to load (a row of placeholders stands in until then).
+    expect(await screen.findByText(/will appear here/)).toBeInTheDocument()
 
     await user.click(await within(lists).findByRole('link', { name: /Seen it.*1 film/ }))
     expect(

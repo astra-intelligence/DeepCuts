@@ -1,5 +1,6 @@
 // Tests for the ticker: screen readers get each item once, the scrolling copy is hidden, and it
-// only scrolls after a mouse rests on it for three seconds (never on touch).
+// only scrolls after a mouse rests on it for three seconds (never on touch), and it can hold its
+// room while its items load.
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Ticker, TICKER_HOVER_DELAY } from './Ticker'
@@ -21,6 +22,25 @@ describe('Ticker', () => {
   it('renders nothing without items', () => {
     const { container } = render(<Ticker items={[]} />)
     expect(container).toBeEmptyDOMElement()
+  })
+
+  it('keeps an empty band, hidden from screen readers, while its items load', () => {
+    const { container, rerender } = render(<Ticker items={[]} loading />)
+    const band = container.firstElementChild
+    expect(band).toHaveAttribute('aria-hidden', 'true')
+    expect(band).toHaveAttribute('data-ticker-loading')
+    expect(screen.queryByRole('listitem')).not.toBeInTheDocument()
+    // The items arrive in the same band.
+    rerender(<Ticker items={ITEMS} loading={false} />)
+    expect(container.firstElementChild).not.toHaveAttribute('data-ticker-loading')
+    expect(screen.getAllByRole('listitem')).toHaveLength(2)
+    // Items that arrive into the empty band fade in; a band that starts full doesn't.
+    expect(container.querySelector('.inline-block')).toHaveClass('motion-safe:animate-fade-in')
+  })
+
+  it('shows items it has from the start at once, without the fade', () => {
+    const { container } = render(<Ticker items={ITEMS} />)
+    expect(container.querySelector('.inline-block')).not.toHaveClass('motion-safe:animate-fade-in')
   })
 
   it('starts scrolling only after a mouse rests on it for three seconds', () => {

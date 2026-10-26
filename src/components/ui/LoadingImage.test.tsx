@@ -13,7 +13,8 @@ describe('LoadingImage', () => {
 
     fireEvent.load(img)
     expect(img).not.toHaveAttribute('data-loading')
-    expect(img).toHaveAttribute('data-loaded')
+    // It arrived while on screen, so it fades in.
+    expect(img).toHaveAttribute('data-loaded', 'fade')
   })
 
   it('stops the loader but keeps the placeholder when the image fails', () => {

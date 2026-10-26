@@ -174,9 +174,12 @@
 }
 
 /* Loader behind film images (`LoadingImage`): the placeholder color with a soft band of light
-   sweeping across it until the image arrives. Loaded images drop the background entirely, so
-   nothing keeps animating underneath them; failed ones keep the static placeholder. Reduced
-   motion gets the static placeholder only. */
+   sweeping across it until the image arrives. While it loads, the image's own pixels are pushed
+   out of its box (object-position; an <img> clips its content to its box), so a half-downloaded
+   poster never paints as a strip, yet the loader background still shows. Images that arrive on
+   screen then fade in (`data-loaded="fade"`); cached ones appear at once. Loaded images drop the
+   background entirely, so nothing keeps animating underneath them; failed ones keep the static
+   placeholder. Reduced motion gets the static placeholder, and no fade (the rule above). */
 @utility image-loader {
   background-color: var(--color-poster-placeholder);
   &[data-loading] {
@@ -188,9 +191,13 @@
     );
     background-size: 200% 100%;
     animation: image-shimmer 1.4s ease-in-out infinite;
+    object-position: -200vw 0;
   }
   &[data-loaded] {
     background: none;
+  }
+  &[data-loaded='fade'] {
+    animation: --theme(--animate-fade-in);
   }
   @media (prefers-reduced-motion: reduce) {
     &[data-loading] {
@@ -207,8 +214,9 @@
   }
 }
 
-/* Gentle entrance for onboarding steps (`animate-enter`), and the ticker's slow loop
-   (`animate-ticker`, Ticker.tsx: one half of its track per 50s). Both are disabled by the
+/* Gentle entrance for content as it arrives (`animate-enter`: onboarding steps, Home's film
+   tiles), a plain fade for images (`animate-fade-in`, the loader above), and the ticker's slow
+   loop (`animate-ticker`, Ticker.tsx: one half of its track per 50s). All are disabled by the
    reduced-motion rule above. */
 @theme {
   --animate-ticker: ticker 50s linear infinite;
@@ -221,6 +229,11 @@
     from {
       opacity: 0;
       transform: translateY(8px);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
     }
   }
 }

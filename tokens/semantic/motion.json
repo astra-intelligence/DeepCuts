@@ -16,7 +16,7 @@
       "duration": {
         "$type": "duration",
         "$value": "{duration.400}",
-        "$description": "Onboarding steps fading in"
+        "$description": "Content fading in as it arrives: onboarding steps, Home's film tiles, posters"
       },
       "easing": {
         "$type": "cubicBezier",

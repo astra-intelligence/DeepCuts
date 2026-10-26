@@ -11,6 +11,7 @@ import { z } from 'zod'
 import { movieQueries } from '@/api/queries'
 import { creditsOf, summaryOf } from '@/api/tmdb'
 import { CassetteCard } from '@/components/movie/CassetteCard'
+import { CassetteSkeleton, CassetteSkeletonRow } from '@/components/movie/CassetteSkeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Icon } from '@/components/ui/Icon'
 import { PageHeading } from '@/components/ui/PageHeading'
@@ -44,7 +45,8 @@ export function ListsPage() {
   const queries = useTagQueries()
   // All four lists load at once, for the counts on the tiles.
   const counts = useQueries({ queries: TAGS.map((t) => queries.list(t.tag)) })
-  const ids = counts[SYSTEM_TAGS.indexOf(tag)]?.data ?? []
+  const current = counts[SYSTEM_TAGS.indexOf(tag)]
+  const ids = current?.data ?? []
   const label = TAGS.find((t) => t.tag === tag)?.label ?? ''
 
   return (
@@ -84,7 +86,7 @@ export function ListsPage() {
       </nav>
 
       {/* Keyed by list, so switching lists always leaves reorder mode. */}
-      <FilmList key={tag} tag={tag} label={label} ids={ids} />
+      <FilmList key={tag} tag={tag} label={label} ids={ids} loading={!!current?.isPending} />
     </div>
   )
 }
@@ -92,9 +94,20 @@ export function ListsPage() {
 /**
  * The films on one list, under a bar saying which list and how many. The watchlist is an ordered
  * list in the person's order, with the reorder toggle (two or more films, ADR-0041); the other
- * lists are newest first.
+ * lists are newest first. While the list itself loads (`loading`), a row of placeholders stands in
+ * for it, rather than the empty message, so the page doesn't jump when the films arrive.
  */
-function FilmList({ tag, label, ids }: { tag: SystemTag; label: string; ids: number[] }) {
+function FilmList({
+  tag,
+  label,
+  ids,
+  loading,
+}: {
+  tag: SystemTag
+  label: string
+  ids: number[]
+  loading: boolean
+}) {
   const ordered = tag === 'watchlist'
   const { active, toggle, message, announce, toggleRef, scopeRef } = useReorderMode(
     ordered && ids.length >= 2,
@@ -112,9 +125,11 @@ function FilmList({ tag, label, ids }: { tag: SystemTag; label: string; ids: num
         <h2>
           Filtered by <strong className="text-contextual">{label}</strong>
         </h2>
-        <div className="flex items-center gap-4">
+        {/* As tall as the Reorder button (44px), so the row keeps its height when it appears. */}
+        <div className="flex min-h-11 items-center gap-4">
+          {/* No count until the list is in: "0 results" would be announced, then corrected. */}
           <span role="status">
-            {ids.length} {ids.length === 1 ? 'result' : 'results'}
+            {!loading && `${ids.length} ${ids.length === 1 ? 'result' : 'results'}`}
           </span>
           {ordered && ids.length >= 2 && (
             <ReorderToggle ref={toggleRef} active={active} onPress={toggle} />
@@ -123,7 +138,9 @@ function FilmList({ tag, label, ids }: { tag: SystemTag; label: string; ids: num
       </div>
       {ordered && <ReorderStatus message={message} />}
 
-      {active ? (
+      {loading ? (
+        <CassetteSkeletonRow />
+      ) : active ? (
         // Until reorder mode's code arrives (once, a moment), the list stays as it was.
         <Suspense fallback={<Films ids={ids} as={List} />}>
           <ReorderList ids={ids} announce={announce} onReorder={reorderWatchlist.mutate} />
@@ -144,27 +161,28 @@ function FilmList({ tag, label, ids }: { tag: SystemTag; label: string; ids: num
 function Films({ ids, as: List }: { ids: number[]; as: 'ol' | 'ul' }) {
   return (
     <List className={SHELF_GRID}>
-      {ids.map((id) => (
-        <ListCassette key={id} id={id} />
+      {ids.map((id, i) => (
+        <ListCassette key={id} id={id} stagger={i} />
       ))}
     </List>
   )
 }
 
-// One film on the list as a VHS box, with its director and writer. Shows a box-shaped halftone
-// placeholder until its details arrive, so the grid doesn't jump.
-function ListCassette({ id }: { id: number }) {
+// One film on the list as a VHS box, with its director and writer. Shows a box-shaped
+// placeholder, caption room included, until its details arrive, so the grid doesn't jump.
+// `stagger`: its place on the list, so tiles that arrive together ripple in.
+function ListCassette({ id, stagger }: { id: number; stagger: number }) {
   const { data: m } = useQuery(movieQueries.detail(id))
   if (!m) {
     return (
       <li aria-hidden="true" className="flex">
-        <div className="aspect-[1/1.7] w-full bg-surface-raised halftone" />
+        <CassetteSkeleton />
       </li>
     )
   }
   return (
     <li className="flex">
-      <CassetteCard item={{ movie: summaryOf(m), credits: creditsOf(m) }} />
+      <CassetteCard item={{ movie: summaryOf(m), credits: creditsOf(m) }} stagger={stagger} />
     </li>
   )
 }

@@ -1,5 +1,7 @@
 // An <img> that shows a shimmering placeholder behind itself until the image has loaded. Used for
 // film posters and backdrops from TMDB, which can be slow on a cold cache or a weak connection.
+// The image itself stays hidden until it has fully arrived, then fades in, so a half-downloaded
+// poster never paints as a strip at the top of its box.
 import { useState, type ComponentProps } from 'react'
 
 /**
@@ -10,6 +12,10 @@ import { useState, type ComponentProps } from 'react'
  * untouched. `data-loading` runs the shimmer; once the image loads the background is removed, so
  * the shimmer never keeps repainting under a finished image. If it fails, the shimmer stops and
  * the static placeholder color stays, matching the "no poster" placeholder.
+ *
+ * `data-loaded="fade"` marks an image that arrived while you watched: it fades in. One already in
+ * the browser's cache when it mounts (`data-loaded=""`, e.g. going back to a page) shows at once,
+ * so a familiar page doesn't replay the fade.
  */
 export function LoadingImage({
   alt,
@@ -23,7 +29,8 @@ export function LoadingImage({
 }) {
   // Which src finished, and how. Keyed by src so a new image (e.g. the next Tune pick in the
   // same element) starts loading again without an effect to reset the state.
-  const [settled, setSettled] = useState<{ src: string | undefined; ok: boolean }>()
+  // `fade`: it loaded after mounting, so it fades in (see above).
+  const [settled, setSettled] = useState<{ src: string | undefined; ok: boolean; fade?: true }>()
   const done = settled?.src === props.src
   return (
     <img
@@ -35,9 +42,11 @@ export function LoadingImage({
       }}
       className={`image-loader ${className}`}
       data-loading={done ? undefined : ''}
-      data-loaded={done && settled?.ok ? '' : undefined}
+      data-loaded={done && settled?.ok ? (settled.fade ? 'fade' : '') : undefined}
       onLoad={(e) => {
-        setSettled({ src: props.src, ok: true })
+        // The load event can follow the mount check above for a cached image: keep it instant.
+        const src = props.src
+        setSettled((prev) => (prev?.src === src ? prev : { src, ok: true, fade: true }))
         onLoad?.(e)
       }}
       onError={(e) => {
