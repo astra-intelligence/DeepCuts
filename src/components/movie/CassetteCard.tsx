@@ -1,6 +1,6 @@
 // One film as a cassette tile: the VHS box (design approved 2026-10-09) with its badge, then the
-// caption (ADR-0040 §8): title, year · genre, director and writer (a Discovery pick's reason
-// sits just after the tile, PickReason). The whole
+// caption (ADR-0040 §8): title, year · genre, director and writer (a Discovery pick's "Why this
+// title?" sits just after the tile, PickReason). The whole
 // tile is the link (no separate "View details", owner 2026-10-13); its title lights up on hover.
 // Used by Home's shelves and My Lists. A tile rises gently into place when its film arrives,
 // usually replacing a CassetteSkeleton of the same size, so nothing around it moves.

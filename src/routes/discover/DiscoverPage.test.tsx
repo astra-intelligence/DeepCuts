@@ -506,9 +506,9 @@ describe('home with likes (ADR-0026)', () => {
     expect(feature).toHaveTextContent(/\d+% match/)
     // The match is also the box's blood-red stamp.
     expect(within(feature).getByText(/^\d+%$/)).toBeInTheDocument()
-    // The reason line sits after the tile's link; pressing it opens the full sentence.
+    // "Why this pick?" sits after the tile's link; pressing it opens the full sentence.
     const reason = within(await firstTile()).getByRole('button', {
-      name: 'Because you liked The Thing: why The Fog was picked',
+      name: 'Why this pick? (The Fog)',
     })
     await userEvent.click(reason)
     expect(await screen.findByRole('dialog', { name: 'Why The Fog was picked' })).toHaveTextContent(
@@ -565,7 +565,11 @@ describe('home with a Top Ten (ADR-0043)', () => {
     const feature = await firstPick()
     // Scored picks, not the starter shelf: a match and the reason, from the Top Ten film.
     expect(feature).toHaveTextContent(/\d+% match/)
-    expect(await firstTile()).toHaveTextContent('Because you liked The Thing')
+    await userEvent.click(within(await firstTile()).getByRole('button', { name: /^Why this pick/ }))
+    expect(await screen.findByRole('dialog')).toHaveTextContent('The Thing')
+    // The open bubble hides the page from assistive tech, so close it before reading on.
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(feature).toHaveTextContent('The Fog')
     // The Top Ten film itself is never recommended back.
     const panel = screen.getByRole('region', { name: 'Discover Some Deep Cuts' })
@@ -597,7 +601,13 @@ describe('home with a liked film in a series (ADR-0032, ADR-0037)', () => {
     // TMDB recommends nothing for it here, so the pick comes from the series: only the next film.
     const feature = await firstPick()
     expect(feature).toHaveTextContent('Friday the 13th Part 2')
-    expect(await firstTile()).toHaveTextContent('Because you liked Friday the 13th')
+    await userEvent.click(within(await firstTile()).getByRole('button', { name: /^Why this pick/ }))
+    expect(await screen.findByRole('dialog')).toHaveTextContent(
+      'Next in the series after Friday the 13th',
+    )
+    // The open bubble hides the page from assistive tech, so close it before reading on.
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     const titles = screen
       .getAllByRole('link', { name: /Friday the 13th Part/ })
       .map((l) => l.textContent)

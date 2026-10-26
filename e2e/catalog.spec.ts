@@ -473,9 +473,9 @@ test('liking a film tunes Home’s recommendations, with a match and the reason 
   const feature = tile.getByRole('link')
   await expect(feature).toContainText(/\d+% match/)
   await expect(page.getByText('Like a few films to tune these picks to you.')).toHaveCount(0)
-  // The reason line opens the full sentence (PickReason).
-  await tile.getByRole('button', { name: /^Because you liked The Thing/ }).click()
-  await expect(page.getByRole('dialog', { name: /^Why .* was picked$/ })).toBeVisible()
+  // "Why this pick?" opens the full reason (PickReason).
+  await tile.getByRole('button', { name: /^Why this pick\?/ }).click()
+  await expect(page.getByRole('dialog', { name: /^Why .* was picked$/ })).toContainText('The Thing')
   await page.keyboard.press('Escape')
   await expectNoA11yViolations(page)
   await expectNoHorizontalOverflow(page)

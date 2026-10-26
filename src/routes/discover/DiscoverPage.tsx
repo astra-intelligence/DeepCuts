@@ -31,7 +31,7 @@ import { ReorderStatus, ReorderToggle } from '@/components/ui/ReorderToggle'
 import { useReorderMode } from '@/hooks/useReorderMode'
 import { PANELS } from '@/config/panels'
 import { PickActions } from './PickActions'
-import { PickReason, type PickWhy } from './PickReason'
+import { PickReason } from './PickReason'
 import { quickAction, type QuickAction } from '@/components/movie/quickActions'
 import { SHELF_GRID, ShelfSection } from '@/components/movie/ShelfSection'
 import { Ticker } from '@/components/ui/Ticker'
@@ -237,7 +237,7 @@ function tickerItems(topTen: number, watchlist: number, discovery: DiscoveryPick
 }
 
 /** A Discovery tile: a cassette, plus why the scorer picked it (tuned picks only). */
-type ShelfPick = CassetteItem & { why?: PickWhy }
+type ShelfPick = CassetteItem & { reason?: string }
 
 /** How the scorer saw a pick: what's saved with a quick-action press (ADR-0045). */
 type Scores = Pick<FeedbackEntry, 'parts' | 'penalty'>
@@ -276,7 +276,7 @@ function useDiscoveryPicks() {
       ? (tuned.loading ? [] : tuned.recommendations).map((r) => ({
           movie: r.movie,
           match: r.match,
-          why: { liked: r.because[0], reason: r.reason },
+          reason: r.reason,
         }))
       : (starter.data?.results ?? [])
           .filter((m) => !excluded?.has(m.id))
@@ -324,7 +324,7 @@ function DiscoveryShelf({ discovery }: { discovery: DiscoveryPicks }) {
           {shelf.items.map((pick, i) => (
             <li key={pick.movie.id} className="flex flex-col">
               <CassetteCard item={pick} stagger={i} />
-              {pick.why && <PickReason why={pick.why} title={pick.movie.title} />}
+              {pick.reason && <PickReason reason={pick.reason} title={pick.movie.title} />}
               <PickActions
                 title={pick.movie.title}
                 stamped={pick.stamp}
