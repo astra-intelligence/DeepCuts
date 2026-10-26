@@ -1,4 +1,4 @@
-// One of the four tag buttons (Seen it, Want to see, Like, Dislike) on Detail and in Search.
+// One of the three tag buttons (Want to see, Like, Dislike) on Detail and in Search.
 import type { CSSProperties } from 'react'
 import { ToggleButton } from 'react-aria-components'
 import { Icon } from '@/components/ui/Icon'
@@ -26,7 +26,7 @@ export function TagToggle({
       isSelected={isSelected}
       onChange={onChange}
       // Sets `--tag` to this tag's color; the classes below use it for the icon, hover and
-      // selected state, so one component serves all four tags. Pressed, the button fills with
+      // selected state, so one component serves all three tags. Pressed, the button fills with
       // the tag's color and its text and icon turn ink (ADR-0040), so on and off differ by far
       // more than a border.
       style={tagColor(tag.tag) as CSSProperties}

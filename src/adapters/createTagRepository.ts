@@ -28,6 +28,23 @@ export function listOf(records: readonly TagRecord[], tag: SystemTag): number[] 
     .map(({ r }) => r.tmdbId)
 }
 
+/**
+ * Records with at most one tag per film (ADR-0050). Data saved before ADR-0050 could hold two
+ * (Like and Want to see); the one added most recently is kept (for equal times, the record stored
+ * later), as if each had been picked again in order under today's rule. Already-valid records
+ * come back unchanged and in their order.
+ */
+export function oneTagPerFilm(records: readonly TagRecord[]): TagRecord[] {
+  // Each film's newest record: its index in `records`.
+  const newest = new Map<number, number>()
+  records.forEach((r, i) => {
+    const kept = newest.get(r.tmdbId)
+    const current = kept === undefined ? undefined : records[kept]
+    if (!current || r.createdAt >= current.createdAt) newest.set(r.tmdbId, i)
+  })
+  return records.filter((r, i) => newest.get(r.tmdbId) === i)
+}
+
 /** Where the watchlist's saved order lives (ADR-0041): film ids, first first. */
 export interface OrderStore {
   load(): readonly number[]

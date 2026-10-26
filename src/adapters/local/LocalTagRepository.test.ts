@@ -19,12 +19,37 @@ describe('LocalTagRepository storage', () => {
     expect([...(await open().getTags(7))]).toEqual(['liked'])
   })
 
-  it.each(['not json', '{"tags":1}', '[{"tmdbId":-1,"tag":"seen","createdAt":"x"}]'])(
+  it.each(['not json', '{"tags":1}', '[{"tmdbId":-1,"tag":"liked","createdAt":"x"}]'])(
     'resets corrupt data (%s) to empty',
     async (raw) => {
       localStorage.setItem(`deepcuts:v1:${KEY}`, raw)
-      expect(await open().list('seen')).toEqual([])
+      expect(await open().list('liked')).toEqual([])
       expect(localStorage.getItem(`deepcuts:v1:${KEY}`)).toBeNull()
     },
   )
+
+  it('ADR-0050: drops saved "Seen it" records and keeps one tag per film, losing nothing else', async () => {
+    const at = (s: number) => `2026-10-0${s}T12:00:00.000Z`
+    localStorage.setItem(
+      `deepcuts:v1:${KEY}`,
+      JSON.stringify([
+        { tmdbId: 1, tag: 'seen', createdAt: at(1) },
+        { tmdbId: 1, tag: 'liked', createdAt: at(2) },
+        // Film 2 was Liked, then put on the watchlist: the newer tag wins.
+        { tmdbId: 2, tag: 'liked', createdAt: at(3) },
+        { tmdbId: 2, tag: 'watchlist', createdAt: at(4) },
+        { tmdbId: 3, tag: 'seen', createdAt: at(5) },
+        // Equal times: the record stored later wins.
+        { tmdbId: 4, tag: 'watchlist', createdAt: at(6) },
+        { tmdbId: 4, tag: 'liked', createdAt: at(6) },
+      ]),
+    )
+    const repo = open()
+    expect(await repo.list('liked')).toEqual([4, 1])
+    expect(await repo.list('watchlist')).toEqual([2])
+    expect([...(await repo.getTags(3))]).toEqual([])
+    // The next change saves the cleaned list.
+    await repo.setTag(5, 'disliked', true)
+    expect(localStorage.getItem(`deepcuts:v1:${KEY}`)).not.toContain('seen')
+  })
 })

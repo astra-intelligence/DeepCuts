@@ -1,12 +1,13 @@
 // The three quick actions on a Discovery pick (issue #76; owner picked layout A with stamps,
-// 2026-10-15): save it, mark it seen, or wave it off, straight from Home without opening Detail.
-// Each is one of the ADR-0017 tags, with the words the shelf, the stamp and the toast use.
+// 2026-10-15): save it, like it, or wave it off, straight from Home without opening Detail. Each
+// is one of the three tags (ADR-0050; Like replaced Seen it), with the words the shelf, the stamp
+// and the toast use.
 import type { SystemTag } from '@/domain/tagRules'
 import type { IconName } from '@/components/ui/Icon'
 
 /** One quick action: its tag and every piece of text that goes with it. */
 export interface QuickAction {
-  tag: Extract<SystemTag, 'watchlist' | 'seen' | 'disliked'>
+  tag: SystemTag
   /** The full name, as on Detail's tag buttons where it exists: "Want to see". */
   label: string
   /** The short label under its icon on the strip, which is only about 43px wide on phones. */
@@ -30,12 +31,13 @@ export const QUICK_ACTIONS: readonly QuickAction[] = [
     done: (title) => `Added ${title} to your watchlist.`,
   },
   {
-    tag: 'seen',
-    label: 'Seen it',
-    short: 'Seen',
-    icon: 'eye',
-    stamp: 'Seen it',
-    done: (title) => `Marked ${title} as seen.`,
+    // You've seen it and liked it: it moves to My Lists → Liked and seeds future picks.
+    tag: 'liked',
+    label: 'Like',
+    short: 'Like',
+    icon: 'heart',
+    stamp: 'Liked it',
+    done: (title) => `Liked ${title}. Your picks will follow it.`,
   },
   {
     // "Not for me" is the Dislike tag: the film moves to My Lists → Disliked.

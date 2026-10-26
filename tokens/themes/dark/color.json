@@ -137,10 +137,6 @@
       "$description": "Hard offset shadows (ADR-0040)"
     },
     "tag": {
-      "seen": {
-        "$value": "{color.green.300}",
-        "$description": "Seen it"
-      },
       "watchlist": {
         "$value": "{color.sky.300}",
         "$description": "Want to see"

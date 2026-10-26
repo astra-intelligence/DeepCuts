@@ -3,7 +3,9 @@
 // - Every query is scoped to the session's user (`WHERE user_id = ?`); a user id is never taken
 //   from the client, so nobody can read or change someone else's lists.
 // - The tag rules (src/domain/tagRules.ts) run here too, through the same `applyTag` the app uses,
-//   so a modified client can't store a state the rules forbid (e.g. Like and Dislike together).
+//   so a modified client can't store a state the rules forbid (e.g. two tags on one film).
+// - Rows of a retired tag ("Seen it", ADR-0050) are never read: migration 0004 deletes them, and
+//   until it has run every query skips them, so deploy and migration can happen in either order.
 // - Changes are written as a diff (rows to delete, rows to add). The rows travel as one JSON
 //   parameter that SQLite expands with `json_each`, because D1 allows only 100 bound parameters
 //   per query and 50 queries per request: a 5,000-record import is still two statements.
@@ -31,12 +33,16 @@ const NO_STORE = { 'Cache-Control': 'no-store' }
 
 type Row = { tmdbId: number; tag: SystemTag; createdAt: string }
 
+// SQL that keeps only rows of today's tags (ADR-0050). Built from the constant SYSTEM_TAGS, never
+// from input, so it's safe to put into the query text.
+const CURRENT_TAG = `tag IN (${SYSTEM_TAGS.map((t) => `'${t}'`).join(', ')})`
+
 /** All of a user's tag rows, oldest first (insertion order breaks ties). */
 async function loadAll(db: D1Like, userId: string): Promise<Row[]> {
   const { results } = await db
     .prepare(
       `SELECT tmdb_id AS tmdbId, tag, created_at AS createdAt FROM tags
-       WHERE user_id = ? ORDER BY created_at, rowid`,
+       WHERE user_id = ? AND ${CURRENT_TAG} ORDER BY created_at, rowid`,
     )
     .bind(userId)
     .all<Row>()
@@ -161,7 +167,9 @@ export async function changeTag(request: Request, env: AccountsEnv, now = Date.n
       .first<{ n: number }>()
     if ((count?.n ?? 0) >= ACCOUNT_TAG_LIMIT) return fail(409, 'too_many_tags')
   }
-  const { results } = await env.DB.prepare('SELECT tag FROM tags WHERE user_id = ? AND tmdb_id = ?')
+  const { results } = await env.DB.prepare(
+    `SELECT tag FROM tags WHERE user_id = ? AND tmdb_id = ? AND ${CURRENT_TAG}`,
+  )
     .bind(user.id, tmdbId)
     .all<{ tag: SystemTag }>()
   const current = new Set(results.map((r) => r.tag))

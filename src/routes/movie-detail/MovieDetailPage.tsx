@@ -256,7 +256,7 @@ function MovieDetail({ id, onDismiss }: { id: number; onDismiss: () => void }) {
           <p className="my-3.5 max-w-prose leading-relaxed text-fg-soft">{m.overview}</p>
         )}
 
-        {/* The four tag toggles, with Save and Cancel once anything changes (ADR-0017 rules). */}
+        {/* The three tag toggles, with Save and Cancel once anything changes (ADR-0050 rule). */}
         <DetailTags movieId={m.id} title={m.title} onDismiss={onDismiss} />
 
         {/* A clear break between your tags and the streaming info (owner, 2026-10-07). */}

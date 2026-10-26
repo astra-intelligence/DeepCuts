@@ -16,6 +16,28 @@ export const tagRecordSchema = z.object({
   tag: z.enum(SYSTEM_TAGS),
   createdAt: z.iso.datetime(),
 })
+/**
+ * Tags that older versions saved and this one no longer has: "Seen it", retired by ADR-0050.
+ * Stored data and server answers may still hold them, so they're skipped before validation.
+ */
+const RETIRED_TAGS: readonly unknown[] = ['seen']
+
+/**
+ * Drops records of retired tags from untrusted data, before it's validated. Without this, one
+ * leftover Seen record would fail the whole list's validation and the stored lists would be
+ * thrown away (versionedStore resets invalid data). Anything that isn't a list is passed on as is.
+ */
+export function dropRetiredTags(raw: unknown): unknown {
+  if (!Array.isArray(raw)) return raw
+  return raw.filter(
+    (r: unknown) =>
+      !(typeof r === 'object' && r !== null && RETIRED_TAGS.includes((r as { tag?: unknown }).tag)),
+  )
+}
+
+/** A list of stored tag records, read the safe way: retired tags are skipped (ADR-0050). */
+export const storedRecordsSchema = z.preprocess(dropRetiredTags, z.array(tagRecordSchema))
+
 /** The lists that can be put in the person's own order: only the watchlist (ADR-0041). */
 export type OrderedTag = 'watchlist'
 

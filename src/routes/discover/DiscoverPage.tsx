@@ -6,7 +6,7 @@
 // Discovery's picks. With likes, the picks come from the recommendation scorer (ADR-0026) with a
 // match stamp and the reason why (PickReason). Without likes, they are a starter shelf of acclaimed,
 // lesser-known older films (ADR-0042, minus any you've tagged), with a hint to like a few films. Each pick has quick actions under it (issue #76):
-// Want to see, Seen it, Not for me, saved at once with Undo. On tuned picks a press is also saved
+// Want to see, Like, Not for me (ADR-0050), saved at once with Undo. On tuned picks a press is also saved
 // with the pick's scores, for the weights lab to learn from (ADR-0045). Every box names the film's director
 // and writer, from its details (the same cached call Detail makes). The Top Ten shelf has a reorder mode (ADR-0041).
 //
@@ -254,7 +254,7 @@ function useDiscoveryPicks() {
   const tuned = useRecommendations(HOME_PICKS)
   const starter = useQuery(movieQueries.deepCuts())
   // Every film you've tagged stays out of the starter picks, not just disliked ones (owner,
-  // 2026-10-15): a film you saved or marked seen with a quick action shouldn't come back. The
+  // 2026-10-15): a film you saved or liked with a quick action shouldn't come back. The
   // scorer's picks already leave out every tagged film. Your Top Ten films stay out too
   // (ADR-0043): a favourite you already ranked isn't a discovery.
   const tagged = useQuery(useTagQueries().all()).data
@@ -436,12 +436,12 @@ function useHeldPicks(picks: ShelfPick[], scores: ReadonlyMap<number, Scores>, r
     setBusy(movie.id)
     try {
       const undoTag = await quickTag(movie.id, tag)
-      const seen = heldScores.get(movie.id)
-      if (seen)
+      const shown = heldScores.get(movie.id)
+      if (shown)
         feedback?.add({
           tmdbId: movie.id,
           action: tag,
-          ...seen,
+          ...shown,
           scorerVersion: SCORER_VERSION,
           at: new Date().toISOString(),
         })

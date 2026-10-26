@@ -369,7 +369,7 @@ describe('home', () => {
         within(actions)
           .getAllByRole('button')
           .map((b) => b.getAttribute('aria-label')),
-      ).toEqual(['Want to see The Thing', 'Seen it The Thing', 'Not for me The Thing'])
+      ).toEqual(['Want to see The Thing', 'Like The Thing', 'Not for me The Thing'])
       await user.click(within(actions).getByRole('button', { name: 'Want to see The Thing' }))
 
       await findToast('Added The Thing to your watchlist.')
@@ -396,11 +396,11 @@ describe('home', () => {
 
     it('undoes from the toast too, putting back the tags the film had', async () => {
       const user = userEvent.setup()
-      // Alien is already marked seen, so it stays out of the starter picks (it's tagged).
+      // Alien is already disliked, so it stays out of the starter picks (it's tagged).
       const tags = createLocalTagRepository(undefined, undefined, 'account-demo-tags')
-      await tags.setTag(348, 'seen', true)
+      await tags.setTag(348, 'disliked', true)
       renderRoute('/')
-      // Tagged films leave the starter picks, so seen Alien isn't offered; use The Thing.
+      // Tagged films leave the starter picks, so Alien isn't offered; use The Thing.
       expect(screen.queryByRole('link', { name: /^Alien/ })).not.toBeInTheDocument()
       const tile = await pickTile(/^The Thing/)
       await user.click(within(tile).getByRole('button', { name: 'Not for me The Thing' }))
@@ -414,7 +414,7 @@ describe('home', () => {
       )
       // The Thing is back to no tags; Alien still has its own.
       expect(await tags.getTags(1091)).toEqual(new Set())
-      expect(await tags.getTags(348)).toEqual(new Set(['seen']))
+      expect(await tags.getTags(348)).toEqual(new Set(['disliked']))
     })
 
     it('saves a press on a tuned pick with its scores, and Undo takes it back (ADR-0045)', async () => {
@@ -443,8 +443,9 @@ describe('home', () => {
       const user = userEvent.setup()
       renderRoute('/')
       const tile = await pickTile(/^The Thing/)
-      await user.click(within(tile).getByRole('button', { name: 'Seen it The Thing' }))
-      await findToast('Marked The Thing as seen.')
+      await user.click(within(tile).getByRole('button', { name: 'Like The Thing' }))
+      await findToast('Liked The Thing. Your picks will follow it.')
+      expect(within(tile).getByRole('link')).toHaveAccessibleName(/Liked it\./)
       expect(createLocalFeedbackLog('feedback-demo:demo').list()).toEqual([])
     })
 
@@ -452,12 +453,14 @@ describe('home', () => {
       const user = userEvent.setup()
       const { router } = renderRoute('/')
       const tile = await pickTile(/^The Thing/)
-      await user.click(within(tile).getByRole('button', { name: 'Seen it The Thing' }))
-      await findToast('Marked The Thing as seen.')
+      await user.click(within(tile).getByRole('button', { name: 'Want to see The Thing' }))
+      await findToast('Added The Thing to your watchlist.')
       await act(() => router.navigate('/lists'))
       await act(() => router.navigate('/'))
       expect(await firstPick()).toHaveAccessibleName(/^Alien/)
-      expect(screen.queryByRole('link', { name: /^The Thing/ })).not.toBeInTheDocument()
+      // It's on the watchlist shelf now, but no longer a Discovery pick.
+      const discovery = screen.getByRole('region', { name: 'Discover Some Deep Cuts' })
+      expect(within(discovery).queryByRole('link', { name: /^The Thing/ })).not.toBeInTheDocument()
     })
   })
 
@@ -467,7 +470,7 @@ describe('home', () => {
     // Open the pick, tag it there and save, which closes Detail back to Home.
     await user.click(await firstPick())
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Seen it' }))
+    await user.click(within(group).getByRole('button', { name: 'Dislike' }))
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByRole('heading', { level: 1, name: 'Your movies, close at hand' })
     // The shelf is built from the saved tags, not the ones from before the save: the next film

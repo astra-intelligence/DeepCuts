@@ -1,8 +1,8 @@
-// The tag panel on the Detail page: the four tag toggles, then Save and Cancel.
+// The tag panel on the Detail page: the three tag toggles, then Save and Cancel.
 //
-// Changes are staged: tapping a tag only changes what's shown (following the ADR-0017 rules
-// through `applyTag`), and Save and Cancel appear as soon as anything differs from what's saved.
-// Save writes the changes, confirms them in a toast ("Saved. The Thing: Seen it, Like.") and
+// Changes are staged: tapping a tag only changes what's shown (following the ADR-0050 rule
+// through `applyTag`: one tag per film, so picking one clears the others), and Save and Cancel appear as soon as anything differs from what's saved.
+// Save writes the changes, confirms them in a toast ("Saved. The Thing: Like.") and
 // closes Detail; the toast stays up on the page underneath. Cancel discards the draft and closes Detail.
 // Search keeps one-tap tagging that saves at once (owner's choice, 2026-10-07).
 import { useQuery } from '@tanstack/react-query'
@@ -19,7 +19,7 @@ const NO_TAGS: TagSet = new Set()
 // Whether two tag sets hold the same tags.
 const sameTags = (a: TagSet, b: TagSet) => a.size === b.size && [...a].every((t) => b.has(t))
 
-/** "Saved. The Thing: Seen it, Like." in display order, or a note that the tags were cleared. */
+/** "Saved. The Thing: Like.", or a note that the tags were cleared. */
 function savedMessage(title: string, tags: TagSet): string {
   const labels = TAGS.filter((t) => tags.has(t.tag)).map((t) => t.label)
   return labels.length
@@ -99,7 +99,7 @@ export function DetailTags({
 
   return (
     <>
-      <div role="group" aria-label="Your tags" className="grid grid-cols-4 gap-1.5">
+      <div role="group" aria-label="Your tags" className="grid grid-cols-3 gap-1.5">
         {TAGS.map((t) => (
           <TagToggle
             key={t.tag}

@@ -1,7 +1,7 @@
 // Top Ten rules (ADR-0036): the single source of truth for what a Top Ten list may hold.
 //
 // A Top Ten is a person's ten favourite films, in their own order (ADR-0033). It is a separate
-// list from the four tags: adding a film here never changes its tags, and the other way round.
+// list from the three tags: adding a film here never changes its tags, and the other way round.
 // Every place that changes a Top Ten (this browser's store, the server, the test fakes) goes
 // through these functions, so the rules can't drift between storage adapters.
 //

@@ -1,5 +1,5 @@
 // The quick-action strip under a Discovery pick (issue #76; owner picked layout A with stamps,
-// 2026-10-15): three buttons in one row, Want / Seen / Nope, that tag the film at once without
+// 2026-10-15): three buttons in one row, Want / Like / Nope (ADR-0050), that tag the film at once without
 // opening Detail. Once one is used, the strip becomes an Undo button (the box shows the stamp,
 // CassetteCard). It sits after the tile's link, never inside it, so there's no interactive
 // element nested in another, and the keyboard goes tile link → its actions → the next tile.

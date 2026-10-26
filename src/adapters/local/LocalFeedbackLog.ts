@@ -1,6 +1,6 @@
 // The quick-action press log (ADR-0045), saved in this browser for every kind of account.
 //
-// Each Want / Seen / Nope press on a Discovery pick is saved with how the scorer saw that pick
+// Each Want / Like / Nope press on a Discovery pick is saved with how the scorer saw that pick
 // (its part scores and dislike penalty), so the weights lab can learn which parts predict what
 // you want (learnWeights.ts). Undo takes the press back out. It stays on this device, even for
 // passkey accounts whose tags live on the server: it's a tuning aid for the dev-only lab, holds
@@ -22,7 +22,7 @@ const unit = z.number().min(0).max(1)
 /** One saved press. Stored data is untrusted, so every field is checked (ADR-0013). */
 const entrySchema = z.object({
   tmdbId: z.number().int().positive(),
-  action: z.enum(['watchlist', 'seen', 'disliked']),
+  action: z.enum(['watchlist', 'liked', 'disliked']),
   parts: z.object(
     Object.fromEntries(SCORE_PARTS.map((p) => [p, unit])) as Record<ScorePart, typeof unit>,
   ),
@@ -49,6 +49,11 @@ export interface FeedbackLog {
 export function createLocalFeedbackLog(key: string, storage?: Storage): FeedbackLog {
   const store = versionedStore<FeedbackEntry[]>({
     key,
+    // Presses of the retired Seen button (ADR-0050) are dropped; the rest of the log is kept.
+    migrate: (raw) =>
+      Array.isArray(raw)
+        ? raw.filter((e: unknown) => (e as { action?: unknown } | null)?.action !== 'seen')
+        : raw,
     // A corrupt log is dropped and starts empty: losing tuning data is better than crashing.
     schema: z.array(entrySchema).max(FEEDBACK_LIMIT),
     fallback: [],

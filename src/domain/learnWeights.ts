@@ -1,23 +1,23 @@
 // Learning the scorer's weights from quick-action presses (ADR-0045).
 //
-// Each Want / Seen / Nope press on a Discovery pick is a verdict on a film the scorer chose.
+// Each Want / Like / Nope press on a Discovery pick is a verdict on a film the scorer chose.
 // When a press is saved, the pick's twelve part scores and its dislike penalty are saved with it
-// (LocalFeedbackLog.ts). Here a logistic regression learns which parts predict "Want to see"
-// rather than "Not for me", and turns that into suggested weights for the weights lab.
+// (LocalFeedbackLog.ts). Here a logistic regression learns which parts predict a yes (Want to see
+// or Like) rather than "Not for me", and turns that into suggested weights for the weights lab.
 //
-// - Want is a yes (1) and Nope a no (0). Seen is left out: it says the film was in your orbit,
-//   not whether you liked it.
+// - Want and Like are a yes (1) and Nope a no (0). Like replaced Seen on the strip (ADR-0050):
+//   "I've seen it and liked it" says the scorer picked well, just as "I want to see it" does.
 // - Only presses saved by the current scorer version count. A new version computes the parts
 //   differently, so older numbers would mislead the fit.
-// - It waits for MIN_PRESSES Want/Nope presses, with MIN_EACH of each, because a fit on a
+// - It waits for MIN_PRESSES presses, with MIN_EACH yeses and nos, because a fit on a
 //   handful of presses mostly learns noise.
 //
 // Pure and deterministic: plain gradient descent from zero, a fixed number of steps, no
 // randomness, so the same presses always suggest the same weights.
 import { SCORE_PARTS, type Pick, type ScorePart, type Weights } from './scorer'
 
-/** The tags a quick action sets (quickActions.ts): Want, Seen and Nope. */
-export type FeedbackAction = 'watchlist' | 'seen' | 'disliked'
+/** The tags a quick action sets (quickActions.ts): Want, Like and Nope. */
+export type FeedbackAction = 'watchlist' | 'liked' | 'disliked'
 
 /** One saved press: what was pressed, on which film, and how the scorer saw that film then. */
 export interface FeedbackEntry {
@@ -31,10 +31,10 @@ export interface FeedbackEntry {
   at: string
 }
 
-/** Want/Nope presses needed before the lab suggests weights. */
+/** Presses needed before the lab suggests weights. */
 export const MIN_PRESSES = 30
 
-/** Of those, at least this many Wants and this many Nopes, or there's nothing to compare. */
+/** Of those, at least this many yeses (Want or Like) and Nopes, or there's nothing to compare. */
 export const MIN_EACH = 5
 
 /**
@@ -52,15 +52,15 @@ const STEPS = 4000
 /** How many presses of each kind count toward a fit, for the lab to show. */
 export interface PressCounts {
   want: number
+  like: number
   nope: number
-  seen: number
   /** Presses saved by an older scorer version, which don't count. */
   older: number
 }
 
 /** The lab's suggestion, once there are enough presses. */
 export interface LearnedWeights {
-  /** Suggested weights, summing to 1. Parts that don't predict a Want get 0. */
+  /** Suggested weights, summing to 1. Parts that don't predict a yes get 0. */
   weights: Weights
   /** Suggested dislike penalty, 0 to MAX_DISLIKE_PENALTY. */
   dislikePenalty: number
@@ -76,14 +76,14 @@ export interface LearnedWeights {
 /** The result of learning: the counts, and the suggestion when there are enough presses. */
 export interface LearnResult {
   counts: PressCounts
-  /** Undefined until there are enough presses, or when no part predicts a Want at all. */
+  /** Undefined until there are enough presses, or when no part predicts a yes at all. */
   learned?: LearnedWeights
 }
 
 // The features for one press: the twelve parts, then the penalty.
 const featuresOf = (e: FeedbackEntry) => [...SCORE_PARTS.map((p) => e.parts[p]), e.penalty]
 
-// 1 / (1 + e^−z): a score turned into a probability of Want.
+// 1 / (1 + e^−z): a score turned into a probability of a yes.
 const sigmoid = (z: number) => 1 / (1 + Math.exp(-z))
 
 /**
@@ -95,19 +95,18 @@ export function learnWeights(
   entries: readonly FeedbackEntry[],
   scorerVersion: number,
 ): LearnResult {
-  const current = entries.filter((e) => e.scorerVersion === scorerVersion)
-  const labelled = current.filter((e) => e.action !== 'seen')
+  const labelled = entries.filter((e) => e.scorerVersion === scorerVersion)
   const counts: PressCounts = {
     want: labelled.filter((e) => e.action === 'watchlist').length,
+    like: labelled.filter((e) => e.action === 'liked').length,
     nope: labelled.filter((e) => e.action === 'disliked').length,
-    seen: current.length - labelled.length,
-    older: entries.length - current.length,
+    older: entries.length - labelled.length,
   }
-  if (labelled.length < MIN_PRESSES || counts.want < MIN_EACH || counts.nope < MIN_EACH)
-    return { counts }
+  const yes = counts.want + counts.like
+  if (labelled.length < MIN_PRESSES || yes < MIN_EACH || counts.nope < MIN_EACH) return { counts }
 
   const xs = labelled.map(featuresOf)
-  const ys = labelled.map((e) => (e.action === 'watchlist' ? 1 : 0))
+  const ys = labelled.map((e) => (e.action === 'disliked' ? 0 : 1))
   const { coefficients, intercept } = fit(xs, ys)
 
   // Weights: each part's positive coefficient, as a share of all of them. A part with a negative
@@ -127,14 +126,14 @@ export function learnWeights(
     const predicted = sigmoid(intercept + dot(coefficients, x)) >= 0.5 ? 1 : 0
     return predicted === ys[i]
   }).length
-  const wantShare = counts.want / labelled.length
+  const yesShare = yes / labelled.length
   return {
     counts,
     learned: {
       weights,
       dislikePenalty,
       accuracy: correct / labelled.length,
-      baseline: Math.max(wantShare, 1 - wantShare),
+      baseline: Math.max(yesShare, 1 - yesShare),
     },
   }
 }
@@ -145,7 +144,7 @@ function dot(a: readonly number[], b: readonly number[]) {
 }
 
 // L2-regularized logistic regression by batch gradient descent. Returns one coefficient per
-// feature and an intercept (which isn't regularized: it only sets the overall Want rate).
+// feature and an intercept (which isn't regularized: it only sets the overall yes rate).
 function fit(xs: readonly number[][], ys: readonly number[]) {
   const n = xs.length
   const width = xs[0]?.length ?? 0
@@ -155,7 +154,7 @@ function fit(xs: readonly number[][], ys: readonly number[]) {
     const gradient = new Array<number>(width).fill(0)
     let interceptGradient = 0
     xs.forEach((x, i) => {
-      // How far the prediction is from the press: positive when it guessed Want too strongly.
+      // How far the prediction is from the press: positive when it guessed yes too strongly.
       const error = sigmoid(intercept + dot(coefficients, x)) - (ys[i] ?? 0)
       interceptGradient += error
       x.forEach((v, j) => (gradient[j] = (gradient[j] ?? 0) + error * v))

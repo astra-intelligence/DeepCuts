@@ -12,7 +12,7 @@ import { listOf } from '../createTagRepository'
 import { isInFeeds, SYSTEM_TAGS, type SystemTag, type TagSet } from '../../domain/tagRules'
 import {
   savedOrderSchema,
-  tagRecordSchema,
+  storedRecordsSchema,
   type TagRecord,
   type TagRepository,
 } from '../TagRepository'
@@ -27,7 +27,8 @@ export class TagApiError extends Error {
 }
 
 const recordsSchema = z.object({
-  records: z.array(tagRecordSchema),
+  // Skips any "Seen it" row the server still holds (ADR-0050), rather than failing the lists.
+  records: storedRecordsSchema,
   // Optional, so a server from before ADR-0041 still reads as "no saved order".
   watchlistOrder: savedOrderSchema.default([]),
 })

@@ -154,10 +154,10 @@ test('the account menu is the way to My Lists at every width (ADR-0040)', async 
 test('detail tags toggle and save by keyboard, all at 44px or more', async ({ page }) => {
   await page.goto('/movie/1091')
   const tags = page.getByRole('group', { name: 'Your tags' })
-  const seen = tags.getByRole('button', { name: 'Seen it' })
-  await seen.focus()
+  const want = tags.getByRole('button', { name: 'Want to see' })
+  await want.focus()
   await page.keyboard.press('Space')
-  await expect(seen).toHaveAttribute('aria-pressed', 'true')
+  await expect(want).toHaveAttribute('aria-pressed', 'true')
   const save = page.getByRole('button', { name: 'Save' })
   const cancel = page.getByRole('button', { name: 'Cancel' })
   // Detail slides in by 8px (animate-enter); measured mid-slide, a 44px button can read as
@@ -166,7 +166,7 @@ test('detail tags toggle and save by keyboard, all at 44px or more', async ({ pa
     Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))),
   )
   for (const target of [
-    ...['Seen it', 'Want to see', 'Like', 'Dislike'].map((name) =>
+    ...['Want to see', 'Like', 'Dislike'].map((name) =>
       tags.getByRole('button', { name, exact: true }),
     ),
     save,
@@ -178,11 +178,11 @@ test('detail tags toggle and save by keyboard, all at 44px or more', async ({ pa
   }
   await expectNoA11yViolations(page)
   await expectNoHorizontalOverflow(page)
-  // Save follows the tags in Tab order (Want to see, Like and Dislike come first).
-  for (let i = 0; i < 4; i++) await page.keyboard.press('Tab')
+  // Save follows the tags in Tab order (Like and Dislike come first).
+  for (let i = 0; i < 3; i++) await page.keyboard.press('Tab')
   await expect(save).toBeFocused()
   await page.keyboard.press('Enter')
-  await expect(toasts(page).getByText('Saved. The Thing: Seen it.')).toBeVisible()
+  await expect(toasts(page).getByText('Saved. The Thing: Want to see.')).toBeVisible()
   await expect(page).toHaveURL(/\/$/)
   await expect(
     page.getByRole('heading', { level: 1, name: 'Your movies, close at hand' }),
@@ -372,7 +372,7 @@ test('a disliked film appears only on the Disliked list, with the tag accent', a
   await lists.getByRole('link', { name: /Dislike/ }).click()
   await expect(page.getByRole('link', { name: /The Thing/ })).toBeVisible()
   await expectNoA11yViolations(page)
-  await lists.getByRole('link', { name: /Seen it/ }).click()
+  await lists.getByRole('link', { name: /Like/ }).click()
   await expect(page.getByText(/will appear here/)).toBeVisible()
 })
 
@@ -492,7 +492,7 @@ test('tag and genre colors reach the page (runtime CSS variables, ADR-0020/0027)
   // the source; the generated theme must still emit every one.
   const missing = await page.evaluate(() => {
     const root = getComputedStyle(document.documentElement)
-    const names = ['seen', 'watchlist', 'liked', 'disliked'].map((t) => `--color-tag-${t}`)
+    const names = ['watchlist', 'liked', 'disliked'].map((t) => `--color-tag-${t}`)
     names.push('--color-genre', '--color-genre-horror', '--color-genre-drama')
     return names.filter((n) => !root.getPropertyValue(n).trim())
   })
@@ -500,7 +500,7 @@ test('tag and genre colors reach the page (runtime CSS variables, ADR-0020/0027)
   // Each unselected toggle's icon wears its own tag color. Compare against the tag's resolved
   // color rather than the label's: Like's tag color is the same near-white as label text.
   const group = page.getByRole('group', { name: 'Your tags' })
-  const tags = { 'Seen it': 'seen', 'Want to see': 'watchlist', Like: 'liked', Dislike: 'disliked' }
+  const tags = { 'Want to see': 'watchlist', Like: 'liked', Dislike: 'disliked' }
   for (const [name, tag] of Object.entries(tags)) {
     const button = group.getByRole('button', { name, exact: true })
     const [expected, icon] = await button.evaluate((b, t) => {

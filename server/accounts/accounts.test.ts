@@ -442,10 +442,10 @@ describe('tags (A3)', () => {
   it("keeps each user's tags apart: B can neither read nor change A's", async () => {
     const a = await signedIn()
     const b = await signedIn()
-    await a.call('PUT', '/api/tags', { tmdbId: 1, tag: 'seen' })
+    await a.call('PUT', '/api/tags', { tmdbId: 1, tag: 'liked' })
     expect((await b.call('GET', '/api/tags')).body.records).toEqual([])
     await b.call('DELETE', '/api/tags', { all: true })
-    await b.call('DELETE', '/api/tags', { tmdbId: 1, tag: 'seen' })
+    await b.call('DELETE', '/api/tags', { tmdbId: 1, tag: 'liked' })
     expect((await a.call('GET', '/api/tags')).body.records).toHaveLength(1)
   })
 
@@ -453,20 +453,20 @@ describe('tags (A3)', () => {
     const a = await signedIn()
     const b = await signedIn()
     const aId = (await a.call('GET', '/api/auth/session')).body.id
-    await b.call('PUT', '/api/tags', { tmdbId: 1, tag: 'seen', userId: aId })
+    await b.call('PUT', '/api/tags', { tmdbId: 1, tag: 'liked', userId: aId })
     expect((await a.call('GET', '/api/tags')).body.records).toEqual([])
   })
 
   it('needs a session', async () => {
     expect((await createClient(env).call('GET', '/api/tags')).status).toBe(401)
     expect(
-      (await createClient(env).call('PUT', '/api/tags', { tmdbId: 1, tag: 'seen' })).status,
+      (await createClient(env).call('PUT', '/api/tags', { tmdbId: 1, tag: 'liked' })).status,
     ).toBe(401)
   })
 
   it('imports picks oldest first through the rules, keeping their timestamps', async () => {
     const client = await signedIn()
-    await client.call('PUT', '/api/tags', { tmdbId: 9, tag: 'seen' })
+    await client.call('PUT', '/api/tags', { tmdbId: 9, tag: 'liked' })
     const res = await client.call('POST', '/api/tags/import', {
       records: [
         { tmdbId: 5, tag: 'disliked', createdAt: '2026-01-02T00:00:00.000Z' },
@@ -478,13 +478,13 @@ describe('tags (A3)', () => {
     expect((await client.call('GET', '/api/tags')).body.records).toEqual([
       { tmdbId: 5, tag: 'disliked', createdAt: '2026-01-02T00:00:00.000Z' },
       { tmdbId: 7, tag: 'watchlist', createdAt: '2026-01-03T00:00:00.000Z' },
-      { tmdbId: 9, tag: 'seen', createdAt: '2026-10-07T12:00:00.000Z' },
+      { tmdbId: 9, tag: 'liked', createdAt: '2026-10-07T12:00:00.000Z' },
     ])
   })
 
   it('caps an import at 5,000 records, and validates each one', async () => {
     const client = await signedIn()
-    const record = { tmdbId: 1, tag: 'seen', createdAt: '2026-01-01T00:00:00.000Z' }
+    const record = { tmdbId: 1, tag: 'liked', createdAt: '2026-01-01T00:00:00.000Z' }
     const many = Array.from({ length: 5001 }, (_, i) => ({ ...record, tmdbId: i + 1 }))
     expect((await client.call('POST', '/api/tags/import', { records: many })).status).toBe(400)
     expect(
@@ -493,6 +493,23 @@ describe('tags (A3)', () => {
     expect(db.rows('tags')).toHaveLength(5000)
     const bad = { records: [{ ...record, tag: 'loved' }] }
     expect((await client.call('POST', '/api/tags/import', bad)).status).toBe(400)
+  })
+
+  it('ADR-0050: refuses the retired "Seen it" tag and skips rows of it not yet migrated', async () => {
+    const client = await signedIn()
+    expect((await client.call('PUT', '/api/tags', { tmdbId: 1, tag: 'seen' })).status).toBe(400)
+    const retired = { records: [{ tmdbId: 1, tag: 'seen', createdAt: '2026-01-01T00:00:00.000Z' }] }
+    expect((await client.call('POST', '/api/tags/import', retired)).status).toBe(400)
+    // A row saved before migration 0004 ran: it's neither listed nor counted as the film's tag.
+    const userId = String(db.rows('users')[0]?.id)
+    db.exec(
+      `INSERT INTO tags (user_id, tmdb_id, tag, created_at)
+       VALUES ('${userId}', 2, 'seen', '2026-01-01T00:00:00.000Z')`,
+    )
+    expect((await client.call('GET', '/api/tags')).body.records).toEqual([])
+    expect((await client.call('PUT', '/api/tags', { tmdbId: 2, tag: 'liked' })).body.tags).toEqual([
+      'liked',
+    ])
   })
 })
 
@@ -548,11 +565,11 @@ describe('watchlist order (ADR-0041)', () => {
     expect(await order(client)).toEqual([])
   })
 
-  it('drops a film from the order when it leaves the watchlist (seen, removed or disliked)', async () => {
+  it('drops a film from the order when it leaves the watchlist (liked, removed or disliked)', async () => {
     const client = await signedIn()
     for (const id of [1, 2, 3, 4]) await add(client, id)
     await reorder(client, [1, 2, 3, 4])
-    await add(client, 2, 'seen') // Seen clears Want to see (tag rules).
+    await add(client, 2, 'liked') // Like clears Want to see (tag rules, ADR-0050).
     await client.call('DELETE', '/api/tags', { tmdbId: 3, tag: 'watchlist' })
     await add(client, 4, 'disliked')
     expect(db.rows('watchlist_order').map((r) => r.tmdb_id)).toEqual([1])

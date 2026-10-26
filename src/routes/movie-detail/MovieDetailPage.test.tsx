@@ -36,22 +36,26 @@ describe('movie detail', () => {
     expect(within(section).queryAllByRole('button')).toHaveLength(0)
   })
 
-  it('tag toggles follow the ADR-0017 rules', async () => {
+  it('tag toggles follow the ADR-0050 rule: one at a time', async () => {
     const user = userEvent.setup()
     renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
     const btn = (name: string) => within(group).getByRole('button', { name })
     // The rules apply to the staged selection, before anything is saved.
+    const pressed = () =>
+      within(group)
+        .getAllByRole('button')
+        .filter((b) => b.getAttribute('aria-pressed') === 'true')
+        .map((b) => b.textContent)
     await user.click(btn('Want to see'))
-    expect(btn('Want to see')).toHaveAttribute('aria-pressed', 'true')
-    await user.click(btn('Seen it'))
-    expect(btn('Seen it')).toHaveAttribute('aria-pressed', 'true')
-    expect(btn('Want to see')).toHaveAttribute('aria-pressed', 'false')
+    expect(pressed()).toEqual([expect.stringMatching(/^Want to see/)])
     await user.click(btn('Like'))
+    expect(pressed()).toEqual([expect.stringMatching(/^Like/)])
     await user.click(btn('Dislike'))
-    expect(btn('Dislike')).toHaveAttribute('aria-pressed', 'true')
-    expect(btn('Like')).toHaveAttribute('aria-pressed', 'false')
-    expect(btn('Seen it')).toHaveAttribute('aria-pressed', 'true')
+    expect(pressed()).toEqual([expect.stringMatching(/^Dislike/)])
+    // Pressing the chosen one again clears it.
+    await user.click(btn('Dislike'))
+    expect(pressed()).toEqual([])
   })
 
   it('saves changes, announces them, then fades back to the source', async () => {
@@ -63,19 +67,16 @@ describe('movie detail', () => {
     // something changes.
     expect(document.querySelector('[data-detail-actions]')).toHaveClass('min-h-11')
     expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
-    await user.click(btn('Seen it'))
     await user.click(btn('Like'))
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
-    // Undoing every change by hand hides them again: nothing differs from what's saved.
-    await user.click(btn('Seen it'))
+    // Undoing the change by hand hides them again: nothing differs from what's saved.
     await user.click(btn('Like'))
     expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
 
-    // Save writes both tags, confirms it in a toast, then closes the Detail overlay.
-    await user.click(btn('Seen it'))
+    // Save writes the tag, confirms it in a toast, then closes the Detail overlay.
     await user.click(btn('Like'))
     await user.click(screen.getByRole('button', { name: 'Save' }))
-    expect(await findToast('Saved. The Thing: Seen it, Like.')).toBeInTheDocument()
+    expect(await findToast('Saved. The Thing: Like.')).toBeInTheDocument()
     // The action row stays in place for the fade and disappears only when Detail unmounts.
     expect(screen.getByRole('button', { name: 'Saving…' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
