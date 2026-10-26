@@ -340,7 +340,7 @@ describe('home', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Dislike' }))
+    await user.click(within(group).getByRole('button', { name: 'Less like this' }))
     // Detail stages tag changes until Save.
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
@@ -470,7 +470,7 @@ describe('home', () => {
     // Open the pick, tag it there and save, which closes Detail back to Home.
     await user.click(await firstPick())
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Dislike' }))
+    await user.click(within(group).getByRole('button', { name: 'Less like this' }))
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByRole('heading', { level: 1, name: 'Your movies, close at hand' })
     // The shelf is built from the saved tags, not the ones from before the save: the next film
@@ -495,7 +495,7 @@ describe('home with likes (ADR-0026)', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Like' }))
+    await user.click(within(group).getByRole('button', { name: 'More like this' }))
     // Detail stages tag changes until Save.
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
@@ -540,7 +540,7 @@ describe('home with likes (ADR-0026)', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Like' }))
+    await user.click(within(group).getByRole('button', { name: 'More like this' }))
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
     await act(() => router.navigate('/'))
@@ -596,7 +596,7 @@ describe('home with a liked film in a series (ADR-0032, ADR-0037)', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/4488')
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Like' }))
+    await user.click(within(group).getByRole('button', { name: 'More like this' }))
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
     await act(() => router.navigate('/'))

@@ -49,12 +49,12 @@ describe('movie detail', () => {
         .map((b) => b.textContent)
     await user.click(btn('Want to see'))
     expect(pressed()).toEqual([expect.stringMatching(/^Want to see/)])
-    await user.click(btn('Like'))
-    expect(pressed()).toEqual([expect.stringMatching(/^Like/)])
-    await user.click(btn('Dislike'))
-    expect(pressed()).toEqual([expect.stringMatching(/^Dislike/)])
+    await user.click(btn('More like this'))
+    expect(pressed()).toEqual([expect.stringMatching(/^More like this/)])
+    await user.click(btn('Less like this'))
+    expect(pressed()).toEqual([expect.stringMatching(/^Less like this/)])
     // Pressing the chosen one again clears it.
-    await user.click(btn('Dislike'))
+    await user.click(btn('Less like this'))
     expect(pressed()).toEqual([])
   })
 
@@ -67,14 +67,14 @@ describe('movie detail', () => {
     // something changes.
     expect(document.querySelector('[data-detail-actions]')).toHaveClass('min-h-11')
     expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
-    await user.click(btn('Like'))
+    await user.click(btn('More like this'))
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
     // Undoing the change by hand hides them again: nothing differs from what's saved.
-    await user.click(btn('Like'))
+    await user.click(btn('More like this'))
     expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
 
     // Save writes the tag, confirms it in a toast, then closes the Detail overlay.
-    await user.click(btn('Like'))
+    await user.click(btn('More like this'))
     await user.click(screen.getByRole('button', { name: 'Save' }))
     expect(await findToast('Saved. The Thing: Like.')).toBeInTheDocument()
     // The action row stays in place for the fade and disappears only when Detail unmounts.
@@ -104,7 +104,7 @@ describe('movie detail', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/1091', { features: { searchPage: true } })
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Dislike' }))
+    await user.click(within(group).getByRole('button', { name: 'Less like this' }))
     // Detail stages tag changes until Save.
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)

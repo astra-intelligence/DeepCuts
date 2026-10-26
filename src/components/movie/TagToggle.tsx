@@ -1,8 +1,8 @@
-// One of the three tag buttons (Want to see, Like, Dislike) on Detail and in Search.
+// One of the three tag buttons (Want to see, More like this, Less like this) on Detail and Tune.
 import type { CSSProperties } from 'react'
 import { ToggleButton } from 'react-aria-components'
 import { Icon } from '@/components/ui/Icon'
-import { tagColor, type TAGS } from './tagDisplay'
+import { tagColor, type TagDisplay } from './tagDisplay'
 
 /** A tag on/off button. Its state is announced by aria-pressed only, never repeated in the label. */
 /**
@@ -15,7 +15,7 @@ export function TagToggle({
   detailed = false,
   className = '',
 }: {
-  tag: (typeof TAGS)[number]
+  tag: TagDisplay
   isSelected: boolean
   onChange: (on: boolean) => void
   detailed?: boolean
@@ -37,7 +37,7 @@ export function TagToggle({
         className="size-5 shrink-0 text-(--tag) group-data-selected:text-fg-on-accent"
       />
       <span className="flex flex-col gap-0.5">
-        <strong className="font-bold">{tag.label}</strong>
+        <strong className="font-bold">{tag.button}</strong>
         {detailed && (
           <small className="text-sm font-normal text-fg-muted group-data-selected:text-fg-on-accent">
             {tag.hint}

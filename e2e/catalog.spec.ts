@@ -166,7 +166,7 @@ test('detail tags toggle and save by keyboard, all at 44px or more', async ({ pa
     Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))),
   )
   for (const target of [
-    ...['Want to see', 'Like', 'Dislike'].map((name) =>
+    ...['Want to see', 'More like this', 'Less like this'].map((name) =>
       tags.getByRole('button', { name, exact: true }),
     ),
     save,
@@ -360,7 +360,7 @@ test('a disliked film appears only on the Disliked list, with the tag accent', a
   await page.goto('/movie/1091')
   const dislike = page
     .getByRole('group', { name: 'Your tags' })
-    .getByRole('button', { name: 'Dislike' })
+    .getByRole('button', { name: 'Less like this' })
   await dislike.click()
   await expect(dislike).toHaveAttribute('aria-pressed', 'true')
   // Detail stages tag changes until Save.

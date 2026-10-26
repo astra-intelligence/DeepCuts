@@ -13,7 +13,7 @@ describe('my lists', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Like' }))
+    await user.click(within(group).getByRole('button', { name: 'More like this' }))
     // Detail stages tag changes until Save.
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
@@ -47,7 +47,7 @@ describe('my lists', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Like' }))
+    await user.click(within(group).getByRole('button', { name: 'More like this' }))
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
 

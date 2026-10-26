@@ -12,7 +12,7 @@ async function likeThenOpen(path: string, options: Parameters<typeof renderRoute
   const user = userEvent.setup()
   const rendered = renderRoute('/movie/1091', options)
   const group = await screen.findByRole('group', { name: 'Your tags' })
-  await user.click(within(group).getByRole('button', { name: 'Like' }))
+  await user.click(within(group).getByRole('button', { name: 'More like this' }))
   // Detail stages tag changes until Save.
   await user.click(screen.getByRole('button', { name: 'Save' }))
   await screen.findByText(/^Saved\./)
