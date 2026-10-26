@@ -48,7 +48,10 @@ export function PageHeading({
           </>
         )}
       </h1>
-      {lede && <p className="mt-4 max-w-prose text-lg text-fg-soft">{lede}</p>}
+      {/* As wide as the headline and the content below it (owner, 2026-10-26): a narrower measure
+          left Home's one-line lede wrapping before its last word. text-pretty keeps a lone last
+          word off its own line where it does wrap. */}
+      {lede && <p className="mt-4 text-lg text-pretty text-fg-soft">{lede}</p>}
     </div>
   )
 }
