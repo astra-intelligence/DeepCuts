@@ -36,6 +36,18 @@
     outline: none;
     box-shadow: none;
   }
+  /* The ring fades in and settles out to its offset over the app's default transition (150ms,
+     the same as Tailwind's `transition` classes), instead of snapping on (owner, 2026-10-26). An
+     outline can only animate between two drawn states, so controls carry an invisible one at rest.
+     Only the outline's color and offset transition, so a control's own transitions are untouched;
+     reduced motion makes it instant (below). */
+  :where(a[href], button, select, textarea, summary, [tabindex]:not([tabindex='-1'])) {
+    outline: 3px solid transparent;
+    outline-offset: 0;
+    transition-property: outline-color, outline-offset;
+    transition-duration: --theme(--default-transition-duration);
+    transition-timing-function: --theme(--default-transition-timing-function);
+  }
   /* Headings receive focus only programmatically after navigation (useRouteFocus); they are not
      controls, so they get no ring (SC 2.4.7 covers operable components). */
   h1[tabindex='-1']:focus {
@@ -43,7 +55,13 @@
     box-shadow: none;
   }
   @media (forced-colors: active) {
+    /* Forced colors repaint a transparent outline in a system color, which would ring every
+       control at rest, so there the ring has no resting state and simply appears. */
+    :where(a[href], button, select, textarea, summary, [tabindex]:not([tabindex='-1'])) {
+      outline-style: none;
+    }
     :focus-visible {
+      outline-style: solid;
       outline-color: Highlight;
       box-shadow: none;
     }
@@ -69,6 +87,12 @@
 
 /* Applies the focus ring to a field container while its input has keyboard focus. */
 @utility focus-ring-within {
+  /* At rest: an invisible ring, so the focused one fades in like every other control's. */
+  outline: 3px solid transparent;
+  outline-offset: 0;
+  transition-property: outline-color, outline-offset;
+  transition-duration: --theme(--default-transition-duration);
+  transition-timing-function: --theme(--default-transition-timing-function);
   &:has(input:focus-visible) {
     position: relative;
     z-index: 3;
@@ -78,7 +102,9 @@
     box-shadow: 0 0 0 2px var(--color-surface);
   }
   @media (forced-colors: active) {
+    outline-style: none;
     &:has(input:focus-visible) {
+      outline-style: solid;
       outline-color: Highlight;
       box-shadow: none;
     }
