@@ -112,7 +112,7 @@ describe('registration (A2)', () => {
     )
     const real = createClient(env)
     real.jar.set(LOCAL_SESSION_COOKIE, local.jar.get(LOCAL_SESSION_COOKIE) ?? '')
-    expect((await real.call('GET', '/api/auth/session')).status).toBe(401)
+    expect((await real.call('GET', '/api/auth/session')).body).toBeNull()
   })
 
   it('stores no raw invite code or session id anywhere', async () => {
@@ -276,9 +276,9 @@ describe('sign-in and sessions (A2)', () => {
     expect(db.rows('passkeys')[0]).toMatchObject({ counter: 1, last_used_at: Date.now() })
   })
 
-  it('answers 401 with no session, and never caches session answers', async () => {
+  it('answers null with no session, not an error, and never caches session answers', async () => {
     const res = await createClient(env).call('GET', '/api/auth/session')
-    expect(res).toMatchObject({ status: 401, body: { error: 'signed_out' } })
+    expect(res).toMatchObject({ status: 200, body: null })
     expect(res.response.headers.get('Cache-Control')).toBe('no-store')
   })
 
@@ -291,7 +291,7 @@ describe('sign-in and sessions (A2)', () => {
     const out = await client.call('POST', '/api/auth/sign-out')
     expect(out.response.headers.get('Set-Cookie')).toContain('Max-Age=0')
     expect(db.rows('sessions')).toEqual([])
-    expect((await stolen.call('GET', '/api/auth/session')).status).toBe(401)
+    expect((await stolen.call('GET', '/api/auth/session')).body).toBeNull()
   })
 
   it('renews a session past half its life, and ends it after 30 days unused', async () => {
@@ -308,7 +308,7 @@ describe('sign-in and sessions (A2)', () => {
     expect(db.rows('sessions')[0].expires_at).toBe(Date.now() + 30 * DAY)
 
     vi.setSystemTime(Date.now() + 31 * DAY)
-    expect((await client.call('GET', '/api/auth/session')).status).toBe(401)
+    expect((await client.call('GET', '/api/auth/session')).body).toBeNull()
     expect(db.rows('sessions')).toEqual([])
   })
 
@@ -346,7 +346,7 @@ describe('the /api guard', () => {
     const check = vi.fn(async (_key: string, bucket?: string) => ({ allowed: bucket !== 'auth' }))
     const client = createClient({ ...env, RATE_LIMITER: { check } })
     expect((await client.call('POST', '/api/auth/authenticate/options')).status).toBe(429)
-    expect((await client.call('GET', '/api/auth/session')).status).toBe(401)
+    expect((await client.call('GET', '/api/auth/session')).body).toBeNull()
     expect(check.mock.calls.map((c) => c[1])).toEqual(['auth', 'api'])
   })
 
@@ -411,7 +411,7 @@ describe('rename and delete (A2b)', () => {
     expect(db.rows('tags')).toHaveLength(3)
     expect(db.rows('top_ten')).toHaveLength(1)
     expect(db.rows('watchlist_order')).toHaveLength(2)
-    expect((await stolen.call('GET', '/api/auth/session')).status).toBe(401)
+    expect((await stolen.call('GET', '/api/auth/session')).body).toBeNull()
   })
 })
 

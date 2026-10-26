@@ -45,7 +45,9 @@ test('the API answers only on the site address (host pin)', async ({ request }) 
   const site = await request.get('/api/auth/session', {
     headers: { Host: 'deep-cuts.example' },
   })
-  expect(site.status()).toBe(401)
+  // Reached the handler: signed out, so a 200 with no user (not refused by the pin).
+  expect(site.status()).toBe(200)
+  expect(await site.json()).toBeNull()
 })
 
 test('unknown API paths are a JSON 404, not the app page', async ({ request }) => {

@@ -74,7 +74,7 @@ test('invite → register → reload → sign out → sign in with the passkey',
   await expect(page.getByRole('menuitem', { name: 'Account settings' })).toBeVisible()
   await page.getByRole('menuitem', { name: 'Sign out' }).click()
   await expect(page).toHaveURL(/\/$/)
-  expect((await page.request.get('/api/auth/session')).status()).toBe(401)
+  expect(await (await page.request.get('/api/auth/session')).json()).toBeNull()
 
   // Sign in with the passkey: one button, no username.
   await page.goto('/sign-in')
