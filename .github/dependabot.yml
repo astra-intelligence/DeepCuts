@@ -1,8 +1,8 @@
 # Dependabot opens monthly pull requests to update dependencies and the pinned GitHub Actions.
 # Each one goes through CI like any other change; the owner merges them.
 #
-# Monthly and grouped to save GitHub Actions minutes on this private repo: every Dependabot PR
-# (and every rebase of one) runs the full CI workflow. Security updates for known
+# Monthly and grouped to keep the PR stream small: every Dependabot PR (and every rebase of one)
+# runs the full CI workflow. Security updates for known
 # vulnerabilities are a separate repo setting and still open as soon as an alert appears.
 version: 2
 updates:

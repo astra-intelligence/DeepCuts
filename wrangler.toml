@@ -19,8 +19,9 @@ service = "deep-cuts-rate-limit"
 
 # The accounts database (ADR-0031, Stage 6): Cloudflare D1 (SQLite), Free plan. Schema changes are
 # versioned SQL files in migrations/. Locally, `npm run db:migrate:local` creates it under
-# .wrangler/ (git-ignored). The owner replaces the placeholder id at go-live, after
-# `wrangler d1 create deep-cuts` (docs repo: hosting/go-live-checklist.md). The id is not a secret.
+# .wrangler/ (git-ignored). The id below is the hosted database's, created with
+# `wrangler d1 create deep-cuts` (docs repo: hosting/go-live-checklist.md). It is not a secret:
+# using it needs the owner's Cloudflare login.
 [[d1_databases]]
 binding = "DB"
 database_name = "deep-cuts"
