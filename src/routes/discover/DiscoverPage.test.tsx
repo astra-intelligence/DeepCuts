@@ -17,11 +17,16 @@ import { server } from '@/test/msw/server'
 
 /** The first (top-ranked) pick in the Discovery panel, once the picks have loaded. */
 async function firstPick() {
+  return within(await firstTile()).getByRole('link')
+}
+
+/** The first Discovery pick's whole tile: its link, reason line and quick actions. */
+async function firstTile() {
   const panel = await screen.findByRole('region', { name: 'Discover Some Deep Cuts' })
-  // The first tile's link (the skeleton tiles are aria-hidden, so they never match).
+  // The skeleton tiles are aria-hidden, so they never match.
   const [first] = await within(panel).findAllByRole('listitem')
   if (!first) throw new Error('no picks')
-  return within(first).getByRole('link')
+  return first
 }
 
 describe('home', () => {
@@ -501,7 +506,16 @@ describe('home with likes (ADR-0026)', () => {
     expect(feature).toHaveTextContent(/\d+% match/)
     // The match is also the box's blood-red stamp.
     expect(within(feature).getByText(/^\d+%$/)).toBeInTheDocument()
-    expect(feature).toHaveTextContent('Because you liked The Thing')
+    // "Why this pick?" sits after the tile's link; pressing it opens the full sentence.
+    const reason = within(await firstTile()).getByRole('button', {
+      name: 'Why this pick? (The Fog)',
+    })
+    await userEvent.click(reason)
+    expect(await screen.findByRole('dialog', { name: 'Why The Fog was picked' })).toHaveTextContent(
+      'Same director as The Thing',
+    )
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     // The re-rank loaded the top candidates' directors (ADR-0028): The Fog shares John Carpenter
     // with The Thing, which lifts it to the top spot.
     expect(feature).toHaveTextContent('The Fog')
@@ -551,7 +565,11 @@ describe('home with a Top Ten (ADR-0043)', () => {
     const feature = await firstPick()
     // Scored picks, not the starter shelf: a match and the reason, from the Top Ten film.
     expect(feature).toHaveTextContent(/\d+% match/)
-    expect(feature).toHaveTextContent('Because you liked The Thing')
+    await userEvent.click(within(await firstTile()).getByRole('button', { name: /^Why this pick/ }))
+    expect(await screen.findByRole('dialog')).toHaveTextContent('The Thing')
+    // The open bubble hides the page from assistive tech, so close it before reading on.
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(feature).toHaveTextContent('The Fog')
     // The Top Ten film itself is never recommended back.
     const panel = screen.getByRole('region', { name: 'Discover Some Deep Cuts' })
@@ -582,7 +600,14 @@ describe('home with a liked film in a series (ADR-0032, ADR-0037)', () => {
 
     // TMDB recommends nothing for it here, so the pick comes from the series: only the next film.
     const feature = await firstPick()
-    expect(feature).toHaveTextContent('Because you liked Friday the 13th')
+    expect(feature).toHaveTextContent('Friday the 13th Part 2')
+    await userEvent.click(within(await firstTile()).getByRole('button', { name: /^Why this pick/ }))
+    expect(await screen.findByRole('dialog')).toHaveTextContent(
+      'Next in the series after Friday the 13th',
+    )
+    // The open bubble hides the page from assistive tech, so close it before reading on.
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     const titles = screen
       .getAllByRole('link', { name: /Friday the 13th Part/ })
       .map((l) => l.textContent)

@@ -466,14 +466,17 @@ test('liking a film tunes Home’s recommendations, with a match and the reason 
   await expect(toasts(page).getByText(/^Saved\./)).toBeVisible()
   await page.getByRole('link', { name: 'Deep Cuts, go to Home' }).click()
   // The top pick is the first row in Discovery (no featured card).
-  const feature = page
+  const tile = page
     .getByRole('region', { name: 'Discover Some Deep Cuts' })
     .getByRole('listitem')
     .first()
-    .getByRole('link')
+  const feature = tile.getByRole('link')
   await expect(feature).toContainText(/\d+% match/)
   await expect(page.getByText('Like a few films to tune these picks to you.')).toHaveCount(0)
-  await expect(feature).toContainText('Because you liked The Thing')
+  // "Why this pick?" opens the full reason (PickReason).
+  await tile.getByRole('button', { name: /^Why this pick\?/ }).click()
+  await expect(page.getByRole('dialog', { name: /^Why .* was picked$/ })).toContainText('The Thing')
+  await page.keyboard.press('Escape')
   await expectNoA11yViolations(page)
   await expectNoHorizontalOverflow(page)
 

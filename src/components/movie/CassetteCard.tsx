@@ -1,20 +1,20 @@
 // One film as a cassette tile: the VHS box (design approved 2026-10-09) with its badge, then the
-// caption (ADR-0040 §8): title, the first reason, year · genre, director and writer. The whole
+// caption (ADR-0040 §8): title, year · genre, director and writer (a Discovery pick's "Why this
+// title?" sits just after the tile, PickReason). The whole
 // tile is the link (no separate "View details", owner 2026-10-13); its title lights up on hover.
 // Used by Home's shelves and My Lists. A tile rises gently into place when its film arrives,
 // usually replacing a CassetteSkeleton of the same size, so nothing around it moves.
 import { Link } from 'react-router'
 import { releaseYear, type Credits, type MovieSummary } from '@/api/tmdb'
 import { genreTone, primaryGenreName } from '@/domain/genres'
-import { Because, CreditLines } from './FilmCredits'
+import { CreditLines } from './FilmCredits'
 import { quickAction, type QuickAction } from './quickActions'
 import { VhsBox, type VhsBadge } from './VhsBox'
 
-/** A film on a cassette tile, with its match and reasons when it came from the scorer. */
+/** A film on a cassette tile, with its match when it came from the scorer. */
 export interface CassetteItem {
   movie: MovieSummary
   match?: number
-  because?: string[]
   /** Director and writer names, once the film's details have loaded. */
   credits?: Credits
   /** Its place in a ranked list (the Top Ten, ADR-0036), shown as a "#1" tab on the box. */
@@ -86,7 +86,6 @@ export function CassetteCard({ item, stagger = 0 }: { item: CassetteItem; stagge
         {item.match !== undefined && <span className="sr-only">{item.match}% match</span>}
         {/* The stamp is on the hidden box, so say it here too: "On your watchlist." */}
         {item.stamp && <span className="sr-only">{quickAction(item.stamp).stamp}.</span>}
-        <Because titles={item.because?.slice(0, 1)} />
         <p className="mt-1 min-h-5 text-sm text-fg-muted">{meta.join(' · ')}</p>
         <CreditLines credits={item.credits} />
       </div>

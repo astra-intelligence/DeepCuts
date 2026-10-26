@@ -1,15 +1,5 @@
-// The small text lines under a film on Home and My Lists: why it was picked, and who made it.
+// The small text lines under a film on Home and My Lists: who made it.
 import type { Credits } from '@/api/tmdb'
-
-/** "Because you liked Alien and The Thing" (nothing without titles). */
-export function Because({ titles }: { titles: string[] | undefined }) {
-  if (!titles?.length) return null
-  return (
-    <span className="mt-1 block font-label text-sm text-accent">
-      Because you liked <cite className="not-italic">{titles.join(' and ')}</cite>
-    </span>
-  )
-}
 
 /**
  * "Director: John Carpenter" and "Writer: Bill Lancaster" (plural with two names). A line is

@@ -13,7 +13,7 @@
 //    the scorer ranks again with them. Every call is the same cached details query the Detail
 //    page uses, so opening a recommended film afterwards costs nothing.
 // Each pick then gets its one-sentence reason (pickReason.ts), named from the same data. Home
-// still shows "Because you liked …" on tiles; the full reason is for tooltips (owner, 2026-10-25).
+// shows "Why this pick?", which opens it (PickReason, owner 2026-10-26).
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { movieQueries } from '@/api/queries'
 import { crewOf, releaseYear, type MovieDetail, type MovieSummary } from '@/api/tmdb'
