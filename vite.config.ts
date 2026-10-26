@@ -62,7 +62,12 @@ export default defineConfig(({ mode }) => ({
               // stays in that lazy chunk instead of adding ~20 kB to every first visit.
               test: /node_modules[\\/](react-aria|react-aria-components|react-stately|@react-aria|@react-stately|@react-types|@internationalized|@swc)[\\/](?!.*(?:[\\/]dnd[\\/]|[\\/]use(?:Drag|Drop)\.js$))/,
             },
-            { name: 'data', test: /node_modules[\\/](zod|@tanstack)[\\/]/ },
+            {
+              name: 'data',
+              // src/zodConfig.ts rides with Zod, so its setting runs as soon as Zod loads: left
+              // in the entry chunk, it ran after the chunks that parse on load, too late.
+              test: /node_modules[\\/](zod|@tanstack)[\\/]|src[\\/]zodConfig\.ts$/,
+            },
           ],
         },
       },
