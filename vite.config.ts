@@ -6,6 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { defineConfig, loadEnv } from 'vite'
+import { preloadFonts } from './server/preloadFonts.ts'
 import { baseHeaders, contentSecurityPolicy } from './server/securityHeaders.ts'
 import { sonnerStyles } from './server/sonnerStyles.ts'
 import { tmdbProxy } from './server/tmdb/proxy.ts'
@@ -29,6 +30,8 @@ export default defineConfig(({ mode }) => ({
     tmdbProxy(loadEnv(mode, process.cwd(), '').TMDB_READ_TOKEN),
     // Keeps Sonner's inline <style> tag out of the build, which the CSP would block.
     sonnerStyles(),
+    // Starts the web fonts downloading with the page, so headings don't reflow when they arrive.
+    preloadFonts(),
     // `npm run analyze` only: a treemap of what's in the bundle, at build/bundle-report.html.
     mode === 'analyze' &&
       visualizer({ filename: 'build/bundle-report.html', gzipSize: true, template: 'treemap' }),
