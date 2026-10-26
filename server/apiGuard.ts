@@ -1,10 +1,10 @@
 // The checks every `/api/*` request passes before any route runs (ADR-0029, ADR-0031). Used by
 // functions/api/_middleware.ts on Cloudflare, and by the accounts tests, so both run the same code:
-// 1. The host pin: the API answers only on the site's own address (`CANONICAL_HOST`). Every
-//    Cloudflare Pages deploy also stays reachable forever at its own `<hash>.deep-cuts.pages.dev`
-//    address, running that version's code against the production database and secret; the pin
-//    makes those old copies (and `deep-cuts.pages.dev` itself) unable to reach either. Checked
-//    first, so a refused host never uses the rate limiter.
+// 1. The host pin: the API answers only on the site's own address (`CANONICAL_HOST`, a Pages
+//    secret, ADR-0047). Every Cloudflare Pages deploy also stays reachable forever at its own
+//    `<hash>.<project>.pages.dev` address, running that version's code against the production
+//    database and secret; the pin makes those old copies (and `<project>.pages.dev` itself) unable
+//    to reach either. Checked first, so a refused host never uses the rate limiter.
 // 2. The per-client rate limit (rateLimit.ts). Sign-in, registration and account changes count
 //    against a tighter limit than everything else.
 // 3. CSRF protection: any request that can change data (anything but GET/HEAD/OPTIONS) must come
@@ -19,8 +19,9 @@ const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]'])
 
 /**
  * Whether the API may answer on this request's host.
- * @param canonicalHost - The site's address (`deep-cuts.example`), from `wrangler.toml`
- *   `[vars]`. When it isn't set (unit tests), every host is allowed.
+ * @param canonicalHost - The site's address, from the `CANONICAL_HOST` Pages secret (ADR-0047).
+ *   When it isn't set (unit tests), every host is allowed; on Cloudflare the middleware refuses to
+ *   run without it (functions/api/_middleware.ts).
  */
 export function isAllowedHost(request: Request, canonicalHost: string | undefined): boolean {
   const { hostname } = new URL(request.url)

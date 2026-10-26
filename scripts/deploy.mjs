@@ -5,7 +5,8 @@
 //
 // What goes live is exactly what was reviewed and merged:
 // 1. Pre-flight (scripts/deployChecks.ts): on main, nothing uncommitted, the same commit as GitHub's
-//    main, and a real D1 database id in wrangler.toml. Any problem stops it before anything runs.
+//    main, a real D1 database id in wrangler.toml, and the Pages secrets the API needs
+//    (CANONICAL_HOST, ADR-0047). Any problem stops it before anything runs.
 // 2. A fresh build with real accounts on (VITE_ACCOUNTS=cloudflare, ADR-0031), so a stale or
 //    demo-only dist/ can never be uploaded by mistake.
 // 3. The dist secret scan, then the upload.
@@ -14,7 +15,7 @@
 // a public preview URL for every branch.
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
-import { deployProblems } from './deployChecks.ts'
+import { deployProblems, parseSecretNames } from './deployChecks.ts'
 
 if (process.env.DEEP_CUTS_DEPLOY !== '1') {
   console.error(
@@ -37,6 +38,12 @@ const problems = deployProblems(
     originMain: git('rev-parse', 'origin/main'),
   },
   readFileSync('wrangler.toml', 'utf8'),
+  // Names only: wrangler never prints secret values.
+  parseSecretNames(
+    execFileSync('npx', ['wrangler', 'pages', 'secret', 'list', '--project-name', 'deep-cuts'], {
+      encoding: 'utf8',
+    }),
+  ),
 )
 if (problems.length) {
   console.error(['✗ Not deploying:', ...problems.map((p) => `  • ${p}`)].join('\n'))

@@ -36,7 +36,7 @@ test('deep links load the app (H7)', async ({ page }) => {
 
 test('the API answers only on the site address (host pin)', async ({ request }) => {
   // An old deploy's own address, as Cloudflare would route it. Localhost (every other test here)
-  // is allowed; so is the real site.
+  // is allowed; so is the site, here the stand-in host `npm run preview:cf` sets (ADR-0047).
   const wrong = await request.get('/api/auth/session', {
     headers: { Host: 'a1b2c3d4.deep-cuts.pages.dev' },
   })
