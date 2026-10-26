@@ -5,7 +5,8 @@
 // (so it never moves on its own or on touch), and eases back to the start when the pointer leaves.
 // Reduced motion keeps it still. Screen readers get the items once, as a list; the scrolling copy
 // is hidden from them. While its items load, the band can keep its room (`loading`), so the page
-// below doesn't drop when they arrive; they then fade in.
+// below doesn't drop when they arrive; they then fade in. A band that has its items from the start
+// (the landing page, or Home with its lists cached) shows them at once.
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 
 /** How long the pointer must rest on the band before it starts scrolling (design §5). */
@@ -27,6 +28,8 @@ export function Ticker({ items, loading = false }: { items: string[]; loading?: 
   const track = useRef<HTMLDivElement>(null)
   const timer = useRef<number | undefined>(undefined)
   const [playing, setPlaying] = useState(false)
+  // Whether it started empty: only items that arrive into the empty band fade in.
+  const [startedEmpty] = useState(items.length === 0)
   // A pending start must not fire after the band has gone.
   useEffect(() => () => window.clearTimeout(timer.current), [])
 
@@ -75,8 +78,11 @@ export function Ticker({ items, loading = false }: { items: string[]; loading?: 
         ref={track}
         aria-hidden="true"
         data-playing={playing || undefined}
-        // Fades in as it first appears (into the empty band, when it was loading).
-        className="inline-block transition-transform duration-400 ease-out data-playing:animate-ticker data-playing:transition-none motion-safe:animate-fade-in motion-reduce:animate-none"
+        // Fades in when it arrives into the empty band (`startedEmpty`). Never while playing:
+        // both set `animation`, and the scroll must win.
+        className={`inline-block transition-transform duration-400 ease-out data-playing:animate-ticker data-playing:transition-none motion-reduce:animate-none ${
+          startedEmpty && !playing ? 'motion-safe:animate-fade-in' : ''
+        }`}
       >
         {loop.map((item, i) => (
           <span key={i} className="px-4">

@@ -34,6 +34,13 @@ describe('Ticker', () => {
     rerender(<Ticker items={ITEMS} loading={false} />)
     expect(container.firstElementChild).not.toHaveAttribute('data-ticker-loading')
     expect(screen.getAllByRole('listitem')).toHaveLength(2)
+    // Items that arrive into the empty band fade in; a band that starts full doesn't.
+    expect(container.querySelector('.inline-block')).toHaveClass('motion-safe:animate-fade-in')
+  })
+
+  it('shows items it has from the start at once, without the fade', () => {
+    const { container } = render(<Ticker items={ITEMS} />)
+    expect(container.querySelector('.inline-block')).not.toHaveClass('motion-safe:animate-fade-in')
   })
 
   it('starts scrolling only after a mouse rests on it for three seconds', () => {
