@@ -1,5 +1,5 @@
 {
-  "$description": "Tier 1: the 'Triple Feature' palette (ADR-0040, docs/design/triple-feature/). Warm ink, bone and dust, with mustard and blood as the two accents. The genre ramps are generated separately in hues.json (ADR-0023).",
+  "$description": "Tier 1: the 'Triple Feature' palette (ADR-0040, docs repo: design/triple-feature/). Warm ink, bone and dust, with mustard and blood as the two accents. The genre ramps are generated separately in hues.json (ADR-0023).",
   "color": {
     "$type": "color",
     "ink": {

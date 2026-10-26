@@ -1,6 +1,6 @@
 # Security Policy
 
-Deep Cuts is a local-first portfolio app (ADR-0013). Security controls are described in [ADR-0008](docs/adr/0008-security-baseline.md) and the [threat model](docs/security/threat-model.md).
+Deep Cuts is a local-first portfolio app (ADR-0013). Its security controls (CSP and security headers, a server-side TMDB proxy with an allowlist, rate limiting, Zod validation of all external data, passkey-only accounts, and secret scanning) are enforced in code and CI; see `server/securityHeaders.ts`, `server/tmdb/` and `eslint.config.js`.
 
 ## Reporting a vulnerability
 

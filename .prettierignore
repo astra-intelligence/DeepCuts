@@ -3,7 +3,6 @@ build
 coverage
 package-lock.json
 src/styles/tokens.css
-docs
 .claude
 test-results
 playwright-report

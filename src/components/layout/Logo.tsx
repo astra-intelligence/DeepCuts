@@ -1,5 +1,5 @@
 // The Deep Cuts wordmark (ADR-0040): two skewed blocks, "DEEP" in bone on blood and "CUTS" in ink
-// on bone. Drawn inline from the owner's artwork (docs/design/triple-feature/deep-cuts-logo.svg),
+// on bone. Drawn inline from the owner's artwork (docs repo: design/triple-feature/deep-cuts-logo.svg),
 // with the letters as vector paths, so it looks identical before any font loads and stays sharp
 // at any size.
 //
