@@ -10,6 +10,7 @@ import {
   nextVersion,
   planRelease,
   prependEntry,
+  releaseVersionOf,
   versionProblems,
   type Commit,
   type VersionState,
@@ -172,13 +173,26 @@ describe('prependEntry', () => {
   })
 })
 
+describe('releaseVersionOf', () => {
+  it('reads the version from the subject npm run release writes', () => {
+    expect(releaseVersionOf('chore(release): v1.2.0')).toBe('1.2.0')
+  })
+
+  it('ignores anything else', () => {
+    expect(releaseVersionOf('chore(release): prep')).toBeNull()
+    expect(releaseVersionOf('feat: v1.2.0')).toBeNull()
+    expect(releaseVersionOf('chore(release): v1.2')).toBeNull()
+  })
+})
+
 describe('versionProblems', () => {
+  // Release v1.3.0 is merged and nothing has landed since.
   const released: VersionState = {
     packageVersion: '1.3.0',
-    lastTagVersion: '1.2.0',
+    lastRelease: '1.3.0',
+    commitsSinceRelease: [],
     packageTagCommit: null,
     head: 'h',
-    commitsSinceTag: [c('feat: a'), c('chore(release): v1.3.0')],
     changelog: '# Changelog\n\n## 1.3.0 (2026-11-01)\n',
   }
 
@@ -190,20 +204,31 @@ describe('versionProblems', () => {
     expect(versionProblems({ ...released, packageTagCommit: 'h' })).toEqual([])
   })
 
-  it('refuses a version already tagged elsewhere', () => {
-    expect(versionProblems({ ...released, packageTagCommit: 'old' })[0]).toMatch(
-      /already tagged on another commit/,
+  it('refuses commits that landed after the release, and names the fix', () => {
+    const later = { ...released, commitsSinceRelease: [c('feat: b'), c('test: c')] }
+    expect(versionProblems(later)).toEqual([
+      '2 commits have landed since v1.3.0 without a release. Run `npm run release` and merge its PR.',
+    ])
+    expect(versionProblems({ ...released, commitsSinceRelease: [c('fix: d')] })[0]).toMatch(
+      /^1 commit has landed/,
     )
   })
 
-  it('refuses commits that landed after the release PR', () => {
-    const later = { ...released, commitsSinceTag: [...released.commitsSinceTag, c('feat!: b')] }
-    expect(versionProblems(later)[0]).toMatch(/make it 2\.0\.0/)
+  it('refuses a version already tagged elsewhere', () => {
+    const shipped = { ...released, packageTagCommit: 'old', commitsSinceRelease: [] }
+    expect(versionProblems(shipped)[0]).toMatch(/already tagged on another commit/)
   })
 
   it('refuses before the first release', () => {
-    const before = { ...released, packageVersion: '0.0.0', lastTagVersion: null }
-    expect(versionProblems(before)[0]).toMatch(/since the start make it 1\.0\.0/)
+    expect(versionProblems({ ...released, packageVersion: '0.0.0', lastRelease: null })).toEqual([
+      'Nothing has been released yet. Run `npm run release` and merge its PR.',
+    ])
+  })
+
+  it('refuses a version changed by hand', () => {
+    expect(versionProblems({ ...released, packageVersion: '1.4.0' })[0]).toMatch(
+      /package.json says 1\.4\.0, but the last release commit is v1\.3\.0/,
+    )
   })
 
   it('refuses a missing changelog entry', () => {
