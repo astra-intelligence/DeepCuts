@@ -2,7 +2,7 @@
 
 A fast, very visual, one-thumb movie tracker. Tag films (Seen it, Want to see, Like, Dislike) in a tap or two, and it surfaces deep cuts you've never heard of.
 
-> Status: **live at https://deep-cuts.example** since 2026-10-08 (Cloudflare Pages, invite-only passkey accounts; not indexed by search engines). Recommendations from your likes (ADR-0032), film details, tagging, My Lists and a demo sign-in all work locally too. ADR-0033 makes Welcome the primary home and recommendation surface, with no separate Discover route. You're either signed in or signed out (ADR-0034): signed out, `/` is a landing page that explains Top Ten, Movies I want to watch and Discovery in the same panels Home uses (ADR-0035). A responsive, mobile-first website (ADR-0021).
+> Status: **live** since 2026-10-08 (Cloudflare Pages, invite-only passkey accounts; not indexed by search engines). Recommendations from your likes (ADR-0032), film details, tagging, My Lists and a demo sign-in all work locally too. ADR-0033 makes Welcome the primary home and recommendation surface, with no separate Discover route. You're either signed in or signed out (ADR-0034): signed out, `/` is a landing page that explains Top Ten, Movies I want to watch and Discovery in the same panels Home uses (ADR-0035). A responsive, mobile-first website (ADR-0021).
 
 ## Run locally
 
@@ -52,7 +52,7 @@ CI also runs `npm audit` and gitleaks (secret scan of the whole git history). Ac
 
 ## Hosting
 
-The app is hosted on **Cloudflare Pages** (ADR-0029) at **https://deep-cuts.example** (Pages address `deep-cuts.pages.dev`, which the API refuses). Only the owner deploys; nothing here runs a deploy for you. Local development needs no Cloudflare account.
+The app is hosted on **Cloudflare Pages** (ADR-0029). This public repo doesn't name the live address (ADR-0047): the API's host pin reads it from the `CANONICAL_HOST` Pages secret, and the API refuses every request (and `npm run deploy` refuses to run) until that secret is set. The Pages project's own `*.pages.dev` address is refused too. Only the owner deploys; nothing here runs a deploy for you. Local development needs no Cloudflare account.
 
 **Try the hosted runtime locally:** `npm run build && npm run preview:cf` serves the app at http://localhost:8788 with the real Pages Function (the TMDB proxy), the rate-limit Worker, the generated `_headers` and SPA routing. For the TMDB token, copy `.dev.vars.example` to `.dev.vars` (git-ignored); if it's missing, Wrangler falls back to `.env.local`.
 
@@ -90,7 +90,7 @@ Sessions last 30 days and renew on use; the cookie is `__Host-dc_session` (`Http
 | Sign-in / sign-up rate limit (ours)          | 10 requests / 60 s per client | 429 `rate_limited`          |
 | CPU per passkey check (measured locally)     | ~0.3 ms typical, ~2 ms cold   | 10 ms limit; request errors |
 
-`npm run invite -- --remote --base https://deep-cuts.example` writes to the real database. It's for the owner only, after go-live (see the checklist).
+`npm run invite -- --remote --base https://<live address>` writes to the real database. It's for the owner only, after go-live (see the checklist).
 
 ## Project structure
 

@@ -36,17 +36,21 @@ tmdbProxyContract('Pages Function', (url, { method, token, fetchImpl }) =>
   viaFunction(url, method, { TMDB_READ_TOKEN: token }, fetchImpl),
 )
 
+// A stand-in for the live site's address, which stays out of this public repo (ADR-0047).
+const site = 'deep-cuts.example'
+
 describe('/api middleware: rate limit (Stage 4 H4)', () => {
-  // Runs the API middleware with `next` standing in for the route.
+  // Runs the API middleware with `next` standing in for the route, on the site's own address.
   async function viaApiMiddleware(request: Request, env: ApiEnv) {
     const next = vi.fn(async () => Response.json({ ok: true }))
-    const res = await apiMiddleware({ request, env, next } as unknown as Parameters<
+    const withSite = { CANONICAL_HOST: site, ...env }
+    const res = await apiMiddleware({ request, env: withSite, next } as unknown as Parameters<
       typeof apiMiddleware
     >[0])
     return { res, next }
   }
   const get = (path: string) =>
-    new Request(`https://deep-cuts.pages.dev${path}`, {
+    new Request(`https://${site}${path}`, {
       headers: { 'CF-Connecting-IP': '203.0.113.7' },
     })
 
@@ -82,7 +86,7 @@ describe('/api middleware: rate limit (Stage 4 H4)', () => {
   })
 
   it('refuses a data-changing request from another origin', async () => {
-    const request = new Request('https://deep-cuts.pages.dev/api/tags/import', {
+    const request = new Request(`https://${site}/api/tags/import`, {
       method: 'POST',
       headers: { Origin: 'https://evil.example' },
     })
@@ -93,7 +97,6 @@ describe('/api middleware: rate limit (Stage 4 H4)', () => {
 })
 
 describe('/api middleware: host pin', () => {
-  const site = 'deep-cuts.example'
   async function viaApiMiddleware(url: string, env: ApiEnv) {
     const next = vi.fn(async () => Response.json({ ok: true }))
     const request = new Request(url, { headers: { 'CF-Connecting-IP': '203.0.113.7' } })
@@ -134,9 +137,15 @@ describe('/api middleware: host pin', () => {
     },
   )
 
-  it('allows any host when no site address is configured', async () => {
-    const { res } = await viaApiMiddleware('https://deep-cuts.pages.dev/api/tags', {})
-    expect(res.status).toBe(200)
+  it('refuses everything when no site address is configured (fails closed, ADR-0047)', async () => {
+    const check = vi.fn(async () => ({ allowed: true }))
+    const { res, next } = await viaApiMiddleware(`https://${site}/api/tags`, {
+      RATE_LIMITER: { check },
+    })
+    expect(res.status).toBe(500)
+    expect(await res.json()).toEqual({ error: 'host_not_configured' })
+    expect(check).not.toHaveBeenCalled()
+    expect(next).not.toHaveBeenCalled()
   })
 })
 

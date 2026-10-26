@@ -6,11 +6,12 @@ pages_build_output_dir = "dist"
 # Fixed so the runtime's behavior only changes when this date is moved on purpose.
 compatibility_date = "2026-10-01"
 
-# Plain settings (not secrets). CANONICAL_HOST is the only address the API answers on
-# (server/apiGuard.ts): old deploys at <hash>.deep-cuts.pages.dev, and deep-cuts.pages.dev itself,
-# get 421 from every /api/* route. Local runs on localhost are always allowed.
-[vars]
-CANONICAL_HOST = "deep-cuts.example"
+# CANONICAL_HOST, the only address the API answers on (server/apiGuard.ts), is deliberately not
+# here: it's a Pages secret (`wrangler pages secret put CANONICAL_HOST --project-name deep-cuts`), so
+# this public repo never names the live site. Old deploys at <hash>.<project>.pages.dev, and
+# <project>.pages.dev itself, get 421 from every /api/* route. Without it the API refuses everything
+# (functions/api/_middleware.ts) and `npm run deploy` won't run. Local runs on localhost are always
+# allowed; `npm run preview:cf` sets a stand-in host.
 
 # The rate-limit Worker (workers/rate-limit/), called by the Functions before any other work.
 [[services]]
