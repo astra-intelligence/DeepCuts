@@ -1,5 +1,5 @@
 {
-  "$description": "Exact colors of the Triple Feature wordmark and favicon (docs/design/triple-feature/). Used ONLY by the logo and app icon (ADR-0023, ADR-0040).",
+  "$description": "Exact colors of the Triple Feature wordmark and favicon (docs repo: design/triple-feature/). Used ONLY by the logo and app icon (ADR-0023, ADR-0040).",
   "brand": {
     "$type": "color",
     "logo": {

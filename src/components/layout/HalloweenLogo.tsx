@@ -1,5 +1,5 @@
 // The Halloween logo, shown every October (Logo.tsx, SEASONAL_LOGOS). The owner's artwork
-// (docs/design/halloween/deep-cuts-halloween-original.svg) drawn as data: the standard wordmark
+// (docs repo: design/halloween/deep-cuts-halloween-original.svg) drawn as data: the standard wordmark
 // ringed by jack-o'-lanterns under a crescent moon (the
 // artwork's bats are left out, owner 2026-10-13). At rest the wordmark keeps its usual
 // colors and the faces are dark; on hover, or while the link around it has keyboard focus, the

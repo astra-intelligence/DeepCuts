@@ -10,7 +10,7 @@
 
 - [ ] No secrets or `VITE_*` secret-like vars; no `dangerouslySetInnerHTML`
 - [ ] External data validated with Zod at the boundary
-- [ ] Threat model updated if the attack surface changed
+- [ ] Attack-surface changes flagged for the threat model (docs repo)
 
 **Accessibility** (ADR-0009)
 

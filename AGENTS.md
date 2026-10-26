@@ -4,8 +4,7 @@ The source of truth for this repo is the files in it, not chat history.
 
 ## Start here
 
-1. `docs/README.md`: the ADR index. Accepted ADRs are binding. Change them only by superseding them (`.claude/skills/adr/`).
-2. Planning, the current state and the stage prompts live outside this repo: a separate planning workspace.
+- Comments cite design decisions as `ADR-NNNN`. The records live in a separate, private docs repo (checked out as `../deep-cuts-docs` when you have it). Accepted ADRs are binding; a change of direction needs a new ADR, written as Proposed for the owner to approve.
 
 ## Rules
 
@@ -52,17 +51,17 @@ One rule: **a file lives next to the only thing that uses it; once two or more p
 
 - Commit after each working step, using Conventional Commits (`feat`, `fix`, `test`, `docs`, `design`, `chore`, `refactor`), with a body that says **what** changed and **why**, and names the ADRs involved.
 - `npm run verify` passes before every commit.
-- Remote: `origin` = `git@github.com:mcurts/DeepCuts.git` (**private**). Never change the repo's visibility.
+- Only source belongs here: no decision records, design files, reviews or notes (those go to the docs repo).
 
 ## Pull requests (the owner approves and merges)
 
 - **Never commit to or push `main` directly.** All work happens on a branch (`feat/…`, `fix/…`, `chore/…`, `docs/…`).
-- Pushing your **own working branch** to open or update a pull request is allowed. **Only the owner merges.** Agents never merge, force-push shared branches, or change branch settings.
+- Pushing your **own working branch** to open or update a pull request is allowed. **Only the owner merges.** Agents never merge, force-push shared branches, or change branch or repository settings.
 - Prefer **fewer, larger PRs**: group related work (for example, a whole build stage) into one PR, with one commit per working step inside it.
 - Open PRs with `gh pr create`. The description says what changed and why, lists the ADRs involved, how it was tested, and anything the owner should check by hand.
 - Before opening or updating a PR, run **`npm run ci:local`**. It runs exactly what CI runs.
 - After pushing, watch CI (`gh pr checks --watch`). If it fails, read the log (`gh run view --log-failed`), fix it on the branch and push again. **Only hand a PR to the owner when CI is green.**
-- **Security check-in on every PR.** Before handover, review the diff for anything questionable: secrets or tokens, new network calls or endpoints, input that skips Zod, HTML injection, storage outside `src/adapters/local/`, weakened headers or CSP, new dependencies (`npm audit`, maintainer, install scripts), anything that could bill (ADR-0024). Update `docs/security/threat-model.md` when the attack surface changes, and add a "Security check-in" section to the PR description with what was checked and found.
+- **Security check-in on every PR.** Before handover, review the diff for anything questionable: secrets or tokens, new network calls or endpoints, input that skips Zod, HTML injection, storage outside `src/adapters/local/`, weakened headers or CSP, new dependencies (`npm audit`, maintainer, install scripts), anything that could bill (ADR-0024). Flag attack-surface changes so the threat model (docs repo) gets updated, and add a "Security check-in" section to the PR description with what was checked and found.
 - After the owner merges: `git switch main && git pull`, then delete the local branch.
 
 ## Keep local and CI identical

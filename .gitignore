@@ -48,3 +48,8 @@ src/styles/theme.css
 src/styles/theme-dark.css
 storybook-static
 *storybook.log
+
+# Local agent setup: CLAUDE.md just loads AGENTS.md for Claude Code, and .claude/ holds personal
+# settings. Decision records and their tooling live in the separate docs repo.
+CLAUDE.md
+.claude/

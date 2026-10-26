@@ -35,9 +35,7 @@
     "storybook": "npm run tokens && storybook dev -p 6006",
     "build-storybook": "npm run tokens && storybook build --quiet",
     "storybook:test": "playwright test --config playwright.storybook.config.ts",
-    "design:starter": "npm run tokens && node scripts/design-starter.mjs",
     "tokens:ramps": "node scripts/generate-ramps.mjs && npm run tokens",
-    "tokens:review": "npm run tokens && node scripts/token-review.mjs",
     "icons": "npm run tokens && node scripts/generate-icons.mjs",
     "ci:local": "bash scripts/ci-local.sh",
     "check:bundle": "node scripts/check-bundle-size.mjs"

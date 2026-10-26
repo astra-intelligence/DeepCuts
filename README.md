@@ -2,7 +2,7 @@
 
 A fast, very visual, one-thumb movie tracker. Tag films (Seen it, Want to see, Like, Dislike) in a tap or two, and it surfaces deep cuts you've never heard of.
 
-> Status: **live at https://deep-cuts.example** since 2026-10-08 (Cloudflare Pages, invite-only passkey accounts; not indexed by search engines). Recommendations from your likes (ADR-0032), film details, tagging, My Lists and a demo sign-in all work locally too. [ADR-0033](docs/adr/0033-welcome-is-the-primary-home.md) makes Welcome the primary home and recommendation surface, with no separate Discover route. You're either signed in or signed out ([ADR-0034](docs/adr/0034-two-session-states-signed-in-or-out.md)): signed out, `/` is a landing page that explains Top Ten, Movies I want to watch and Discovery in the same panels Home uses ([ADR-0035](docs/adr/0035-landing-and-three-panel-home.md)). A responsive, mobile-first website (ADR-0021).
+> Status: **live at https://deep-cuts.example** since 2026-10-08 (Cloudflare Pages, invite-only passkey accounts; not indexed by search engines). Recommendations from your likes (ADR-0032), film details, tagging, My Lists and a demo sign-in all work locally too. ADR-0033 makes Welcome the primary home and recommendation surface, with no separate Discover route. You're either signed in or signed out (ADR-0034): signed out, `/` is a landing page that explains Top Ten, Movies I want to watch and Discovery in the same panels Home uses (ADR-0035). A responsive, mobile-first website (ADR-0021).
 
 ## Run locally
 
@@ -48,7 +48,6 @@ CI also runs `npm audit` and gitleaks (secret scan of the whole git history). Ac
 | `npm run ci:local`         | Exactly what GitHub CI runs; run before opening a PR                                          |
 | `npm run tokens`           | Builds the design tokens (`tokens/`) into CSS, the Tailwind theme, JS and Figma JSON          |
 | `npm run tokens:ramps`     | Regenerates the color ramps in `tokens/primitive/hues.json`                                   |
-| `npm run tokens:review`    | Builds `build/token-review.html`, a page for reviewing the palette                            |
 | `npm run format`           | Formats every file with Prettier                                                              |
 
 ## Hosting
@@ -66,7 +65,7 @@ The app is hosted on **Cloudflare Pages** (ADR-0029) at **https://deep-cuts.exam
 
 > ⚠️ **Never upgrade the Cloudflare account to Workers Paid and never add a payment method.** On the Free plan, going over a limit fails; on Paid, it bills (ADR-0024).
 
-**Deploying** is a manual owner step (first go-live: 2026-10-08). For later deploys see the end of [docs/hosting/go-live-checklist.md](docs/hosting/go-live-checklist.md). The deploy command, `DEEP_CUTS_DEPLOY=1 npm run deploy`, refuses to run without that flag, and only deploys a clean `main` that matches GitHub. It builds fresh with accounts on, so what goes live is exactly what was merged.
+**Deploying** is a manual owner step (first go-live: 2026-10-08). For later deploys, follow the hosting checklist in the docs repo. The deploy command, `DEEP_CUTS_DEPLOY=1 npm run deploy`, refuses to run without that flag, and only deploys a clean `main` that matches GitHub. It builds fresh with accounts on, so what goes live is exactly what was merged.
 
 ## Accounts (opt-in)
 
@@ -106,7 +105,6 @@ workers/           the rate-limit Worker
 scripts/           build, check and deploy scripts
 tokens/            design tokens (source for the Tailwind theme)
 e2e/               Playwright tests
-docs/              ADRs, design notes, security
 ```
 
 Rules for where a file goes, and how imports are written (`@/` means `src/`), are in [AGENTS.md](AGENTS.md#where-files-go-adr-0046) (ADR-0046).
@@ -125,7 +123,8 @@ Most config files explain themselves in comments. These formats can't hold comme
 
 Other config: `vite.config.ts` (dev server, build, unit tests), `server/securityHeaders.ts` (the security headers, for every runtime), `wrangler.toml` + `workers/rate-limit/wrangler.toml` (Cloudflare Pages and the rate-limit Worker, no secrets), `playwright.config.ts` / `playwright.cf.config.ts` (E2E), `eslint.config.js` (lint rules), `tsconfig*.json` (TypeScript), `sd.config.mjs` (design tokens), `.github/` (CI, CodeQL, Dependabot), `.githooks/pre-commit` (local secret scan).
 
-## Docs
+## Decisions and docs
 
-- [Architecture Decision Records](docs/README.md)
-- [Threat model](docs/security/threat-model.md) · [Security policy](SECURITY.md)
+Comments cite design decisions as `ADR-NNNN`. The decision records, design artwork, reviews, threat
+model and hosting checklist are kept in a separate private docs repository, so this one holds
+source only. [SECURITY.md](SECURITY.md) covers reporting a vulnerability.

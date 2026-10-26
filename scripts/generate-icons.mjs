@@ -1,5 +1,5 @@
 // Generates the app icons in public/ from the brand tokens (ADR-0040; artwork:
-// docs/design/triple-feature/deep-cuts-favicon.svg). Run `npm run icons` after changing either.
+// docs repo: design/triple-feature/deep-cuts-favicon.svg). Run `npm run icons` after changing either.
 //
 // The icon is the "DC" monogram on a split tile: a blood-red left half with a bone D, and a bone
 // right half (cut on a slant) with an ink C. The letters are already vector paths, so no font is

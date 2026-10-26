@@ -1,6 +1,6 @@
 // `npm run deploy`: builds the app and uploads it to Cloudflare Pages (ADR-0029, Stage 4 H10).
 // OFF BY DEFAULT (ADR-0024): it refuses to run unless DEEP_CUTS_DEPLOY=1 is set, and it is meant
-// for the owner only, after the go-live checklist (docs/hosting/go-live-checklist.md). Agents and
+// for the owner only, after the go-live checklist (docs repo: hosting/go-live-checklist.md). Agents and
 // CI never run it.
 //
 // What goes live is exactly what was reviewed and merged:
@@ -19,7 +19,7 @@ import { deployProblems } from './deployChecks.ts'
 if (process.env.DEEP_CUTS_DEPLOY !== '1') {
   console.error(
     '✗ Deploying is off by default (ADR-0024). If you are the owner and have followed\n' +
-      '  docs/hosting/go-live-checklist.md, run: DEEP_CUTS_DEPLOY=1 npm run deploy',
+      '  hosting/go-live-checklist.md in the docs repo, run: DEEP_CUTS_DEPLOY=1 npm run deploy',
   )
   process.exit(1)
 }
