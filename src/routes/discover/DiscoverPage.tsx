@@ -9,6 +9,10 @@
 // Want to see, Seen it, Not for me, saved at once with Undo. On tuned picks a press is also saved
 // with the pick's scores, for the weights lab to learn from (ADR-0045). Every box names the film's director
 // and writer, from its details (the same cached call Detail makes). The Top Ten shelf has a reorder mode (ADR-0041).
+//
+// Loading holds still (no jumps): every film that's still loading has a box-shaped placeholder in
+// its own place (CassetteSkeleton), a list that's still loading shows one row of them, and each
+// tile rises in as its film arrives (CassetteCard).
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { lazy, Suspense, useRef, useState } from 'react'
 import { Link } from 'react-router'
@@ -19,6 +23,7 @@ import type { FeedbackEntry } from '@/domain/learnWeights'
 import { SCORER_VERSION } from '@/domain/scorer'
 import { TOP_TEN_SIZE } from '@/domain/topTen'
 import { CassetteCard, type CassetteItem } from '@/components/movie/CassetteCard'
+import { CassetteSkeleton, CassetteSkeletonRow } from '@/components/movie/CassetteSkeleton'
 import { EmptySlot } from '@/components/movie/EmptySlot'
 import { focusHeaderSearch } from './headerSearch'
 import { PageHeading } from '@/components/ui/PageHeading'
@@ -50,20 +55,26 @@ export function HomePage() {
   // Discovery's picks are worked out once here and shared by the ticker and the shelf, so the
   // scorer runs once. The two lists are cached queries, so reading them twice costs nothing.
   const discovery = useDiscoveryPicks()
-  const topTen = useTopTen().data ?? []
-  const watchlist = useQuery(useTagQueries().list('watchlist')).data ?? []
+  const topTenQuery = useTopTen()
+  const topTen = topTenQuery.data ?? []
+  const watchlistQuery = useQuery(useTagQueries().list('watchlist'))
+  const watchlist = watchlistQuery.data ?? []
   return (
     <>
       <title>Home · Deep Cuts</title>
-      <Ticker items={tickerItems(topTen.length, watchlist.length, discovery)} />
+      {/* Its first facts come from the two lists: keep its room until they're in. */}
+      <Ticker
+        items={tickerItems(topTen.length, watchlist.length, discovery)}
+        loading={topTenQuery.isPending || watchlistQuery.isPending}
+      />
       <PageHeading
         size="hero"
         title="Your movies,"
         highlight="close at hand"
         lede="The films you love, want to see, and a few worth going deeper for."
       />
-      <TopTenShelf ids={topTen} />
-      <WatchlistShelf ids={watchlist} />
+      <TopTenShelf ids={topTen} loading={topTenQuery.isPending} />
+      <WatchlistShelf ids={watchlist} loading={watchlistQuery.isPending} />
       <DiscoveryShelf discovery={discovery} />
     </>
   )
@@ -73,8 +84,9 @@ export function HomePage() {
  * The person's Top Ten (ADR-0036), all of it, in their order: #1 first, then the next open slot
  * until all ten are ranked. Films are added and removed from their Detail page. With two or more
  * films, "Reorder" switches the shelf to reorder mode (ADR-0041) until "Done".
+ * @param loading - The list itself is still loading: show a row of placeholders.
  */
-function TopTenShelf({ ids }: { ids: readonly number[] }) {
+function TopTenShelf({ ids, loading }: { ids: readonly number[]; loading: boolean }) {
   // A single film has nowhere to move (and a list can shrink in another tab mid-reorder).
   const { active, toggle, message, announce, toggleRef, scopeRef } = useReorderMode(
     ids.length >= 2,
@@ -82,13 +94,16 @@ function TopTenShelf({ ids }: { ids: readonly number[] }) {
   )
   const reorderTopTen = useReorderTopTen()
 
-  // One details call per film (cached for a day and shared with Detail). Each box appears once
-  // its film has loaded; the rank comes from the list, so it stays right even if one film is
-  // slow or missing.
+  // One details call per film (cached for a day and shared with Detail). Each film holds its
+  // place with a placeholder until it has loaded; the rank comes from the list, so it stays right
+  // even if one film is slow. A film whose details failed leaves the shelf, as before.
   const details = useQueries({ queries: ids.map((id) => movieQueries.detail(id)) })
-  const films = ids.flatMap((_, i) => {
-    const movie = details[i]?.data
-    return movie ? [{ movie: summaryOf(movie), credits: creditsOf(movie), rank: i + 1 }] : []
+  const films = ids.flatMap((id, i): FilmSlot[] => {
+    const query = details[i]
+    const movie = query?.data
+    if (movie)
+      return [{ id, item: { movie: summaryOf(movie), credits: creditsOf(movie), rank: i + 1 } }]
+    return query?.isPending ? [{ id }] : []
   })
 
   return (
@@ -101,7 +116,9 @@ function TopTenShelf({ ids }: { ids: readonly number[] }) {
       meta={ids.length >= 2 && <ReorderToggle ref={toggleRef} active={active} onPress={toggle} />}
     >
       <ReorderStatus message={message} />
-      {active ? (
+      {loading ? (
+        <CassetteSkeletonRow />
+      ) : active ? (
         // Until reorder mode's code arrives (once, a moment), the shelf stays as it was.
         <Suspense fallback={<RankedList films={films} />}>
           <ReorderList ids={ids} announce={announce} onReorder={reorderTopTen.mutate} />
@@ -116,17 +133,29 @@ function TopTenShelf({ ids }: { ids: readonly number[] }) {
   )
 }
 
+/** One film's place on a shelf: its tile once its details have loaded (`item`), until then a
+ * placeholder. */
+interface FilmSlot {
+  id: number
+  item?: CassetteItem
+}
+
+/** A film's tile, or its placeholder while it loads. `stagger`: its place in the row. */
+function SlotTile({ slot, stagger }: { slot: FilmSlot; stagger: number }) {
+  return slot.item ? <CassetteCard item={slot.item} stagger={stagger} /> : <CassetteSkeleton />
+}
+
 /**
  * The Top Ten as linked tiles, then the next open slot (`openSlot`, its rank) when there's room.
  * An ordered list: the order is the meaning, and screen readers announce it. The open slot is
  * the list's next place, so it's an item too.
  */
-function RankedList({ films, openSlot }: { films: CassetteItem[]; openSlot?: number | undefined }) {
+function RankedList({ films, openSlot }: { films: FilmSlot[]; openSlot?: number | undefined }) {
   return (
     <ol className={SHELF_GRID}>
-      {films.map((item) => (
-        <li key={item.movie.id} className="flex">
-          <CassetteCard item={item} />
+      {films.map((slot, i) => (
+        <li key={slot.id} className="flex">
+          <SlotTile slot={slot} stagger={i} />
         </li>
       ))}
       {openSlot !== undefined && (
@@ -143,13 +172,21 @@ function RankedList({ films, openSlot }: { films: CassetteItem[]; openSlot?: num
   )
 }
 
-/** The first films on the watchlist, each with its ADMIT ONE ticket; My Lists has them all. */
-function WatchlistShelf({ ids }: { ids: readonly number[] }) {
-  const movies = useQueries({
-    queries: ids.slice(0, WATCHLIST_PREVIEW).map((id) => movieQueries.detail(id)),
+/**
+ * The first films on the watchlist, each with its ADMIT ONE ticket; My Lists has them all.
+ * @param loading - The list itself is still loading: show a row of placeholders.
+ */
+function WatchlistShelf({ ids, loading }: { ids: readonly number[]; loading: boolean }) {
+  // Like the Top Ten: a placeholder in each film's place until it loads; failed films leave.
+  const shown = ids.slice(0, WATCHLIST_PREVIEW)
+  const details = useQueries({ queries: shown.map((id) => movieQueries.detail(id)) })
+  const films = shown.flatMap((id, i): FilmSlot[] => {
+    const query = details[i]
+    const movie = query?.data
+    if (movie)
+      return [{ id, item: { movie: summaryOf(movie), credits: creditsOf(movie), ticket: true } }]
+    return query?.isPending ? [{ id }] : []
   })
-    .map((query) => query.data)
-    .filter((movie): movie is NonNullable<typeof movie> => movie !== undefined)
 
   return (
     <ShelfSection
@@ -158,25 +195,27 @@ function WatchlistShelf({ ids }: { ids: readonly number[] }) {
       title={PANELS.watchlist.title}
       to="/lists?tag=watchlist"
     >
-      <ul className={SHELF_GRID}>
-        {ids.length > 0 ? (
-          movies.map((movie) => (
-            <li key={movie.id} className="flex">
-              <CassetteCard
-                item={{ movie: summaryOf(movie), credits: creditsOf(movie), ticket: true }}
+      {loading ? (
+        <CassetteSkeletonRow />
+      ) : (
+        <ul className={SHELF_GRID}>
+          {ids.length > 0 ? (
+            films.map((slot, i) => (
+              <li key={slot.id} className="flex">
+                <SlotTile slot={slot} stagger={i} />
+              </li>
+            ))
+          ) : (
+            <li>
+              <EmptySlot
+                title="Nothing on the bill yet"
+                note="Search for a film to save it"
+                onPress={focusHeaderSearch}
               />
             </li>
-          ))
-        ) : (
-          <li>
-            <EmptySlot
-              title="Nothing on the bill yet"
-              note="Search for a film to save it"
-              onPress={focusHeaderSearch}
-            />
-          </li>
-        )}
-      </ul>
+          )}
+        </ul>
+      )}
     </ShelfSection>
   )
 }
@@ -215,8 +254,13 @@ function useDiscoveryPicks() {
   // scorer's picks already leave out every tagged film. Your Top Ten films stay out too
   // (ADR-0043): a favourite you already ranked isn't a discovery.
   const tagged = useQuery(useTagQueries().all()).data
-  const topTen = useTopTen().data ?? []
+  const topTenQuery = useTopTen()
+  const topTen = topTenQuery.data ?? []
   const excluded = tagged && new Set([...tagged.map((r) => r.tmdbId), ...topTen])
+  // Whether you have likes isn't known until your lists have loaded (a moment on a passkey
+  // account, ADR-0031). Until then the shelf counts as loading: choosing the starter shelf early
+  // would flash its hint and could hold starter picks for someone who has likes.
+  const listsKnown = tagged !== undefined && !topTenQuery.isPending
 
   // Use the scorer's picks when there are likes and the scorer has (or is still finding) picks;
   // otherwise fall back to the starter shelf so the panel is never empty.
@@ -253,28 +297,29 @@ function useDiscoveryPicks() {
     picks,
     scores,
     usePicks,
-    loading: usePicks ? tuned.loading : starter.isPending,
-    failed: !usePicks && starter.isError,
+    loading: !listsKnown || (usePicks ? tuned.loading : starter.isPending),
+    failed: listsKnown && !usePicks && starter.isError,
+    listsKnown,
   }
 }
 
 /** The Discovery shelf: the picks, a loading placeholder, or what went wrong. */
 function DiscoveryShelf({ discovery }: { discovery: DiscoveryPicks }) {
-  const { picks, scores, usePicks, loading, failed } = discovery
+  const { picks, scores, usePicks, loading, failed, listsKnown } = discovery
   const shelf = useHeldPicks(picks, scores, !loading && !failed && picks.length > 0)
   return (
     <ShelfSection id="discovery" feature={3} title={PANELS.discovery.title}>
       {/* Only the untuned feed explains itself: it's the one line that tells you what to do. */}
-      {!usePicks && !failed && (
+      {listsKnown && !usePicks && !failed && (
         <p className="-mt-2 mb-6 text-base text-fg-soft">
           Like a few films to tune these picks to you.
         </p>
       )}
       {shelf.items ? (
         <ul className={SHELF_GRID}>
-          {shelf.items.map((pick) => (
+          {shelf.items.map((pick, i) => (
             <li key={pick.movie.id} className="flex flex-col">
-              <CassetteCard item={pick} />
+              <CassetteCard item={pick} stagger={i} />
               <PickActions
                 title={pick.movie.title}
                 stamped={pick.stamp}
@@ -421,23 +466,15 @@ function useHeldPicks(picks: CassetteItem[], scores: ReadonlyMap<number, Scores>
 }
 
 /**
- * Box-shaped placeholders for the picks while they load (ADR-0040 §9): raised ink with a
- * halftone screen and room for the caption, so the shelf doesn't jump when the picks arrive.
+ * Box-shaped placeholders for the picks while they load (ADR-0040 §9), one per pick to come, so
+ * the shelf doesn't jump when the picks arrive.
  */
 function ShelfSkeleton() {
   return (
     <ul aria-hidden="true" data-loading-section="grid" className={SHELF_GRID}>
       {Array.from({ length: HOME_PICKS }, (_, i) => (
         <li key={i} className="flex">
-          <div className="flex min-w-0 flex-1 flex-col">
-            {/* The VHS box's own aspect ratio (1:1.7, --vhs-aspect in VhsBox.css). */}
-            <div className="aspect-[1/1.7] w-full bg-surface-raised halftone" />
-            <div className="mt-4 min-h-36 space-y-2">
-              <div className="h-5 w-4/5 bg-surface-raised" />
-              <div className="h-4 w-3/5 bg-surface-raised" />
-              <div className="h-3 w-1/2 bg-surface-raised" />
-            </div>
-          </div>
+          <CassetteSkeleton />
         </li>
       ))}
     </ul>

@@ -12,7 +12,7 @@ import { createLocalTagRepository } from '@/adapters/local/LocalTagRepository'
 import { SCORE_PARTS, SCORER_VERSION } from '@/domain/scorer'
 import { createLocalTopTenRepository } from '@/adapters/local/LocalTopTenRepository'
 import { findToast, renderRoute } from '@/test/renderRoute'
-import { searchFixture } from '@/test/msw/fixtures'
+import { candidateDetailFixtures, searchFixture } from '@/test/msw/fixtures'
 import { server } from '@/test/msw/server'
 
 /** The first (top-ranked) pick in the Discovery panel, once the picks have loaded. */
@@ -87,6 +87,27 @@ describe('home', () => {
     expect(await firstPick()).toHaveAccessibleName(/^The Thing/)
   })
 
+  it('holds a Top Ten film’s place while it loads, so the shelf doesn’t jump', async () => {
+    await createLocalTopTenRepository('account-demo-top-ten').add(348)
+    // Alien's details are slow; every other film answers at once (the default handler).
+    server.use(
+      http.get('/api/tmdb/movie/348', async () => {
+        await delay(250)
+        return HttpResponse.json(candidateDetailFixtures[348])
+      }),
+    )
+    renderRoute('/')
+    const panel = await screen.findByRole('region', { name: 'Your Top Ten of All Time' })
+    // The open slot is #2 from the start: a placeholder (hidden from screen readers) holds #1.
+    await within(panel).findByRole('button', { name: /^Add a film/ })
+    const [first, second] = panel.querySelectorAll('ol > li')
+    expect(first?.querySelector('[aria-hidden="true"]')).toBeInTheDocument()
+    expect(second).toHaveTextContent('#2')
+    expect(within(panel).queryByRole('link')).not.toBeInTheDocument()
+    // Then Alien takes its place.
+    expect(await within(panel).findByRole('link', { name: /^#1 Alien/ })).toBeInTheDocument()
+  })
+
   it('shows the picks as VHS cassettes, two across, with credits and no featured card', async () => {
     renderRoute('/')
     expect(
@@ -112,7 +133,7 @@ describe('home', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/')
     const panel = await screen.findByRole('region', { name: 'Your Top Ten of All Time' })
-    await user.click(within(panel).getByRole('button', { name: /^Add a film/ }))
+    await user.click(await within(panel).findByRole('button', { name: /^Add a film/ }))
     expect(screen.getByRole('combobox', { name: 'Find a movie to view and tag' })).toHaveFocus()
 
     await act(() => router.navigate('/movie/1091'))
@@ -273,7 +294,7 @@ describe('home', () => {
     const user = userEvent.setup()
     renderRoute('/')
     const panel = await screen.findByRole('region', { name: 'My Watchlist' })
-    await user.click(within(panel).getByRole('button', { name: /^Nothing on the bill yet/ }))
+    await user.click(await within(panel).findByRole('button', { name: /^Nothing on the bill yet/ }))
     expect(screen.getByRole('combobox', { name: 'Find a movie to view and tag' })).toHaveFocus()
   })
 

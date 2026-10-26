@@ -1,7 +1,8 @@
 // One film as a cassette tile: the VHS box (design approved 2026-10-09) with its badge, then the
 // caption (ADR-0040 §8): title, the first reason, year · genre, director and writer. The whole
 // tile is the link (no separate "View details", owner 2026-10-13); its title lights up on hover.
-// Used by Home's shelves and My Lists.
+// Used by Home's shelves and My Lists. A tile rises gently into place when its film arrives,
+// usually replacing a CassetteSkeleton of the same size, so nothing around it moves.
 import { Link } from 'react-router'
 import { releaseYear, type Credits, type MovieSummary } from '@/api/tmdb'
 import { genreTone, primaryGenreName } from '@/domain/genres'
@@ -36,20 +37,35 @@ function badgeOf(item: CassetteItem): VhsBadge | undefined {
   return undefined
 }
 
-/** A linked cassette tile that fills its container's width (put it in a `flex` grid cell). */
-export function CassetteCard({ item }: { item: CassetteItem }) {
+// The stagger between tiles that arrive together (a cached shelf), in ms, and how many steps it
+// runs before the rest arrive together: the tenth tile shouldn't wait half a second.
+const STAGGER_MS = 40
+const STAGGER_STEPS = 8
+
+/**
+ * A linked cassette tile that fills its container's width (put it in a `flex` grid cell).
+ * @param stagger - Its place in its row of tiles (0 first), so tiles that arrive at once ripple in
+ *   one after another instead of all together.
+ */
+export function CassetteCard({ item, stagger = 0 }: { item: CassetteItem; stagger?: number }) {
   const { movie } = item
   const meta = [releaseYear(movie.release_date), primaryGenreName(movie.genre_ids)].filter(Boolean)
   return (
     <Link
       to={`/movie/${movie.id}`}
-      style={genreTone(movie.genre_ids)}
+      style={{
+        ...genreTone(movie.genre_ids),
+        animationDelay: `${Math.min(stagger, STAGGER_STEPS) * STAGGER_MS}ms`,
+      }}
       // The box follows the mouse over this link and turns when it has keyboard focus.
       data-vhs-target=""
       // Keyboard focus shows on the text block below the box, not around the whole tile, where
       // the ring would box in the turning 3D box (owner's call, 2026-10-09). While the mouse
       // turns the box, the VHS box styles raise the tile above its neighbours.
-      className="group relative flex min-w-0 flex-1 flex-col focus-visible:shadow-none focus-visible:outline-none"
+      // The entrance (`animate-enter`) runs only when motion is welcome. Its fill is `backwards`:
+      // hidden during the stagger delay, but nothing held on the tile once it ends, so the 3D
+      // box's own hover and focus transforms work as before.
+      className="group relative flex min-w-0 flex-1 flex-col focus-visible:shadow-none focus-visible:outline-none motion-safe:animate-enter motion-safe:[animation-fill-mode:backwards]"
     >
       <VhsBox movie={movie} badge={badgeOf(item)} />
       {/* The focus ring: the app's usual ring (3px focus color, 3px gap), drawn around the text

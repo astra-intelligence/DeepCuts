@@ -4,7 +4,8 @@
 // It is still by default. It only scrolls once a mouse pointer has rested on it for three seconds
 // (so it never moves on its own or on touch), and eases back to the start when the pointer leaves.
 // Reduced motion keeps it still. Screen readers get the items once, as a list; the scrolling copy
-// is hidden from them.
+// is hidden from them. While its items load, the band can keep its room (`loading`), so the page
+// below doesn't drop when they arrive; they then fade in.
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 
 /** How long the pointer must rest on the band before it starts scrolling (design §5). */
@@ -18,8 +19,11 @@ const COPIES = 3
 /**
  * A full-bleed ticker band. Pass the items in order of importance: on touch screens it never
  * scrolls, so the start of the list is what people see.
+ * @param loading - The items are still loading: with none yet, show the empty band rather than
+ *   nothing, so the page doesn't jump down when they arrive. With no items and not loading, there
+ *   is no band.
  */
-export function Ticker({ items }: { items: string[] }) {
+export function Ticker({ items, loading = false }: { items: string[]; loading?: boolean }) {
   const track = useRef<HTMLDivElement>(null)
   const timer = useRef<number | undefined>(undefined)
   const [playing, setPlaying] = useState(false)
@@ -44,7 +48,16 @@ export function Ticker({ items }: { items: string[] }) {
     })
   }
 
-  if (items.length === 0) return null
+  const band =
+    'mx-[calc(50%-50vw)] -mt-5 mb-8 overflow-hidden border-y-3 border-surface bg-accent py-2 font-display text-lg tracking-widest whitespace-nowrap text-fg-on-accent uppercase md:-mt-6'
+  if (items.length === 0) {
+    // The empty band: one line's height (a no-break space), nothing to read.
+    return loading ? (
+      <div aria-hidden="true" data-ticker-loading="" className={band}>
+        {'\u00a0'}
+      </div>
+    ) : null
+  }
   const loop = Array.from({ length: COPIES * 2 }, () => items).flat()
 
   return (
@@ -52,11 +65,7 @@ export function Ticker({ items }: { items: string[] }) {
     // window edges (the layout clips any scrollbar overshoot), and up against the header. It is
     // always the first thing in AppLayout's <main>, so the negative top margin cancels main's top
     // padding (pt-5, md:pt-6). A plain block, not a landmark: it sums up the page below it.
-    <div
-      onPointerEnter={start}
-      onPointerLeave={stop}
-      className="mx-[calc(50%-50vw)] -mt-5 mb-8 overflow-hidden border-y-3 border-surface bg-accent py-2 font-display text-lg tracking-widest whitespace-nowrap text-fg-on-accent uppercase md:-mt-6"
-    >
+    <div onPointerEnter={start} onPointerLeave={stop} className={band}>
       <ul className="sr-only">
         {items.map((item) => (
           <li key={item}>{item}</li>
@@ -66,7 +75,8 @@ export function Ticker({ items }: { items: string[] }) {
         ref={track}
         aria-hidden="true"
         data-playing={playing || undefined}
-        className="inline-block transition-transform duration-400 ease-out data-playing:animate-ticker data-playing:transition-none motion-reduce:animate-none"
+        // Fades in as it first appears (into the empty band, when it was loading).
+        className="inline-block transition-transform duration-400 ease-out data-playing:animate-ticker data-playing:transition-none motion-safe:animate-fade-in motion-reduce:animate-none"
       >
         {loop.map((item, i) => (
           <span key={i} className="px-4">

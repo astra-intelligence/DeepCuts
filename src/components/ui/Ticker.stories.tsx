@@ -42,3 +42,6 @@ export const SignedOut: Story = {
 }
 /** A new account with nothing in its lists: one fact left. */
 export const OneItem: Story = { args: { items: ['Watchlist: 1 film'] } }
+
+/** Home while its lists load: the empty band holds its room until the facts arrive. */
+export const Loading: Story = { args: { items: [], loading: true } }
