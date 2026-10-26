@@ -159,8 +159,8 @@ export function WeightsPage() {
 
       {!taste.hasLikes ? (
         <EmptyState>
-          Like a few films first. The weights rank films your likes recommend, so there’s nothing to
-          tune yet.{' '}
+          Mark a few films “More like this” first. The weights rank films your likes recommend, so
+          there’s nothing to tune yet.{' '}
           <Link to={HOME.path} className="text-accent underline">
             Find films to like
           </Link>
@@ -220,7 +220,8 @@ export function WeightsPage() {
               <p role="status">Loading your picks…</p>
             ) : tuned.length === 0 ? (
               <EmptyState>
-                Your likes don’t recommend any films you haven’t tagged yet. Like a few more films.
+                Your likes don’t recommend any films you haven’t tagged yet. Mark a few more films
+                “More like this”.
               </EmptyState>
             ) : (
               <>
@@ -553,15 +554,15 @@ function LearnedPanel({ params }: { params: URLSearchParams }) {
         Learn from your presses
       </h3>
       <p className="text-sm text-fg-muted">
-        Want {counts.want} · Like {counts.like} · Nope {counts.nope}. Want and Like both count as a
+        Want {counts.want} · More {counts.like} · Less {counts.nope}. Want and More both count as a
         yes.
         {counts.older > 0 &&
           ` ${counts.older} older presses were scored differently and don’t count.`}
       </p>
       {!enough ? (
         <p className="text-sm">
-          Press Want, Like or Nope on Home’s Discovery picks: {MIN_PRESSES} presses, at least{' '}
-          {MIN_EACH} yeses and {MIN_EACH} Nopes, are needed to suggest weights. {presses} so far.
+          Press Want, More or Less on Home’s Discovery picks: {MIN_PRESSES} presses, at least{' '}
+          {MIN_EACH} yeses and {MIN_EACH} noes, are needed to suggest weights. {presses} so far.
         </p>
       ) : !learned ? (
         <p className="text-sm">

@@ -12,7 +12,7 @@ async function likeThenOpen(path: string, options: Parameters<typeof renderRoute
   const user = userEvent.setup()
   const rendered = renderRoute('/movie/1091', options)
   const group = await screen.findByRole('group', { name: 'Your tags' })
-  await user.click(within(group).getByRole('button', { name: 'Like' }))
+  await user.click(within(group).getByRole('button', { name: 'More like this' }))
   // Detail stages tag changes until Save.
   await user.click(screen.getByRole('button', { name: 'Save' }))
   await screen.findByText(/^Saved\./)
@@ -26,7 +26,7 @@ describe('weights lab (ADR-0026)', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Tune the weights' }),
     ).toBeInTheDocument()
-    expect(screen.getByText(/Like a few films first/)).toBeInTheDocument()
+    expect(screen.getByText(/Mark a few films “More like this” first/)).toBeInTheDocument()
     expect(screen.queryByRole('slider')).not.toBeInTheDocument()
   })
 
@@ -126,8 +126,8 @@ describe('weights lab (ADR-0026)', () => {
       savePresses(4)
       await likeThenOpen('/lab/weights')
       const panel = await screen.findByRole('region', { name: 'Learn from your presses' })
-      expect(panel).toHaveTextContent('Want 2 · Like 0 · Nope 2')
-      expect(panel).toHaveTextContent('30 presses, at least 5 yeses and 5 Nopes, are needed')
+      expect(panel).toHaveTextContent('Want 2 · More 0 · Less 2')
+      expect(panel).toHaveTextContent('30 presses, at least 5 yeses and 5 noes, are needed')
       expect(panel).toHaveTextContent('4 so far')
     })
 

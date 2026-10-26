@@ -1,6 +1,6 @@
 // The three quick actions on a Discovery pick (issue #76; owner picked layout A with stamps,
 // 2026-10-15): save it, like it, or wave it off, straight from Home without opening Detail. Each
-// is one of the three tags (ADR-0050; Like replaced Seen it), with the words the shelf, the stamp
+// is one of the three tags (ADR-0050; named More / Less like this by ADR-0051), with the words the shelf, the stamp
 // and the toast use.
 import type { SystemTag } from '@/domain/tagRules'
 import type { IconName } from '@/components/ui/Icon'
@@ -31,21 +31,21 @@ export const QUICK_ACTIONS: readonly QuickAction[] = [
     done: (title) => `Added ${title} to your watchlist.`,
   },
   {
-    // You've seen it and liked it: it moves to My Lists → Liked and seeds future picks.
+    // The Like tag: the film moves to My Lists → More like this and seeds future picks.
     tag: 'liked',
-    label: 'Like',
-    short: 'Like',
+    label: 'More like this',
+    short: 'More',
     icon: 'heart',
-    stamp: 'Liked it',
-    done: (title) => `Liked ${title}. Your picks will follow it.`,
+    stamp: 'More like this',
+    done: (title) => `Got it: more films like ${title}.`,
   },
   {
-    // "Not for me" is the Dislike tag: the film moves to My Lists → Disliked.
+    // The Dislike tag: the film moves to My Lists → Less like this.
     tag: 'disliked',
-    label: 'Not for me',
-    short: 'Nope',
+    label: 'Less like this',
+    short: 'Less',
     icon: 'ban',
-    stamp: 'Not for me',
+    stamp: 'Less like this',
     done: (title) => `${title} won’t be picked again.`,
   },
 ]

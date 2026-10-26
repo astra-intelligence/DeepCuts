@@ -166,7 +166,7 @@ test('detail tags toggle and save by keyboard, all at 44px or more', async ({ pa
     Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))),
   )
   for (const target of [
-    ...['Want to see', 'Like', 'Dislike'].map((name) =>
+    ...['Want to see', 'More like this', 'Less like this'].map((name) =>
       tags.getByRole('button', { name, exact: true }),
     ),
     save,
@@ -360,7 +360,7 @@ test('a disliked film appears only on the Disliked list, with the tag accent', a
   await page.goto('/movie/1091')
   const dislike = page
     .getByRole('group', { name: 'Your tags' })
-    .getByRole('button', { name: 'Dislike' })
+    .getByRole('button', { name: 'Less like this' })
   await dislike.click()
   await expect(dislike).toHaveAttribute('aria-pressed', 'true')
   // Detail stages tag changes until Save.
@@ -369,10 +369,10 @@ test('a disliked film appears only on the Disliked list, with the tag accent', a
   await expect(page).toHaveURL(/\/$/)
   await openMyLists(page)
   const lists = page.getByRole('navigation', { name: 'Lists' })
-  await lists.getByRole('link', { name: /Dislike/ }).click()
+  await lists.getByRole('link', { name: /Less like this/ }).click()
   await expect(page.getByRole('link', { name: /The Thing/ })).toBeVisible()
   await expectNoA11yViolations(page)
-  await lists.getByRole('link', { name: /Like/ }).click()
+  await lists.getByRole('link', { name: /More like this/ }).click()
   await expect(page.getByText(/will appear here/)).toBeVisible()
 })
 
@@ -458,7 +458,7 @@ test('liking a film tunes Home’s recommendations, with a match and the reason 
   await page.goto('/movie/1091')
   const like = page
     .getByRole('group', { name: 'Your tags' })
-    .getByRole('button', { name: 'Like', exact: true })
+    .getByRole('button', { name: 'More like this', exact: true })
   await like.click()
   await expect(like).toHaveAttribute('aria-pressed', 'true')
   // Detail stages tag changes until Save.
@@ -472,7 +472,9 @@ test('liking a film tunes Home’s recommendations, with a match and the reason 
     .first()
   const feature = tile.getByRole('link')
   await expect(feature).toContainText(/\d+% match/)
-  await expect(page.getByText('Like a few films to tune these picks to you.')).toHaveCount(0)
+  await expect(
+    page.getByText('Mark a few films “More like this” to tune these picks to you.'),
+  ).toHaveCount(0)
   // "Why this pick?" opens the full reason (PickReason).
   await tile.getByRole('button', { name: /^Why this pick\?/ }).click()
   await expect(page.getByRole('dialog', { name: /^Why .* was picked$/ })).toContainText('The Thing')
@@ -498,9 +500,13 @@ test('tag and genre colors reach the page (runtime CSS variables, ADR-0020/0027)
   })
   expect(missing).toEqual([])
   // Each unselected toggle's icon wears its own tag color. Compare against the tag's resolved
-  // color rather than the label's: Like's tag color is the same near-white as label text.
+  // color rather than the label's: the liked tag's color is the same near-white as label text.
   const group = page.getByRole('group', { name: 'Your tags' })
-  const tags = { 'Want to see': 'watchlist', Like: 'liked', Dislike: 'disliked' }
+  const tags = {
+    'Want to see': 'watchlist',
+    'More like this': 'liked',
+    'Less like this': 'disliked',
+  }
   for (const [name, tag] of Object.entries(tags)) {
     const button = group.getByRole('button', { name, exact: true })
     const [expected, icon] = await button.evaluate((b, t) => {

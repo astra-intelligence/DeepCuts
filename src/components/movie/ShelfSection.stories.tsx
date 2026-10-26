@@ -1,6 +1,7 @@
 // Stories for ShelfSection, one of Home's full-width shelves (ADR-0040 §6b), with the three kinds
-// of header meta Home uses.
+// of header meta Home uses and the icon before a heading.
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { Icon } from '@/components/ui/Icon'
 import { EmptySlot } from './EmptySlot'
 import { SHELF_GRID, ShelfSection } from './ShelfSection'
 
@@ -38,3 +39,7 @@ export const WithCopy: Story = {
 }
 /** No meta: the dashed rule runs to the edge. */
 export const NoMeta: Story = {}
+/** An icon before the heading, as on the Top Ten (star) and watchlist (bookmark) shelves. */
+export const WithIcon: Story = {
+  args: { icon: <Icon name="star" className="size-10 shrink-0 text-favourite" /> },
+}

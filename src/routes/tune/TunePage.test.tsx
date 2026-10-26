@@ -49,9 +49,9 @@ describe('tune my picks (onboarding)', () => {
     const card = await screen.findByRole('article', { name: 'The Thing' })
     expect(screen.getByText('Tune your picks · 1 of 3')).toBeInTheDocument()
     const tags = within(card).getByRole('group', { name: 'Your tags for The Thing' })
-    await user.click(within(tags).getByRole('button', { name: /Dislike/ }))
+    await user.click(within(tags).getByRole('button', { name: /Less like this/ }))
     await waitFor(() =>
-      expect(within(tags).getByRole('button', { name: /Dislike/ })).toHaveAttribute(
+      expect(within(tags).getByRole('button', { name: /Less like this/ })).toHaveAttribute(
         'aria-pressed',
         'true',
       ),

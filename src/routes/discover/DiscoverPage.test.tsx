@@ -340,7 +340,7 @@ describe('home', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Dislike' }))
+    await user.click(within(group).getByRole('button', { name: 'Less like this' }))
     // Detail stages tag changes until Save.
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
@@ -369,7 +369,7 @@ describe('home', () => {
         within(actions)
           .getAllByRole('button')
           .map((b) => b.getAttribute('aria-label')),
-      ).toEqual(['Want to see The Thing', 'Like The Thing', 'Not for me The Thing'])
+      ).toEqual(['Want to see The Thing', 'More like this The Thing', 'Less like this The Thing'])
       await user.click(within(actions).getByRole('button', { name: 'Want to see The Thing' }))
 
       await findToast('Added The Thing to your watchlist.')
@@ -403,14 +403,14 @@ describe('home', () => {
       // Tagged films leave the starter picks, so Alien isn't offered; use The Thing.
       expect(screen.queryByRole('link', { name: /^Alien/ })).not.toBeInTheDocument()
       const tile = await pickTile(/^The Thing/)
-      await user.click(within(tile).getByRole('button', { name: 'Not for me The Thing' }))
+      await user.click(within(tile).getByRole('button', { name: 'Less like this The Thing' }))
       const toast = await findToast('The Thing won’t be picked again.')
       const region = toast.closest('section') ?? document.body
       // A plain click: a pointer press on a toast starts Sonner's swipe, which calls
       // setPointerCapture, missing in jsdom.
       fireEvent.click(within(region).getByRole('button', { name: 'Undo' }))
       await waitFor(() =>
-        expect(within(tile).getByRole('link')).not.toHaveAccessibleName(/Not for me/),
+        expect(within(tile).getByRole('link')).not.toHaveAccessibleName(/Less like this/),
       )
       // The Thing is back to no tags; Alien still has its own.
       expect(await tags.getTags(1091)).toEqual(new Set())
@@ -424,7 +424,7 @@ describe('home', () => {
       const log = createLocalFeedbackLog('feedback-demo:demo')
       renderRoute('/')
       const tile = await pickTile(/^The Fog/)
-      await user.click(within(tile).getByRole('button', { name: 'Not for me The Fog' }))
+      await user.click(within(tile).getByRole('button', { name: 'Less like this The Fog' }))
       await findToast('The Fog won’t be picked again.')
       const [entry] = log.list()
       expect(entry).toMatchObject({
@@ -435,7 +435,9 @@ describe('home', () => {
       expect(Object.keys(entry?.parts ?? {})).toEqual([...SCORE_PARTS])
       expect(entry?.penalty).toBe(0)
 
-      await user.click(within(tile).getByRole('button', { name: 'Undo Not for me for The Fog' }))
+      await user.click(
+        within(tile).getByRole('button', { name: 'Undo Less like this for The Fog' }),
+      )
       await waitFor(() => expect(log.list()).toEqual([]))
     })
 
@@ -443,9 +445,9 @@ describe('home', () => {
       const user = userEvent.setup()
       renderRoute('/')
       const tile = await pickTile(/^The Thing/)
-      await user.click(within(tile).getByRole('button', { name: 'Like The Thing' }))
-      await findToast('Liked The Thing. Your picks will follow it.')
-      expect(within(tile).getByRole('link')).toHaveAccessibleName(/Liked it\./)
+      await user.click(within(tile).getByRole('button', { name: 'More like this The Thing' }))
+      await findToast('Got it: more films like The Thing.')
+      expect(within(tile).getByRole('link')).toHaveAccessibleName(/More like this\./)
       expect(createLocalFeedbackLog('feedback-demo:demo').list()).toEqual([])
     })
 
@@ -470,7 +472,7 @@ describe('home', () => {
     // Open the pick, tag it there and save, which closes Detail back to Home.
     await user.click(await firstPick())
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Dislike' }))
+    await user.click(within(group).getByRole('button', { name: 'Less like this' }))
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByRole('heading', { level: 1, name: 'Your movies, close at hand' })
     // The shelf is built from the saved tags, not the ones from before the save: the next film
@@ -484,7 +486,7 @@ describe('home', () => {
     async (qs) => {
       renderRoute(`/${qs}`)
       expect(
-        await screen.findByText('Like a few films to tune these picks to you.'),
+        await screen.findByText('Mark a few films “More like this” to tune these picks to you.'),
       ).toBeInTheDocument()
     },
   )
@@ -495,7 +497,7 @@ describe('home with likes (ADR-0026)', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Like' }))
+    await user.click(within(group).getByRole('button', { name: 'More like this' }))
     // Detail stages tag changes until Save.
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
@@ -504,7 +506,7 @@ describe('home with likes (ADR-0026)', () => {
     const feature = await firstPick()
     // Tuned picks drop the "like a few films" hint.
     expect(
-      screen.queryByText('Like a few films to tune these picks to you.'),
+      screen.queryByText('Mark a few films “More like this” to tune these picks to you.'),
     ).not.toBeInTheDocument()
     expect(feature).toHaveTextContent(/\d+% match/)
     // The match is also the box's blood-red stamp.
@@ -540,7 +542,7 @@ describe('home with likes (ADR-0026)', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Like' }))
+    await user.click(within(group).getByRole('button', { name: 'More like this' }))
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
     await act(() => router.navigate('/'))
@@ -596,7 +598,7 @@ describe('home with a liked film in a series (ADR-0032, ADR-0037)', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/4488')
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Like' }))
+    await user.click(within(group).getByRole('button', { name: 'More like this' }))
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
     await act(() => router.navigate('/'))

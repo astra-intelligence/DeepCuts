@@ -24,7 +24,8 @@ const TICKER = [
 const COPY: Record<PanelId, string> = {
   'top-ten': 'Rank the ten films you’d defend to anyone, in your order.',
   watchlist: 'Save a film the moment you hear about it. It waits for you on Home.',
-  discovery: 'Like a few films and get deep cuts picked for your taste, with the reason why.',
+  discovery:
+    'Mark a few films “More like this” and get deep cuts picked for your taste, with the reason why.',
 }
 
 // The two calls to action share a size: at least 48px tall, in the display face.

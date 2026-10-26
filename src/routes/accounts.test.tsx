@@ -165,11 +165,11 @@ describe('a tag that fails to save', () => {
     const user = userEvent.setup()
     renderRoute('/movie/1091', asPat)
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Like' }))
+    await user.click(within(group).getByRole('button', { name: 'More like this' }))
     await user.click(screen.getByRole('button', { name: 'Save' }))
     expect(await findToast(/^Your changes weren’t all saved./)).toBeInTheDocument()
     // Nothing the person picked is lost, and Save is there to try again.
-    expect(within(group).getByRole('button', { name: 'Like' })).toHaveAttribute(
+    expect(within(group).getByRole('button', { name: 'More like this' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )

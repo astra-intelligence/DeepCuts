@@ -7,12 +7,12 @@ import { describe, expect, it, vi } from 'vitest'
 import { PickActions } from './PickActions'
 
 describe('PickActions', () => {
-  it('offers Want / Like / Nope, named in full with the film, and reports the press', async () => {
+  it('offers Want / More / Less, named in full with the film, and reports the press', async () => {
     const onAct = vi.fn()
     render(<PickActions title="The Fly" onAct={onAct} onUndo={() => {}} />)
     const group = screen.getByRole('group', { name: 'Quick actions for The Fly' })
-    expect(group).toHaveTextContent('WantLikeNope')
-    await userEvent.click(screen.getByRole('button', { name: 'Like The Fly' }))
+    expect(group).toHaveTextContent('WantMoreLess')
+    await userEvent.click(screen.getByRole('button', { name: 'More like this The Fly' }))
     expect(onAct).toHaveBeenCalledWith('liked')
   })
 
@@ -28,11 +28,11 @@ describe('PickActions', () => {
 
   it('moves focus to Undo once stamped, and back to the pressed button after Undo', async () => {
     const { rerender } = render(<PickActions title="The Fly" onAct={() => {}} onUndo={() => {}} />)
-    screen.getByRole('button', { name: 'Not for me The Fly' }).focus()
+    screen.getByRole('button', { name: 'Less like this The Fly' }).focus()
     rerender(<PickActions title="The Fly" stamped="disliked" onAct={() => {}} onUndo={() => {}} />)
-    expect(screen.getByRole('button', { name: 'Undo Not for me for The Fly' })).toHaveFocus()
+    expect(screen.getByRole('button', { name: 'Undo Less like this for The Fly' })).toHaveFocus()
     rerender(<PickActions title="The Fly" onAct={() => {}} onUndo={() => {}} />)
-    expect(screen.getByRole('button', { name: 'Not for me The Fly' })).toHaveFocus()
+    expect(screen.getByRole('button', { name: 'Less like this The Fly' })).toHaveFocus()
   })
 
   it('leaves focus alone when it is elsewhere (an undo from the toast)', () => {

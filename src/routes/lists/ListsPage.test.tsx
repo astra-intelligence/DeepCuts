@@ -13,7 +13,7 @@ describe('my lists', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Like' }))
+    await user.click(within(group).getByRole('button', { name: 'More like this' }))
     // Detail stages tag changes until Save.
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
@@ -27,7 +27,7 @@ describe('my lists', () => {
     // The empty message waits for the list to load (a row of placeholders stands in until then).
     expect(await screen.findByText(/will appear here/)).toBeInTheDocument()
 
-    await user.click(await within(lists).findByRole('link', { name: /Like.*1 film/ }))
+    await user.click(await within(lists).findByRole('link', { name: /More like this.*1 film/ }))
     expect(
       await screen.findByRole('link', { name: /The Thing.*1982 · Horror/ }),
     ).toBeInTheDocument()
@@ -47,7 +47,7 @@ describe('my lists', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Like' }))
+    await user.click(within(group).getByRole('button', { name: 'More like this' }))
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
 

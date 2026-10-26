@@ -19,6 +19,8 @@ export const SHELF_GRID =
  * @param to - Where the heading leads, when the shelf previews a longer list (the watchlist):
  *   the heading itself is the link (owner, 2026-10-13), not a separate "See all".
  * @param ref - The `<section>`, e.g. so a reorder mode can listen for Escape inside it.
+ * @param icon - A decorative icon before the heading that ties the shelf to its tag elsewhere in
+ *   the app: the watchlist's bookmark, the Top Ten's star.
  * @param meta - What sits at the right of the header: a count or a line of copy. Below `sm` it
  *   wraps under the heading and the dashed rule hides.
  */
@@ -27,6 +29,7 @@ export function ShelfSection({
   feature,
   title,
   to,
+  icon,
   meta,
   children,
   ref,
@@ -35,6 +38,7 @@ export function ShelfSection({
   feature: number
   title: string
   to?: string
+  icon?: ReactNode
   meta?: ReactNode
   children: ReactNode
   ref?: RefObject<HTMLElement | null>
@@ -45,7 +49,11 @@ export function ShelfSection({
       <div className="mb-6 flex flex-wrap items-end gap-x-6 gap-y-2">
         <div>
           <Eyebrow className="mb-1">Feature Nº {feature}</Eyebrow>
-          <h2 id={headingId} className="font-display text-5xl leading-none tracking-wide uppercase">
+          <h2
+            id={headingId}
+            className="flex items-center gap-3 font-display text-5xl leading-none tracking-wide uppercase"
+          >
+            {icon}
             {to ? (
               <Link to={to} className="underline-offset-8 hover:text-accent hover:underline">
                 {title}

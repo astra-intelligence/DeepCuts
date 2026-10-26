@@ -28,5 +28,5 @@ export const EmptyWatchlist: Story = {
 }
 /** No action: information only (Discovery with nothing to pick). */
 export const InformationOnly: Story = {
-  args: { title: 'Like a few films to get your first picks' },
+  args: { title: 'Mark a few films “More like this” to get your first picks' },
 }

@@ -2,11 +2,36 @@
 import type { SystemTag } from '@/domain/tagRules'
 import type { IconName } from '@/components/ui/Icon'
 
-// The three tags (ADR-0050). Color always comes with an icon and a label (ADR-0020).
-export const TAGS: { tag: SystemTag; label: string; icon: IconName; hint: string }[] = [
-  { tag: 'watchlist', label: 'Want to see', icon: 'bookmark', hint: 'Save for later' },
-  { tag: 'liked', label: 'Like', icon: 'heart', hint: 'More like this' },
-  { tag: 'disliked', label: 'Dislike', icon: 'ban', hint: 'Hide from feeds' },
+/** A tag's display details. */
+export interface TagDisplay {
+  tag: SystemTag
+  /** The tag's name, the same on its button, its list and in toasts: "More like this". */
+  label: string
+  icon: IconName
+  /** The line under the button where there's room: "Save for later". */
+  hint: string
+}
+
+// The three tags (ADR-0050), named for what they do to picks (ADR-0051). Color always comes with an icon and a label (ADR-0020).
+export const TAGS: TagDisplay[] = [
+  {
+    tag: 'watchlist',
+    label: 'Want to see',
+    icon: 'bookmark',
+    hint: 'Save for later',
+  },
+  {
+    tag: 'liked',
+    label: 'More like this',
+    icon: 'heart',
+    hint: 'Steers your picks',
+  },
+  {
+    tag: 'disliked',
+    label: 'Less like this',
+    icon: 'ban',
+    hint: 'Hide from feeds',
+  },
 ]
 
 /** Inline style that sets `--tag` to a tag's color token, e.g. for `text-(--tag)`. */

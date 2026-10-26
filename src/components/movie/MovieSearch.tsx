@@ -131,7 +131,7 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
                     <small className="text-sm text-fg-muted">
                       {meta.filter(Boolean).join(' · ')}
                       {disliked.has(movie.id) && (
-                        <span className="ml-2 text-tag-disliked">Disliked</span>
+                        <span className="ml-2 text-tag-disliked">Less like this</span>
                       )}
                     </small>
                   </span>
