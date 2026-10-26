@@ -1,5 +1,5 @@
 // Tests for My Lists: tagged films appear under their list, `?tag=` filters, and an unknown
-// `?tag=` falls back to Want to see, and the films are VHS boxes with their credits. The watchlist
+// `?tag=` (or the retired Seen list's) falls back to Want to see, and the films are VHS boxes with their credits. The watchlist
 // can be put in your own order (ADR-0041).
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -13,7 +13,7 @@ describe('my lists', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Seen it' }))
+    await user.click(within(group).getByRole('button', { name: 'Like' }))
     // Detail stages tag changes until Save.
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
@@ -27,15 +27,15 @@ describe('my lists', () => {
     // The empty message waits for the list to load (a row of placeholders stands in until then).
     expect(await screen.findByText(/will appear here/)).toBeInTheDocument()
 
-    await user.click(await within(lists).findByRole('link', { name: /Seen it.*1 film/ }))
+    await user.click(await within(lists).findByRole('link', { name: /Like.*1 film/ }))
     expect(
       await screen.findByRole('link', { name: /The Thing.*1982 · Horror/ }),
     ).toBeInTheDocument()
-    expect(router.state.location.search).toBe('?tag=seen')
+    expect(router.state.location.search).toBe('?tag=liked')
   })
 
-  it('falls back to Want to see for an unknown ?tag=', async () => {
-    renderRoute('/lists?tag=hidden')
+  it.each(['hidden', 'seen'])('falls back to Want to see for ?tag=%s', async (tag) => {
+    renderRoute(`/lists?tag=${tag}`)
     const lists = await screen.findByRole('navigation', { name: 'Lists' })
     expect(within(lists).getByRole('link', { name: /Want to see/ })).toHaveAttribute(
       'aria-current',
@@ -47,11 +47,11 @@ describe('my lists', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/movie/1091')
     const group = await screen.findByRole('group', { name: 'Your tags' })
-    await user.click(within(group).getByRole('button', { name: 'Seen it' }))
+    await user.click(within(group).getByRole('button', { name: 'Like' }))
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByText(/^Saved\./)
 
-    await act(() => router.navigate('/lists?tag=seen'))
+    await act(() => router.navigate('/lists?tag=liked'))
     const tile = await screen.findByRole('link', { name: /The Thing.*1982 · Horror/ })
     expect(tile).toHaveAttribute('data-vhs-target')
     await screen.findByText('John Carpenter')

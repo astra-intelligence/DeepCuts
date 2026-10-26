@@ -1,4 +1,4 @@
-// My Lists (/lists): the films on each of the four tag lists.
+// My Lists (/lists): the films on each of the three tag lists (ADR-0050).
 //
 // Four tiles pick the list (`?tag=`, so it's linkable); the page accent switches to that tag's
 // color (ADR-0020). Each film loads its details from TMDB, cached for a day. The films are VHS
@@ -27,12 +27,12 @@ const ReorderList = lazy(() =>
   import('@/components/movie/ReorderList').then((m) => ({ default: m.ReorderList })),
 )
 
-// ?tag= is untrusted; anything unknown falls back to Want to see (ADR-0014).
+// ?tag= is untrusted; anything unknown falls back to Want to see (ADR-0014). That includes an old
+// bookmark of the retired Seen list (`?tag=seen`, ADR-0050).
 const paramsSchema = z.object({ tag: z.enum(SYSTEM_TAGS).catch('watchlist').default('watchlist') })
 
 // Literal class names so Tailwind generates them (ADR-0020 page accent).
 const PAGE_ACCENT: Record<SystemTag, string> = {
-  seen: 'page-accent-seen',
   watchlist: 'page-accent-watchlist',
   liked: 'page-accent-liked',
   disliked: 'page-accent-disliked',
@@ -43,7 +43,7 @@ export function ListsPage() {
   const [params] = useSearchParams()
   const { tag } = paramsSchema.parse(Object.fromEntries(params))
   const queries = useTagQueries()
-  // All four lists load at once, for the counts on the tiles.
+  // All three lists load at once, for the counts on the tiles.
   const counts = useQueries({ queries: TAGS.map((t) => queries.list(t.tag)) })
   const current = counts[SYSTEM_TAGS.indexOf(tag)]
   const ids = current?.data ?? []

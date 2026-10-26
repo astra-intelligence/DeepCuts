@@ -7,13 +7,13 @@ import { describe, expect, it, vi } from 'vitest'
 import { PickActions } from './PickActions'
 
 describe('PickActions', () => {
-  it('offers Want / Seen / Nope, named in full with the film, and reports the press', async () => {
+  it('offers Want / Like / Nope, named in full with the film, and reports the press', async () => {
     const onAct = vi.fn()
     render(<PickActions title="The Fly" onAct={onAct} onUndo={() => {}} />)
     const group = screen.getByRole('group', { name: 'Quick actions for The Fly' })
-    expect(group).toHaveTextContent('WantSeenNope')
-    await userEvent.click(screen.getByRole('button', { name: 'Seen it The Fly' }))
-    expect(onAct).toHaveBeenCalledWith('seen')
+    expect(group).toHaveTextContent('WantLikeNope')
+    await userEvent.click(screen.getByRole('button', { name: 'Like The Fly' }))
+    expect(onAct).toHaveBeenCalledWith('liked')
   })
 
   it('ignores presses while a change is saving, without dropping focus', async () => {
@@ -39,7 +39,7 @@ describe('PickActions', () => {
     const outside = document.createElement('button')
     document.body.append(outside)
     const { rerender } = render(
-      <PickActions title="The Fly" stamped="seen" onAct={() => {}} onUndo={() => {}} />,
+      <PickActions title="The Fly" stamped="liked" onAct={() => {}} onUndo={() => {}} />,
     )
     outside.focus()
     rerender(<PickActions title="The Fly" onAct={() => {}} onUndo={() => {}} />)

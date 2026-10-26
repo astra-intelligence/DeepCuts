@@ -1,42 +1,30 @@
-// Tag rules (ADR-0017 + its amendment): the single source of truth for how the four tags
-// interact (ADR-0013). Every place that changes tags (the local store today, Supabase later)
-// goes through `applyTag`, so the rules can't drift between storage adapters.
+// Tag rules (ADR-0050, which replaced ADR-0017's rules): the single source of truth for how the
+// three tags interact (ADR-0013). Every place that changes tags (the local store and the accounts
+// API) goes through `applyTag`, so the rules can't drift between storage adapters.
 //
-// The rules, in plain words:
-// - "Seen it" and "Want to see" exclude each other (you can't want to see what you've seen).
-// - "Like" and "Dislike" exclude each other.
-// - Disliking a film also takes it off "Want to see".
-// - Adding to "Want to see" clears a dislike (amendment: wanting it means you've changed your mind).
+// The rule, in plain words: a film carries at most one tag. Want to see, Like and Dislike are three
+// answers to "what do you think of this film?", so picking one clears the other two. Taking a tag
+// off leaves the film with none. ("Seen it" was retired by ADR-0050.)
 
-/** The four tags a person can put on a film, in display order. */
-export const SYSTEM_TAGS = ['seen', 'watchlist', 'liked', 'disliked'] as const
-/** One of the four tags: `'seen' | 'watchlist' | 'liked' | 'disliked'`. */
+/** The three tags a person can put on a film, in display order. */
+export const SYSTEM_TAGS = ['watchlist', 'liked', 'disliked'] as const
+/** One of the three tags: `'watchlist' | 'liked' | 'disliked'`. */
 export type SystemTag = (typeof SYSTEM_TAGS)[number]
-/** The tags currently on one film. Read-only so callers can't bypass `applyTag`. */
+/**
+ * The tags currently on one film: at most one under the rule above, but kept a set so stored data
+ * and undo work the same as before. Read-only so callers can't bypass `applyTag`.
+ */
 export type TagSet = ReadonlySet<SystemTag>
 
-// Adding the key removes every tag in its value. Removing a tag never adds or removes others.
-const REMOVES: Record<SystemTag, readonly SystemTag[]> = {
-  seen: ['watchlist'],
-  watchlist: ['seen', 'disliked'],
-  liked: ['disliked'],
-  disliked: ['liked', 'watchlist'],
-}
-
 /**
- * Returns a film's tags after turning one tag on or off, applying the rules above.
+ * Returns a film's tags after turning one tag on or off, applying the rule above.
  * Pure: the input set is never changed, a new set is returned.
  */
 export function applyTag(current: TagSet, tag: SystemTag, on: boolean): TagSet {
+  // Turning a tag on replaces whatever the film had; turning it off only removes that tag.
+  if (on) return new Set([tag])
   const next = new Set(current)
-  // Turning a tag off only removes that tag.
-  if (!on) {
-    next.delete(tag)
-    return next
-  }
-  // Turning a tag on first clears the tags it conflicts with, then adds it.
-  for (const removed of REMOVES[tag]) next.delete(removed)
-  next.add(tag)
+  next.delete(tag)
   return next
 }
 
@@ -47,7 +35,7 @@ export function isInFeeds(tags: TagSet): boolean {
 
 /**
  * Whether a film shows on a given list in My Lists. A disliked film appears only on the
- * Disliked list, even if it somehow carries another tag (e.g. from an older import).
+ * Disliked list, even if it somehow carries another tag (e.g. data saved before ADR-0050).
  */
 export function isOnList(tags: TagSet, list: SystemTag): boolean {
   return tags.has(list) && (list === 'disliked' || isInFeeds(tags))
@@ -56,7 +44,7 @@ export function isOnList(tags: TagSet, list: SystemTag): boolean {
 /**
  * The tag changes that take a film from `current` back to `previous` (an undo), in an order
  * that's safe under the rules above: removals first, then additions. `previous` was a valid set,
- * so none of its tags conflict and re-adding them never removes another of them.
+ * so it holds at most one tag and re-adding it never removes another of its tags.
  * Feed each step to `applyTag` (or a repository's `setTag`) in turn.
  */
 export function restoreSteps(current: TagSet, previous: TagSet): { tag: SystemTag; on: boolean }[] {

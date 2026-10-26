@@ -38,7 +38,7 @@ const many = (count: number, make: (i: number) => FeedbackEntry) =>
   Array.from({ length: count }, (_, i) => make(i))
 
 describe('learnWeights (ADR-0045)', () => {
-  it('waits for MIN_PRESSES Want/Nope presses, MIN_EACH of each', () => {
+  it('waits for MIN_PRESSES presses, MIN_EACH yeses and Nopes', () => {
     expect([MIN_PRESSES, MIN_EACH]).toEqual([30, 5])
     const tooFew = many(MIN_PRESSES - 1, (i) => press(i % 2 ? 'watchlist' : 'disliked'))
     expect(learnWeights(tooFew, VERSION).learned).toBeUndefined()
@@ -49,17 +49,24 @@ describe('learnWeights (ADR-0045)', () => {
     expect(learnWeights(lopsided, VERSION).learned).toBeUndefined()
   })
 
-  it("counts Seen and older versions' presses, but learns from neither", () => {
+  it("counts Like as a yes (ADR-0050), and older versions' presses not at all", () => {
     const entries = [
-      ...many(20, () => press('watchlist')),
-      ...many(9, () => press('disliked')),
-      ...many(10, () => press('seen')),
+      ...many(10, () => press('watchlist')),
+      ...many(9, () => press('liked')),
+      ...many(10, () => press('disliked')),
       ...many(10, () => press('watchlist', {}, 0, VERSION - 1)),
     ]
     const result = learnWeights(entries, VERSION)
-    expect(result.counts).toEqual({ want: 20, nope: 9, seen: 10, older: 10 })
-    // 29 Want/Nope presses at this version: one short.
+    expect(result.counts).toEqual({ want: 10, like: 9, nope: 10, older: 10 })
+    // 29 presses at this version: one short.
     expect(result.learned).toBeUndefined()
+  })
+
+  it('learns from Likes the same way as Wants', () => {
+    const entries = many(40, (i) =>
+      i % 2 ? press('liked', { quality: 0.9 }) : press('disliked', { quality: 0.1 }),
+    )
+    expect(learnWeights(entries, VERSION).learned?.weights.quality).toBeGreaterThan(0.9)
   })
 
   it('gives the weight to the part that tells Wants from Nopes', () => {

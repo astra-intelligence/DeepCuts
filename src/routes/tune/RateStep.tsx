@@ -17,7 +17,7 @@ import { Prompt } from './Prompt'
 import { primary } from './styles'
 import { PICKS, type StepProps } from './useTuneState'
 
-/** Step 2: rate a few films with the four tags, then finish on Discover. */
+/** Step 2: rate a few films with the three tags, then finish on Discover. */
 export function RateStep({ state, update }: StepProps) {
   const navigate = useNavigate()
   const queries = useTagQueries()
@@ -97,7 +97,7 @@ export function RateStep({ state, update }: StepProps) {
         <div
           role="group"
           aria-label={`Your tags for ${pick.title}`}
-          className="relative grid grid-cols-2 gap-2 p-3 md:grid-cols-5"
+          className="relative grid grid-cols-3 gap-2 p-3 md:grid-cols-4"
         >
           {TAGS.map((t) => (
             <TagToggle
@@ -119,7 +119,7 @@ export function RateStep({ state, update }: StepProps) {
           ))}
           <Button
             onPress={next}
-            className="col-span-2 flex h-11 w-36 items-center justify-center gap-2 self-center justify-self-center bg-button-primary-bg px-3.5 font-display text-base tracking-widest text-button-primary-fg uppercase hover:bg-button-primary-bg-hover md:col-span-1"
+            className="col-span-3 flex h-11 w-36 items-center justify-center gap-2 self-center justify-self-center bg-button-primary-bg px-3.5 font-display text-base tracking-widest text-button-primary-fg uppercase hover:bg-button-primary-bg-hover md:col-span-1"
           >
             <Icon name="arrow" /> Next film
           </Button>

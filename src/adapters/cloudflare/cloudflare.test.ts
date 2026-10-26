@@ -131,23 +131,44 @@ describe('CloudflareTagRepository', () => {
     )
     let t = 0
     const repo = createCloudflareTagRepository(() => t)
-    await repo.list('seen')
+    await repo.list('watchlist')
     await repo.list('liked')
     await repo.feedExclusions()
     expect(gets).toBe(1)
     t = 30_001
     await repo.getTags(1)
     expect(gets).toBe(2)
-    await repo.setTag(1, 'seen', true)
+    await repo.setTag(1, 'liked', true)
     await repo.getTags(1)
     expect(gets).toBe(3)
   })
 
   it('throws on errors and on answers that fail validation', async () => {
     server.use(http.get('/api/tags', () => HttpResponse.json({ error: 'x' }, { status: 401 })))
-    await expect(createCloudflareTagRepository().list('seen')).rejects.toEqual(new TagApiError(401))
+    await expect(createCloudflareTagRepository().list('liked')).rejects.toEqual(
+      new TagApiError(401),
+    )
     server.use(http.get('/api/tags', () => HttpResponse.json({ records: [{ tmdbId: -1 }] })))
-    await expect(createCloudflareTagRepository().list('seen')).rejects.toEqual(new TagApiError(502))
+    await expect(createCloudflareTagRepository().list('liked')).rejects.toEqual(
+      new TagApiError(502),
+    )
+  })
+
+  it('ADR-0050: skips "Seen it" rows the server still holds instead of failing', async () => {
+    const at = '2026-10-01T12:00:00.000Z'
+    server.use(
+      http.get('/api/tags', () =>
+        HttpResponse.json({
+          records: [
+            { tmdbId: 1, tag: 'seen', createdAt: at },
+            { tmdbId: 2, tag: 'liked', createdAt: at },
+          ],
+        }),
+      ),
+    )
+    const repo = createCloudflareTagRepository()
+    expect(await repo.list('liked')).toEqual([2])
+    expect([...(await repo.getTags(1))]).toEqual([])
   })
 
   it('imports in batches of at most 5,000', async () => {
@@ -158,7 +179,7 @@ describe('CloudflareTagRepository', () => {
         return HttpResponse.json({ ok: true })
       }),
     )
-    const record = { tmdbId: 1, tag: 'seen' as const, createdAt: '2026-01-01T00:00:00.000Z' }
+    const record = { tmdbId: 1, tag: 'liked' as const, createdAt: '2026-01-01T00:00:00.000Z' }
     await createCloudflareTagRepository().importAll(Array(12_000).fill(record))
     expect(sizes).toEqual([5000, 5000, 2000])
   })

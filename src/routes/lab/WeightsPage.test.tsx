@@ -126,8 +126,8 @@ describe('weights lab (ADR-0026)', () => {
       savePresses(4)
       await likeThenOpen('/lab/weights')
       const panel = await screen.findByRole('region', { name: 'Learn from your presses' })
-      expect(panel).toHaveTextContent('Want 2 · Nope 2 · Seen 0')
-      expect(panel).toHaveTextContent('30 presses, at least 5 of each, are needed')
+      expect(panel).toHaveTextContent('Want 2 · Like 0 · Nope 2')
+      expect(panel).toHaveTextContent('30 presses, at least 5 yeses and 5 Nopes, are needed')
       expect(panel).toHaveTextContent('4 so far')
     })
 

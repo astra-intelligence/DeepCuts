@@ -34,7 +34,7 @@ function Live({ title }: { title: string }) {
   )
 }
 
-/** Want, Seen, Nope. Press one: it becomes Undo; Undo brings the strip back. */
+/** Want, Like, Nope. Press one: it becomes Undo; Undo brings the strip back. */
 export const Default: Story = { render: (args) => <Live title={args.title} /> }
 
 /** A change is saving: presses are ignored, and the pressed button keeps focus. */

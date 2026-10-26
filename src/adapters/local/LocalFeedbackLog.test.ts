@@ -60,6 +60,19 @@ describe('LocalFeedbackLog (ADR-0045)', () => {
     expect(createLocalFeedbackLog('feedback-test', storage).list()).toEqual([])
   })
 
+  it('ADR-0050: drops presses of the retired Seen button and keeps the rest', () => {
+    const storage = memoryStorage()
+    storage.setItem(
+      `${STORAGE_PREFIX}feedback-test`,
+      JSON.stringify([press(1), { ...press(2), action: 'seen' }, press(3, 'liked')]),
+    )
+    const log = createLocalFeedbackLog('feedback-test', storage)
+    expect(log.list().map((e) => [e.tmdbId, e.action])).toEqual([
+      [1, 'watchlist'],
+      [3, 'liked'],
+    ])
+  })
+
   it('never throws when storage refuses writes', () => {
     const storage = memoryStorage()
     storage.setItem = () => {

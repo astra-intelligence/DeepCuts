@@ -86,9 +86,6 @@
 }
 
 /* Page accent (ADR-0020): a tag-filtered page swaps the contextual accent to that tag's color. */
-@utility page-accent-seen {
-  --dc-color-contextual: var(--dc-color-tag-seen);
-}
 @utility page-accent-watchlist {
   --dc-color-contextual: var(--dc-color-tag-watchlist);
 }

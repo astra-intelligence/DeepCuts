@@ -201,7 +201,7 @@ function Badge({ badge }: { badge: VhsBadge }) {
   switch (badge.kind) {
     case 'stamp':
       // A quick action's result, stamped across the dimmed cover in the tag's color: "On your
-      // watchlist", "Seen it", "Not for me". Ink on the tag colors passes 4.5:1 (they're the
+      // watchlist", "Liked it", "Not for me". Ink on the tag colors passes 4.5:1 (they're the
       // pressed tag buttons' fills).
       return (
         <span

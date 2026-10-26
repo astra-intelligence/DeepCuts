@@ -15,41 +15,42 @@ export function tagRepositoryContract(name: string, make: (now: () => string) =>
 
     it('starts empty', async () => {
       expect(await tags(1)).toEqual([])
-      expect(await repo.list('seen')).toEqual([])
+      expect(await repo.list('liked')).toEqual([])
       expect(await repo.exportAll()).toEqual([])
     })
 
-    it('applies tagRules on every write', async () => {
+    it('ADR-0050: applies tagRules on every write, so a film keeps one tag', async () => {
       await repo.setTag(1, 'watchlist', true)
-      expect([...(await repo.setTag(1, 'seen', true))]).toEqual(['seen'])
-      await repo.setTag(1, 'liked', true)
+      expect([...(await repo.setTag(1, 'liked', true))]).toEqual(['liked'])
+      expect(await repo.list('watchlist')).toEqual([])
       await repo.setTag(1, 'disliked', true)
-      expect(await tags(1)).toEqual(['disliked', 'seen'])
+      expect(await tags(1)).toEqual(['disliked'])
       await repo.setTag(1, 'watchlist', true)
       expect(await tags(1)).toEqual(['watchlist'])
     })
 
-    it('removes a single tag', async () => {
+    it('removes a tag, leaving the film with none', async () => {
       await repo.setTag(1, 'liked', true)
-      await repo.setTag(1, 'seen', true)
+      await repo.setTag(1, 'watchlist', false)
+      expect(await tags(1)).toEqual(['liked'])
       await repo.setTag(1, 'liked', false)
-      expect(await tags(1)).toEqual(['seen'])
+      expect(await tags(1)).toEqual([])
     })
 
     it('lists newest first and keeps the original time when re-adding', async () => {
-      await repo.setTag(1, 'seen', true)
-      await repo.setTag(2, 'seen', true)
-      await repo.setTag(3, 'seen', true)
-      await repo.setTag(1, 'seen', true)
-      expect(await repo.list('seen')).toEqual([3, 2, 1])
+      await repo.setTag(1, 'liked', true)
+      await repo.setTag(2, 'liked', true)
+      await repo.setTag(3, 'liked', true)
+      await repo.setTag(1, 'liked', true)
+      expect(await repo.list('liked')).toEqual([3, 2, 1])
     })
 
-    it('ADR-0017: a disliked film is excluded from feeds and every list but Disliked', async () => {
-      await repo.setTag(1, 'seen', true)
+    it('a disliked film is excluded from feeds and every list but Disliked', async () => {
+      await repo.setTag(1, 'liked', true)
       await repo.setTag(1, 'disliked', true)
-      await repo.setTag(2, 'seen', true)
+      await repo.setTag(2, 'liked', true)
       expect([...(await repo.feedExclusions())]).toEqual([1])
-      expect(await repo.list('seen')).toEqual([2])
+      expect(await repo.list('liked')).toEqual([2])
       expect(await repo.list('disliked')).toEqual([1])
       const excluded = await repo.feedExclusions()
       const discover = [1, 2, 3].filter((id) => !excluded.has(id))
@@ -62,7 +63,7 @@ export function tagRepositoryContract(name: string, make: (now: () => string) =>
       const exported = await repo.exportAll()
       await repo.clear()
       expect(await repo.exportAll()).toEqual([])
-      await repo.setTag(2, 'seen', true)
+      await repo.setTag(2, 'liked', true)
       await repo.importAll(exported)
       expect(await tags(1)).toEqual(['liked'])
       // Imported picks are applied on top of existing tags, so they win (guest picks are the latest intent).
@@ -86,8 +87,8 @@ export function tagRepositoryContract(name: string, make: (now: () => string) =>
     it('a film that leaves the watchlist and comes back goes on top', async () => {
       for (const id of [1, 2, 3]) await repo.setTag(id, 'watchlist', true)
       await repo.reorder('watchlist', [1, 2, 3])
-      // Seen removes it from the watchlist (tag rules), and its saved place goes with it.
-      await repo.setTag(2, 'seen', true)
+      // Like takes it off the watchlist (tag rules), and its saved place goes with it.
+      await repo.setTag(2, 'liked', true)
       expect(await repo.list('watchlist')).toEqual([1, 3])
       await repo.setTag(2, 'watchlist', true)
       expect(await repo.list('watchlist')).toEqual([2, 1, 3])

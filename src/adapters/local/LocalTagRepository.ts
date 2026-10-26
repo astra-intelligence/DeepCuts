@@ -3,9 +3,8 @@
 // Each account gets its own key (`account-<id>-tags`), so signing out and in again never mixes
 // lists (ADR-0025). Passkey accounts keep their lists on the server instead (ADR-0031). The
 // watchlist's saved order (ADR-0041) sits beside the tags, under `account-<id>-watchlist-order`.
-import { z } from 'zod'
-import { createTagRepository } from '../createTagRepository'
-import { savedOrderSchema, tagRecordSchema, type TagRepository } from '../TagRepository'
+import { createTagRepository, oneTagPerFilm } from '../createTagRepository'
+import { savedOrderSchema, storedRecordsSchema, type TagRepository } from '../TagRepository'
 import { versionedStore } from './versionedStore'
 
 /**
@@ -21,7 +20,9 @@ export function createLocalTagRepository(
 ): TagRepository {
   const store = versionedStore({
     key,
-    schema: z.array(tagRecordSchema),
+    // Lists saved before ADR-0050 lose their "Seen it" records and keep one tag per film; the
+    // rest loads as before. The cleaned list is saved back on the next change.
+    schema: storedRecordsSchema.transform(oneTagPerFilm),
     fallback: [],
     // Only pass `storage` when given, so versionedStore's own default (localStorage) applies.
     ...(storage && { storage }),
