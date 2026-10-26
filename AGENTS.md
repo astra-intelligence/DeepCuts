@@ -51,8 +51,8 @@ One rule: **a file lives next to the only thing that uses it; once two or more p
 
 - Commit after each working step, using Conventional Commits (`feat`, `fix`, `test`, `docs`, `design`, `chore`, `refactor`), with a body that says **what** changed and **why**, and names the ADRs involved.
 - `npm run verify` passes before every commit.
-- **Mark breaking changes (ADR-0048).** Versions follow SemVer, read from commit types: `feat` is a minor release; `fix`, `perf`, `design`, `style`, `copy` are a patch; the rest ship with the next one. A change that makes a returning user lose something or redo it (a bookmarked URL stops working, saved data needs a one-way migration or is dropped, an `/api` change breaks the copy of the app still open in a tab, or a browser stops being supported) is a major: write `type!:` and add a `BREAKING CHANGE:` footer saying what users lose.
-- **Releases are part of the work (ADR-0048).** After the owner merges a PR, the agent cuts the release: `npm run release` opens the release PR (version + `CHANGELOG.md`). The owner merges it like any PR, and `npm run deploy` (owner-only) tags `vX.Y.Z` once it's live. Agents bump the version only through `npm run release`, never edit `CHANGELOG.md` by hand, and never push tags or deploy.
+- **Mark breaking changes (ADR-0048).** Versions follow SemVer, read from commit types at deploy: `feat` is a minor release; `fix`, `perf`, `design`, `style`, `copy` are a patch; the rest ship with the next one. A change that makes a returning user lose something or redo it (a bookmarked URL stops working, saved data needs a one-way migration or is dropped, an `/api` change breaks the copy of the app still open in a tab, or a browser stops being supported) is a major: write `type!:` and add a `BREAKING CHANGE:` footer saying what users lose.
+- **Versions come from the deploy (ADR-0049).** `npm run deploy` (owner-only) works out the version from commits since the last `vX.Y.Z` tag, shows it in the footer, tags the commit and posts the release notes as a GitHub Release. There are no release PRs, version commits or changelog file. `npm run version:next` previews the next version. Agents never tag, create releases or deploy.
 - Only source belongs here: no decision records, design files, reviews or notes (those go to the docs repo).
 
 ## Pull requests (the owner approves and merges)
@@ -64,7 +64,7 @@ One rule: **a file lives next to the only thing that uses it; once two or more p
 - Before opening or updating a PR, run **`npm run ci:local`**. It runs exactly what CI runs.
 - After pushing, watch CI (`gh pr checks --watch`). If it fails, read the log (`gh run view --log-failed`), fix it on the branch and push again. **Only hand a PR to the owner when CI is green.**
 - **Security check-in on every PR.** Before handover, review the diff for anything questionable: secrets or tokens, new network calls or endpoints, input that skips Zod, HTML injection, storage outside `src/adapters/local/`, weakened headers or CSP, new dependencies (`npm audit`, maintainer, install scripts), anything that could bill (ADR-0024). Flag attack-surface changes so the threat model (docs repo) gets updated, and add a "Security check-in" section to the PR description with what was checked and found.
-- After the owner merges: `git switch main && git pull`, delete the local branch, then run `npm run release` (skip it when the merged PR was itself a release, or when a release PR is already open; add to that one by closing it and running again). Watch the release PR's CI and hand it over when green.
+- After the owner merges: `git switch main && git pull`, then delete the local branch. When the merged work should go live, tell the owner it's ready to deploy, with `npm run version:next`'s version.
 
 ## Keep local and CI identical
 

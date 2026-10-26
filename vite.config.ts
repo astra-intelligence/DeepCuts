@@ -1,7 +1,6 @@
 /// <reference types="vitest/config" />
 // Vite configuration: the dev server, the production build, the local TMDB proxy, security
 // headers, and the unit-test runner (Vitest reads its settings from `test` below).
-import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
@@ -17,9 +16,9 @@ import { tmdbProxy } from './server/tmdb/proxy.ts'
 // Re-exported so the E2E security test checks the exact same values.
 export { baseHeaders, contentSecurityPolicy }
 
-// The release version (ADR-0048), shown in the footer. Read at build time, so the page always shows
-// the version it was built from.
-const { version } = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string }
+// The release version, shown in the footer. `npm run deploy` works it out from git and passes it in
+// (ADR-0049); every other build (dev, tests, Storybook, CI) is a `dev` build.
+const version = process.env.DEEP_CUTS_VERSION ?? 'dev'
 
 export default defineConfig(({ mode }) => ({
   define: { __APP_VERSION__: JSON.stringify(version) },

@@ -1,10 +1,10 @@
-// The SemVer rules behind `npm run release` and the deploy pre-flight (ADR-0048). Pure functions
-// over plain facts (the last release, the commits since it), so they're unit-tested here and the
-// scripts only gather the facts and act on the answer.
+// The SemVer rules `npm run deploy` versions each deploy with (ADR-0048, ADR-0049). Pure functions
+// over plain facts (the last tag, the commits since it), so they're unit-tested here and the scripts
+// only gather the facts and act on the answer.
 //
-// Two markers, two jobs: a release *commit* (`chore(release): vX.Y.Z`, made by `npm run release`)
-// is where the next release counts from, and a *tag* (`vX.Y.Z`, made by `npm run deploy`) marks what
-// went live. Counting from tags would re-plan a merged-but-undeployed release a second time.
+// Each deploy is a release (ADR-0049): the deploy works out the version from the commits since the
+// last `vX.Y.Z` tag, builds it into the footer, tags the commit it shipped, and posts these notes as
+// a GitHub Release. No version commits or release PRs, so the tag is the only marker.
 //
 // What each bump means for a website (ADR-0048):
 // - major: a returning user loses something or must redo it (`type!:` or a `BREAKING CHANGE:` footer)
@@ -13,8 +13,11 @@
 // - none: nothing a user sees (`chore`, `docs`, `test`, `refactor`, `ci`, `build`). Those ship with
 //   the next bump; a release made of only these is a patch, because something still ships.
 
-/** The version every release starts from: the site was in production before versioning began. */
-export const FIRST_VERSION = '1.0.0'
+/**
+ * The first tag's version. 1.0.0 and 1.0.1 were recorded under ADR-0048's release PRs but never
+ * deployed, so tagging continues from the last of them instead of going backwards.
+ */
+export const FIRST_VERSION = '1.0.1'
 
 /** The size of a change, smallest first. */
 export type Bump = 'none' | 'patch' | 'minor' | 'major'
@@ -22,22 +25,13 @@ export type Bump = 'none' | 'patch' | 'minor' | 'major'
 /** One commit as `git log` gives it. */
 export type Commit = { hash: string; subject: string; body: string }
 
-/** What `npm run release` will do. */
-export type ReleasePlan = { version: string; bump: Bump; entry: string }
+/** What a deploy will release: the version, how big a step it is, and the release notes. */
+export type ReleasePlan = { version: string; bump: Bump; notes: string }
 
 const ORDER: Bump[] = ['none', 'patch', 'minor', 'major']
 const PATCH_TYPES = new Set(['fix', 'perf', 'design', 'style', 'copy'])
 // `type(scope)!: subject`. The scope and the `!` are optional.
 const HEADER = /^(?<type>[a-z]+)(?:\([^)]*\))?(?<bang>!)?:\s*(?<text>.+)$/
-// The release commit itself never counts toward the next release.
-const RELEASE_SUBJECT = /^chore\(release\):/
-// The exact subject `npm run release` writes, with the version captured.
-const RELEASE_COMMIT = /^chore\(release\): v(\d+\.\d+\.\d+)$/
-
-/** The version a release commit made (`chore(release): v1.2.0` → `1.2.0`), or null for others. */
-export function releaseVersionOf(subject: string): string | null {
-  return RELEASE_COMMIT.exec(subject.trim())?.[1] ?? null
-}
 
 /** Reads a Conventional Commit header; null when it doesn't follow the format. */
 function parse(commit: Commit) {
@@ -67,25 +61,15 @@ export function applyBump(version: string, bump: Bump): string {
   return version
 }
 
-/** Commits that belong in the next release: everything except earlier release commits. */
-const releasable = (commits: Commit[]) => commits.filter((c) => !RELEASE_SUBJECT.test(c.subject))
-
-/**
- * The version the next release must have.
- * @param lastRelease - The version of the newest release commit, or null before the first release.
- * @param commits - The commits since that release commit (merge commits left out).
- * @returns The version, or null when there's nothing to release.
- */
-export function nextVersion(lastRelease: string | null, commits: Commit[]): string | null {
-  if (lastRelease === null) return FIRST_VERSION
-  const list = releasable(commits)
-  if (list.length === 0) return null
-  const biggest = list.map(bumpFor).reduce((a, b) => (ORDER.indexOf(b) > ORDER.indexOf(a) ? b : a))
-  // Only maintenance commits: still a patch, because what ships has changed.
-  return applyBump(lastRelease, biggest === 'none' ? 'patch' : biggest)
+/** The biggest bump among the commits; maintenance-only is a patch, because something ships. */
+function biggestBump(commits: Commit[]): Bump {
+  const biggest = commits
+    .map(bumpFor)
+    .reduce<Bump>((a, b) => (ORDER.indexOf(b) > ORDER.indexOf(a) ? b : a), 'none')
+  return biggest === 'none' ? 'patch' : biggest
 }
 
-// The changelog's sections, in the order they're shown.
+// The release notes' sections, in the order they're shown.
 const SECTIONS: {
   title: string
   matches: (c: NonNullable<ReturnType<typeof parse>>) => boolean
@@ -97,32 +81,22 @@ const SECTIONS: {
 ]
 
 /**
- * The CHANGELOG.md entry for a release: user-facing commits by section, maintenance as a count.
- * @param version - The new version.
- * @param date - The release date, `YYYY-MM-DD`.
- * @param commits - The commits since the last release; ignored for the first release.
- * @param first - Whether this is the first versioned release.
+ * The GitHub Release notes for a deploy: user-facing commits by section, maintenance as a count.
+ * @param commits - The commits since the last tag; ignored for the first release.
+ * @param first - Whether this is the first tagged release.
  */
-export function changelogEntry(
-  version: string,
-  date: string,
-  commits: Commit[],
-  first = false,
-): string {
-  const lines = [`## ${version} (${date})`, '']
-  if (first) {
-    // The full history before versioning is hundreds of commits; the log already has it.
-    lines.push(
-      'First versioned release (ADR-0048). The site has been live since 2026-10-08; everything',
-      'before this is in the commit history.',
-      '',
+export function releaseNotes(commits: Commit[], first = false): string {
+  if (first)
+    // The history before versioning is hundreds of commits; the log already has it.
+    return (
+      'First tagged release (ADR-0048, ADR-0049). The site has been live since 2026-10-08; ' +
+      'everything before this is in the commit history.\n'
     )
-    return lines.join('\n')
-  }
-  const parsed = releasable(commits).map((c) => parse(c))
+  const lines: string[] = []
   let maintenance = 0
   const grouped = new Map<string, string[]>()
-  for (const c of parsed) {
+  for (const commit of commits) {
+    const c = parse(commit)
     // Each commit goes in the first section it matches, so a breaking feat is listed once.
     const section = c && SECTIONS.find((s) => s.matches(c))
     if (!c || !section) {
@@ -144,85 +118,15 @@ export function changelogEntry(
 }
 
 /**
- * Everything `npm run release` needs to know, or null when there's nothing to release.
- * @param lastTagVersion - See {@link nextVersion}.
- * @param commits - See {@link nextVersion}.
- * @param date - Today, `YYYY-MM-DD`.
+ * What this deploy releases, or null when nothing has landed since the last tag (a redeploy of
+ * that same version, which gets no new tag).
+ * @param lastTagVersion - The newest `vX.Y.Z` tag without its `v`, or null before the first one.
+ * @param commits - The commits since that tag, merge commits left out.
  */
-export function planRelease(
-  lastRelease: string | null,
-  commits: Commit[],
-  date: string,
-): ReleasePlan | null {
-  const version = nextVersion(lastRelease, commits)
-  if (!version) return null
-  const first = lastRelease === null
-  const bump = first ? 'major' : diffBump(lastRelease, version)
-  return { version, bump, entry: changelogEntry(version, date, commits, first) }
-}
-
-// Which part of the version changed between two releases.
-function diffBump(from: string, to: string): Bump {
-  const [a, b] = [from, to].map((v) => v.split('.').map(Number))
-  if (b[0] !== a[0]) return 'major'
-  return b[1] !== a[1] ? 'minor' : 'patch'
-}
-
-/**
- * Adds a release's entry to the top of CHANGELOG.md, under its heading.
- * @param changelog - The current file, or '' when it doesn't exist yet.
- */
-export function prependEntry(changelog: string, entry: string): string {
-  const heading =
-    '# Changelog\n\nUser-facing changes in each release. Versions follow SemVer as defined in ' +
-    'ADR-0048.\n\n'
-  // Keep the earlier entries (everything from the first `## ` heading on), not the old intro.
-  const firstEntry = changelog.indexOf('\n## ')
-  const rest = firstEntry === -1 ? '' : changelog.slice(firstEntry)
-  return heading + entry.trimEnd() + '\n' + (rest.trim() ? '\n' + rest.trimStart() : '')
-}
-
-/** The facts the deploy pre-flight checks the version against. */
-export type VersionState = {
-  /** `version` in package.json. */
-  packageVersion: string
-  /** The version of the newest release commit, or null before the first release. */
-  lastRelease: string | null
-  /** The commits since that release commit (merge commits left out). */
-  commitsSinceRelease: Commit[]
-  /** The commit the tag `v<packageVersion>` points to, or null when it doesn't exist. */
-  packageTagCommit: string | null
-  /** The commit being deployed. */
-  head: string
-  /** The text of CHANGELOG.md, or '' when it doesn't exist. */
-  changelog: string
-}
-
-/**
- * Every reason the version stops a deploy, in plain words for the owner. Empty means go.
- * A deploy ships a merged release with nothing after it, or repeats the commit a tag already names
- * (ADR-0048).
- */
-export function versionProblems(s: VersionState): string[] {
-  // Redeploying exactly what a tag already names is always fine.
-  if (s.packageTagCommit === s.head) return []
-  const release = 'Run `npm run release` and merge its PR.'
-  if (s.lastRelease === null) return [`Nothing has been released yet. ${release}`]
-  const problems: string[] = []
-  if (s.packageVersion !== s.lastRelease)
-    problems.push(
-      `package.json says ${s.packageVersion}, but the last release commit is v${s.lastRelease}. ` +
-        'Only `npm run release` changes the version.',
-    )
-  const unreleased = releasable(s.commitsSinceRelease).length
-  if (unreleased)
-    problems.push(
-      `${unreleased} ${unreleased === 1 ? 'commit has' : 'commits have'} landed since ` +
-        `v${s.lastRelease} without a release. ${release}`,
-    )
-  if (s.packageTagCommit !== null)
-    problems.push(`v${s.packageVersion} is already tagged on another commit. ${release}`)
-  if (!s.changelog.includes(`\n## ${s.packageVersion} `))
-    problems.push(`CHANGELOG.md has no entry for ${s.packageVersion}. ${release}`)
-  return problems
+export function planRelease(lastTagVersion: string | null, commits: Commit[]): ReleasePlan | null {
+  if (lastTagVersion === null)
+    return { version: FIRST_VERSION, bump: 'patch', notes: releaseNotes(commits, true) }
+  if (commits.length === 0) return null
+  const bump = biggestBump(commits)
+  return { version: applyBump(lastTagVersion, bump), bump, notes: releaseNotes(commits) }
 }
