@@ -6,8 +6,8 @@
 // What goes live is exactly what was reviewed and merged:
 // 1. Pre-flight (scripts/deployChecks.ts): on main, nothing uncommitted, the same commit as GitHub's
 //    main, a real D1 database id in wrangler.toml, and the Pages secrets the API needs
-//    (CANONICAL_HOST, ADR-0047), and a released version (ADR-0048): package.json's version is the
-//    one `npm run release` made for these commits, with its CHANGELOG.md entry. Any problem stops
+//    (CANONICAL_HOST, ADR-0047), and a released version (ADR-0048): a merged release commit with
+//    nothing unreleased after it, and its CHANGELOG.md entry. Any problem stops
 //    it before anything runs.
 // 2. A fresh build with real accounts on (VITE_ACCOUNTS=cloudflare, ADR-0031), so a stale or
 //    demo-only dist/ can never be uploaded by mistake.
@@ -20,7 +20,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { deployProblems, parseSecretNames } from './deployChecks.ts'
-import { commitsSince, latestTagVersion, tagCommit } from './releaseGit.mjs'
+import { commitsSince, latestRelease, tagCommit } from './releaseGit.mjs'
 import { versionProblems } from './releasePlan.ts'
 
 if (process.env.DEEP_CUTS_DEPLOY !== '1') {
@@ -37,7 +37,7 @@ const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim()
 // 1. Pre-flight. Fetch first, so "the same as GitHub's main" compares against the latest.
 git('fetch', '--quiet', '--tags', 'origin', 'main')
 const version = JSON.parse(readFileSync('package.json', 'utf8')).version
-const lastTag = latestTagVersion()
+const last = latestRelease()
 const problems = deployProblems(
   {
     branch: git('branch', '--show-current'),
@@ -55,10 +55,10 @@ const problems = deployProblems(
 ).concat(
   versionProblems({
     packageVersion: version,
-    lastTagVersion: lastTag,
+    lastRelease: last?.version ?? null,
+    commitsSinceRelease: commitsSince(last?.hash ?? null),
     packageTagCommit: tagCommit(`v${version}`),
     head: git('rev-parse', 'HEAD'),
-    commitsSinceTag: commitsSince(lastTag),
     changelog: existsSync('CHANGELOG.md') ? readFileSync('CHANGELOG.md', 'utf8') : '',
   }),
 )
