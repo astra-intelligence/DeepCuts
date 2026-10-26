@@ -128,3 +128,7 @@ Other config: `vite.config.ts` (dev server, build, unit tests), `server/security
 Comments cite design decisions as `ADR-NNNN`. The decision records, design artwork, reviews, threat
 model and hosting checklist are kept in a separate private docs repository, so this one holds
 source only. [SECURITY.md](SECURITY.md) covers reporting a vulnerability.
+
+## License
+
+The code is [MIT](LICENSE)-licensed. Film data and images come from [TMDB](https://www.themoviedb.org/) under its own terms and aren't covered; this product uses the TMDB API but is not endorsed or certified by TMDB. Fonts and other dependencies keep their own licenses.
