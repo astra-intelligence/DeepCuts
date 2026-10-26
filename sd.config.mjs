@@ -141,10 +141,17 @@ StyleDictionary.registerFormat({
       `  --default-transition-timing-function: ${value('motion.transition.easing')};`,
       `  --animate-enter: enter ${value('motion.enter.duration')} ${value('motion.enter.easing')} both;`,
       `  --animate-fade-in: fade-in ${value('motion.enter.duration')} ${value('motion.enter.easing')} both;`,
-      // Motion roles for component stylesheets that animate in plain CSS (VhsBox.css), read
-      // with --theme(). Tailwind has no namespace for durations, so they're named for the role.
+      // Overlays and controls that appear or leave in answer to a press (popovers, Undo, Save) fade
+      // on the default transition, so they keep pace with the press that summoned them.
+      `  --animate-pop-in: fade-in ${value('motion.transition.duration')} ${value('motion.transition.easing')} both;`,
+      `  --animate-pop-out: fade-out ${value('motion.transition.duration')} ${value('motion.transition.easing')} both;`,
+      // Motion roles for motion outside the default transition (VhsBox.css, the ticker, the
+      // Halloween logo), read with --theme() or as a variable. Tailwind has no namespace for
+      // durations, so they're named for the role.
       `  --motion-turn-duration: ${value('motion.turn.duration')};`,
       `  --motion-turn-easing: ${value('motion.turn.easing')};`,
+      `  --motion-glow-duration: ${value('motion.glow.duration')};`,
+      `  --motion-glow-easing: ${value('motion.glow.easing')};`,
       ...lines,
       '}',
       '',

@@ -6,7 +6,9 @@
 //    variables may appear only in src/index.css (the page accent) and brand variables only in
 //    the logo files (Logo.tsx and the holiday logos' stylesheets). Corners are square (ADR-0040)
 //    and shadows use role or component tokens (`shadow-popover`, `shadow-box`), not the raw scale
-//    (`rounded-lg`, `shadow-sm`).
+//    (`rounded-lg`, `shadow-sm`). Motion uses the motion roles (ADR-0053): no raw durations or
+//    easings (`duration-300`, `ease-out`, `transition: color 0.2s`) outside src/index.css, except
+//    endless loops (`infinite`), which keep their own pace.
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
@@ -62,6 +64,11 @@ const ALLOWED = {
 const IGNORE = /^src\/styles\//
 const RAW_SCALE =
   /(?<![\w-])(?:[\w-]+:)*(rounded(?:-[trblse]{1,2})?-(?:xs|sm|md|lg|xl|[234]xl)|rounded|shadow-(?:2xs|xs|sm|md|lg|xl|2xl))(?![\w-])/g
+// Tailwind's raw duration and easing classes; `duration-(--motion-…)` reads a role and passes.
+const RAW_MOTION_CLASS =
+  /(?<![\w-])(?:[\w-]+:)*(duration-\d+|ease-(?:in|out|in-out|linear))(?![\w-])/g
+// A literal time in a CSS transition or animation declaration.
+const RAW_MOTION_CSS = /^\s*(?:transition|animation)(?:-duration)?\s*:.*\d(?:ms|s)\b/
 for (const file of walk('src', /\.(tsx?|css)$/)) {
   if (IGNORE.test(file)) continue
   readFileSync(file, 'utf8')
@@ -77,6 +84,15 @@ for (const file of walk('src', /\.(tsx?|css)$/)) {
             `${file}:${i + 1} ${cls}: corners are square; use a role or component shadow token (shadow-box, shadow-popover…)`,
           )
         }
+        for (const [, cls] of line.matchAll(RAW_MOTION_CLASS)) {
+          fail(`${file}:${i + 1} ${cls}: use a motion role (transition, animate-*, --motion-*)`)
+        }
+      }
+      if (file.endsWith('.css') && file !== 'src/index.css') {
+        if (RAW_MOTION_CSS.test(line) && !/infinite/.test(line))
+          fail(
+            `${file}:${i + 1}: use a motion role (--theme(--default-transition-duration), --motion-*)`,
+          )
       }
     })
 }

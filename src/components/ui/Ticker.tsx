@@ -80,7 +80,7 @@ export function Ticker({ items, loading = false }: { items: string[]; loading?: 
         data-playing={playing || undefined}
         // Fades in when it arrives into the empty band (`startedEmpty`). Never while playing:
         // both set `animation`, and the scroll must win.
-        className={`inline-block transition-transform duration-400 ease-out data-playing:animate-ticker data-playing:transition-none motion-reduce:animate-none ${
+        className={`inline-block transition-transform duration-(--motion-turn-duration) ease-(--motion-turn-easing) data-playing:animate-ticker data-playing:transition-none motion-reduce:animate-none ${
           startedEmpty && !playing ? 'motion-safe:animate-fade-in' : ''
         }`}
       >
