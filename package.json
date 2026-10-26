@@ -15,6 +15,7 @@
     "preview:cf": "node scripts/preview-cf.mjs",
     "preview:accounts": "VITE_ACCOUNTS=cloudflare npm run build && npm run db:migrate:local && npm run preview:cf",
     "deploy": "node scripts/deploy.mjs",
+    "release": "node scripts/release.mjs",
     "db:migrate:local": "wrangler d1 migrations apply deep-cuts --local",
     "invite": "node scripts/invite.mjs",
     "analyze": "npm run tokens && vite build --mode analyze",

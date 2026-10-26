@@ -6,16 +6,22 @@
 // What goes live is exactly what was reviewed and merged:
 // 1. Pre-flight (scripts/deployChecks.ts): on main, nothing uncommitted, the same commit as GitHub's
 //    main, a real D1 database id in wrangler.toml, and the Pages secrets the API needs
-//    (CANONICAL_HOST, ADR-0047). Any problem stops it before anything runs.
+//    (CANONICAL_HOST, ADR-0047), and a released version (ADR-0048): package.json's version is the
+//    one `npm run release` made for these commits, with its CHANGELOG.md entry. Any problem stops
+//    it before anything runs.
 // 2. A fresh build with real accounts on (VITE_ACCOUNTS=cloudflare, ADR-0031), so a stale or
 //    demo-only dist/ can never be uploaded by mistake.
 // 3. The dist secret scan, then the upload.
+// 4. Tags the deployed commit `vX.Y.Z` and pushes the tag, so a tag always names what went live.
+//    A redeploy of an already-tagged commit leaves its tag alone.
 //
 // It uses Direct Upload (`wrangler pages deploy`), not Pages' Git integration, which would publish
 // a public preview URL for every branch.
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { deployProblems, parseSecretNames } from './deployChecks.ts'
+import { commitsSince, latestTagVersion, tagCommit } from './releaseGit.mjs'
+import { versionProblems } from './releasePlan.ts'
 
 if (process.env.DEEP_CUTS_DEPLOY !== '1') {
   console.error(
@@ -29,7 +35,9 @@ if (process.env.DEEP_CUTS_DEPLOY !== '1') {
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim()
 
 // 1. Pre-flight. Fetch first, so "the same as GitHub's main" compares against the latest.
-git('fetch', '--quiet', 'origin', 'main')
+git('fetch', '--quiet', '--tags', 'origin', 'main')
+const version = JSON.parse(readFileSync('package.json', 'utf8')).version
+const lastTag = latestTagVersion()
 const problems = deployProblems(
   {
     branch: git('branch', '--show-current'),
@@ -44,6 +52,15 @@ const problems = deployProblems(
       encoding: 'utf8',
     }),
   ),
+).concat(
+  versionProblems({
+    packageVersion: version,
+    lastTagVersion: lastTag,
+    packageTagCommit: tagCommit(`v${version}`),
+    head: git('rev-parse', 'HEAD'),
+    commitsSinceTag: commitsSince(lastTag),
+    changelog: existsSync('CHANGELOG.md') ? readFileSync('CHANGELOG.md', 'utf8') : '',
+  }),
 )
 if (problems.length) {
   console.error(['✗ Not deploying:', ...problems.map((p) => `  • ${p}`)].join('\n'))
@@ -60,7 +77,7 @@ Cloudflare Workers Free limits (ADR-0029, as of 2026-10-07):
 ⚠  NEVER upgrade this Cloudflare account to Workers Paid, and never add a payment method.
    On the Free plan, going over a limit fails; on Paid, it bills.
 
-Deploying ${git('rev-parse', '--short', 'HEAD')} (${git('log', '-1', '--format=%s')})
+Deploying v${version}: ${git('rev-parse', '--short', 'HEAD')} (${git('log', '-1', '--format=%s')})
 `)
 
 // 2. A fresh build with real accounts on.
@@ -76,3 +93,19 @@ execFileSync(
   ['wrangler', 'pages', 'deploy', 'dist', '--project-name', 'deep-cuts', '--branch', 'main'],
   { stdio: 'inherit' },
 )
+
+// 4. Tag what just went live. Only after a successful upload: execFileSync throws on failure, so a
+// failed deploy never gets a tag.
+if (tagCommit(`v${version}`)) {
+  console.log(`\nv${version} was already tagged on this commit; tag left as it is.`)
+} else {
+  git(
+    'tag',
+    '-a',
+    `v${version}`,
+    '-m',
+    `v${version}, deployed ${new Date().toLocaleDateString('en-CA')}`,
+  )
+  git('push', '--quiet', 'origin', `v${version}`)
+  console.log(`\n✓ Tagged and pushed v${version}.`)
+}

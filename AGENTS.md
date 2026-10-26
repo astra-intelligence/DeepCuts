@@ -51,6 +51,8 @@ One rule: **a file lives next to the only thing that uses it; once two or more p
 
 - Commit after each working step, using Conventional Commits (`feat`, `fix`, `test`, `docs`, `design`, `chore`, `refactor`), with a body that says **what** changed and **why**, and names the ADRs involved.
 - `npm run verify` passes before every commit.
+- **Mark breaking changes (ADR-0048).** Versions follow SemVer, read from commit types: `feat` is a minor release; `fix`, `perf`, `design`, `style`, `copy` are a patch; the rest ship with the next one. A change that makes a returning user lose something or redo it (a bookmarked URL stops working, saved data needs a one-way migration or is dropped, an `/api` change breaks the copy of the app still open in a tab, or a browser stops being supported) is a major: write `type!:` and add a `BREAKING CHANGE:` footer saying what users lose.
+- **Releases are the owner's.** `npm run release` opens the release PR (version + `CHANGELOG.md`), and `npm run deploy` tags `vX.Y.Z` once it's live. Agents never bump the version, edit `CHANGELOG.md` by hand or push tags.
 - Only source belongs here: no decision records, design files, reviews or notes (those go to the docs repo).
 
 ## Pull requests (the owner approves and merges)
