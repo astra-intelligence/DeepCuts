@@ -265,6 +265,9 @@ export const PENALTY_KEYWORDS = 2
 export const MATCH_FLOOR = 30
 export const MATCH_CEILING = 95
 
+/** How many shared keywords a pick names in its reason ("slasher and final girl"). */
+export const SHOWN_KEYWORDS = 2
+
 /** Optional settings for `recommend` (the weights lab passes its own). */
 export interface RecommendOptions {
   /** Defaults to DEFAULT_WEIGHTS. Should sum to 1 (see normalizeWeights). */
@@ -304,6 +307,11 @@ export interface Pick {
   sameCast?: { actor: string; liked: string }
   /** Set when a studio (not a major) also made a film you liked (ADR-0038). */
   sameStudio?: { studio: string; liked: string }
+  /**
+   * Set when it shares keywords you favour with a film you liked: the liked film sharing the most,
+   * and those keyword ids, strongest in your profile first (at most SHOWN_KEYWORDS).
+   */
+  sameKeywords?: { keywordIds: number[]; liked: string }
   /** True when it filled an explore slot: a genre your likes haven't covered (ADR-0032). */
   explore?: true
   /** The twelve part scores (0–1), shown in the weights lab. */
@@ -548,6 +556,33 @@ function firstShared(people: readonly Person[], liked: ReadonlyMap<number, strin
 }
 
 /**
+ * The keywords a candidate shares with one liked film, for its reason: of the candidate's keywords
+ * that weigh above 0 in your profile (and aren't GENERIC_KEYWORDS), the liked film with the most of
+ * them, and up to SHOWN_KEYWORDS of those, strongest first. Ties go to the more recent like, then
+ * by keyword id, so the reason never changes between renders. Undefined when none are shared.
+ */
+function sharedKeywords(
+  keywordIds: readonly number[],
+  profile: {
+    outside: readonly ScorerFilm[]
+    keywords: ReadonlyMap<number, number>
+  },
+): { keywordIds: number[]; liked: string } | undefined {
+  const weightOf = (k: number) => profile.keywords.get(k) ?? 0
+  const favoured = keywordIds
+    .filter((k) => weightOf(k) > 0 && !GENERIC_KEYWORDS.has(k))
+    .sort((a, b) => weightOf(b) - weightOf(a) || a - b)
+  let best: { keywordIds: number[]; liked: string } | undefined
+  // `outside` keeps the likes' order (most recent first), so `>` keeps the earliest on a tie.
+  for (const film of profile.outside) {
+    const shared = favoured.filter((k) => film.keywordIds?.includes(k))
+    if (shared.length > (best?.keywordIds.length ?? 0))
+      best = { keywordIds: shared, liked: film.title }
+  }
+  return best && { ...best, keywordIds: best.keywordIds.slice(0, SHOWN_KEYWORDS) }
+}
+
+/**
  * Ranks films for a person: the main entry point (Discover and the weights lab call it).
  * Returns at most `limit` picks, best first; an empty list when there are no likes yet.
  */
@@ -606,6 +641,7 @@ export function scoreCandidates(
     const keep = (f: ScorerFilm) => series === null || f.seriesId !== series
     const outside = likedFilms.filter(keep)
     return {
+      outside,
       keywords: keywordProfile(input, keep),
       directors: likedBy(outside, (f) => f.directors ?? []),
       writers: likedBy(outside, (f) => f.writers ?? []),
@@ -649,6 +685,7 @@ export function scoreCandidates(
     const studio = firstShared(indie(details?.companies), credits.studios)
     const seriesId = likedSeriesOf(c)
     const series = seriesId === null ? undefined : likedBySeries.get(seriesId)
+    const keywords = sharedKeywords(details?.keywordIds ?? [], credits)
     const overlaps = dislikedOverlaps(f, details, dislikes)
     const parts: Record<ScorePart, number> = {
       // Relative to the best-supported candidate, so the top one always scores 1. On a square-root
@@ -698,6 +735,7 @@ export function scoreCandidates(
       ...(series && { sameSeries: { liked: series } }),
       ...(actor && { sameCast: { actor: actor.name, liked: actor.liked } }),
       ...(studio && { sameStudio: { studio: studio.name, liked: studio.liked } }),
+      ...(keywords && { sameKeywords: keywords }),
     }
   })
 

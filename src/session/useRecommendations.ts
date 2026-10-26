@@ -12,10 +12,14 @@
 // 2. The top RERANK candidates get one details call each for their keywords, credits and series, and
 //    the scorer ranks again with them. Every call is the same cached details query the Detail
 //    page uses, so opening a recommended film afterwards costs nothing.
+// Each pick then gets its one-sentence reason (pickReason.ts), named from the same data. Home
+// still shows "Because you liked …" on tiles; the full reason is for tooltips (owner, 2026-10-25).
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { movieQueries } from '@/api/queries'
 import { crewOf, releaseYear, type MovieDetail, type MovieSummary } from '@/api/tmdb'
+import { pickReasons } from '@/domain/pickReason'
 import {
+  DEFAULT_WEIGHTS,
   keywordsToSearch,
   recommend,
   scoreCandidates,
@@ -50,8 +54,11 @@ export const RERANK = 20
 /** How many liked series (most recent likes first) bring their films in as candidates. */
 export const MAX_SERIES = 10
 
+/** A pick with TMDB's summary of the film and the sentence saying why it was picked. */
 export interface Recommendation extends Omit<Pick, 'film'> {
   movie: MovieSummary
+  /** "Same director as The Thing", unique across the list where it can be (pickReason.ts). */
+  reason: string
 }
 
 // A film's keywords, credits, studios and series, from its details (empty when TMDB has none).
@@ -200,6 +207,11 @@ export function useTaste(): Taste {
     if (q.data && id !== undefined) candidateDetails.set(id, detailsOf(q.data))
   })
   const reranked: TasteInput = { ...input, details: candidateDetails }
+  // Keyword names for the reasons ("final girl"): a pick's shared keywords are always ones a liked
+  // film has, and the liked films' details carry their names.
+  const keywordNames = new Map(
+    likedMovies.flatMap((m) => m.keywords?.keywords ?? []).map((k) => [k.id, k.name] as const),
+  )
 
   return {
     hasLikes: liked.length > 0 || topTen.length > 0,
@@ -211,15 +223,19 @@ export function useTaste(): Taste {
       keywordQueries.some((q) => q.isPending) ||
       topDetails.some((q) => q.isPending),
     // Scoring a few hundred candidates is well under a millisecond, so it simply runs each render.
-    score: (options) => withSummaries(recommend(reranked, options)),
-    candidates: (options) => withSummaries(scoreCandidates(reranked, options)),
+    score: (options) => withSummaries(recommend(reranked, options), options),
+    candidates: (options) => withSummaries(scoreCandidates(reranked, options), options),
   }
 
-  // Swaps each pick's scorer film for TMDB's summary, dropping any without one.
-  function withSummaries(picks: Pick[]): Recommendation[] {
-    return picks.flatMap(({ film, ...rest }) => {
+  // Drops picks without a TMDB summary, swaps each scorer film for its summary, and adds the
+  // reasons (worked out after the drop, so a hidden pick never takes a sentence).
+  function withSummaries(picks: Pick[], options?: RecommendOptions): Recommendation[] {
+    const shown = picks.filter((p) => summaries.has(p.film.id))
+    const weights = options?.weights ?? DEFAULT_WEIGHTS
+    const reasons = pickReasons(shown, weights, (id) => keywordNames.get(id))
+    return shown.flatMap(({ film, ...rest }, i) => {
       const movie = summaries.get(film.id)
-      return movie ? [{ ...rest, movie }] : []
+      return movie ? [{ ...rest, movie, reason: reasons[i] ?? '' }] : []
     })
   }
 }
