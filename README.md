@@ -69,11 +69,11 @@ The app is hosted on **Cloudflare Pages** (ADR-0029). This public repo doesn't n
 
 ## Versions and releases
 
-Releases follow SemVer from 1.0.0 (ADR-0048), worked out from the Conventional Commit types: `feat` is a minor release, `fix`/`perf`/`design`/`style`/`copy` a patch, and `type!:` or a `BREAKING CHANGE:` footer a major (something a returning user loses or must redo). The footer shows the version the page was built from, and [CHANGELOG.md](CHANGELOG.md) lists what changed.
+Every deploy is a release (ADR-0048, ADR-0049). The version follows SemVer and is worked out from the Conventional Commit types since the last `vX.Y.Z` tag: `feat` is a minor release, `fix`/`perf`/`design`/`style`/`copy` a patch, and `type!:` or a `BREAKING CHANGE:` footer a major (something a returning user loses or must redo). Maintenance alone ships as a patch.
 
-1. `npm run release -- --dry-run` shows the next version and its changelog entry.
-2. `npm run release` opens a `release/vX.Y.Z` PR with the new version and changelog entry. Merge it once CI is green.
-3. `DEEP_CUTS_DEPLOY=1 npm run deploy` ships it and tags the deployed commit `vX.Y.Z`. The deploy refuses to run if commits landed since the release PR without a new release.
+- `npm run version:next` shows the version and release notes the next deploy would ship.
+- `DEEP_CUTS_DEPLOY=1 npm run deploy` builds that version into the footer, deploys, tags the commit and posts the notes as a GitHub Release. Run it again with nothing new and it redeploys the same version without a new tag.
+- Builds outside a deploy (dev server, tests, CI) say "dev build" in the footer.
 
 ## Accounts (opt-in)
 

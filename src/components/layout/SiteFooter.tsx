@@ -1,13 +1,14 @@
 // The site's legal footer (owner, 2026-10-13): the copyright with the owner's name and site, and
 // the attribution TMDB's terms of use require. Shown at the foot of the main shell, the account
 // pages and Detail; the full-screen Tune onboarding leaves it out so nothing competes with it.
-// It also shows the release version (ADR-0048), so anyone reporting a problem can say which one.
+// It also shows the release version (ADR-0048, ADR-0049), so anyone reporting a problem can say
+// which one. Builds outside a deploy say "dev build" instead.
 
 /**
  * The legal footer: "© 2026 Mike Curts · mikecurts.com. All rights reserved. · v1.2.0" and the
  * TMDB credit. Side by side from `sm`, stacked on phones.
  * @param className - Placement from the layout (width, gutters, top margin).
- * @param version - The release shown; the build's own version unless a story sets one.
+ * @param version - The release shown (`1.2.0`, or `dev`); the build's own unless a story sets one.
  */
 export function SiteFooter({
   className = '',
@@ -26,7 +27,7 @@ export function SiteFooter({
           <a href="https://mikecurts.com" className="underline underline-offset-4 hover:text-fg">
             mikecurts.com
           </a>
-          . All rights reserved. · v{version}
+          . All rights reserved. · {version === 'dev' ? 'dev build' : `v${version}`}
         </p>
         <p>This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
       </div>

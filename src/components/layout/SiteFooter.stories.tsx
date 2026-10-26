@@ -1,4 +1,4 @@
-// Stories for SiteFooter, the legal footer with the release version (ADR-0048). It stacks below
+// Stories for SiteFooter, the legal footer with the release version (ADR-0048, ADR-0049). It stacks below
 // `sm`; the E2E reflow checks cover the phone widths.
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, within } from 'storybook/test'
@@ -16,5 +16,13 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByText(/· v1\.2\.0$/)).toBeVisible()
+  },
+}
+
+/** Any build outside `npm run deploy` (dev server, tests, CI). */
+export const DevBuild: Story = {
+  args: { version: 'dev' },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText(/· dev build$/)).toBeVisible()
   },
 }
