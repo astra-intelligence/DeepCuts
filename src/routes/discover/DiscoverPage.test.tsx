@@ -501,7 +501,7 @@ describe('home with likes (ADR-0026)', () => {
     expect(feature).toHaveTextContent(/\d+% match/)
     // The match is also the box's blood-red stamp.
     expect(within(feature).getByText(/^\d+%$/)).toBeInTheDocument()
-    expect(feature).toHaveTextContent('Same director as The Thing')
+    expect(feature).toHaveTextContent('Because you liked The Thing')
     // The re-rank loaded the top candidates' directors (ADR-0028): The Fog shares John Carpenter
     // with The Thing, which lifts it to the top spot.
     expect(feature).toHaveTextContent('The Fog')
@@ -515,9 +515,6 @@ describe('home with likes (ADR-0026)', () => {
     const halloween = within(panel).getByRole('link', { name: /Halloween/ })
     expect(halloween).toHaveTextContent(/\d+% match/)
     await waitFor(() => expect(halloween).toHaveTextContent('Writers: John Carpenter, Debra Hill'))
-    // Halloween shares Carpenter too, but a second tile never repeats the first one's reason.
-    expect(halloween).not.toHaveTextContent('Same director as The Thing')
-    expect(halloween).toHaveTextContent(/Because you liked The Thing/)
     // The liked film itself is never recommended back.
     expect(screen.queryByRole('link', { name: /^The Thing/ })).not.toBeInTheDocument()
   })
@@ -554,7 +551,7 @@ describe('home with a Top Ten (ADR-0043)', () => {
     const feature = await firstPick()
     // Scored picks, not the starter shelf: a match and the reason, from the Top Ten film.
     expect(feature).toHaveTextContent(/\d+% match/)
-    expect(feature).toHaveTextContent('Same director as The Thing')
+    expect(feature).toHaveTextContent('Because you liked The Thing')
     expect(feature).toHaveTextContent('The Fog')
     // The Top Ten film itself is never recommended back.
     const panel = screen.getByRole('region', { name: 'Discover Some Deep Cuts' })
@@ -585,7 +582,7 @@ describe('home with a liked film in a series (ADR-0032, ADR-0037)', () => {
 
     // TMDB recommends nothing for it here, so the pick comes from the series: only the next film.
     const feature = await firstPick()
-    expect(feature).toHaveTextContent('Next in the series after Friday the 13th')
+    expect(feature).toHaveTextContent('Because you liked Friday the 13th')
     const titles = screen
       .getAllByRole('link', { name: /Friday the 13th Part/ })
       .map((l) => l.textContent)
