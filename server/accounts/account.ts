@@ -10,12 +10,15 @@ import { clearedSessionCookie, currentUser, endSession } from './sessions.ts'
 const NO_STORE = { 'Cache-Control': 'no-store' }
 
 /**
- * `GET /api/auth/session`: the signed-in user `{ id, name }`, or 401. Renews a session past half its
- * life (the new cookie rides along).
+ * `GET /api/auth/session`: the signed-in user `{ id, name }`, or `null` when nobody is signed in.
+ * Renews a session past half its life (the new cookie rides along). Signed out is an ordinary
+ * answer here, not an error: every page asks on load, and a 401 put an error in the browser's
+ * console for every signed-out visitor (Lighthouse "Best practices"). Clients from before this
+ * change read `null` as an unexpected body and fall back to signed out, the same as a 401.
  */
 export async function getSession(request: Request, env: AccountsEnv, now = Date.now()) {
   const user = await currentUser(env.DB, request, now)
-  if (!user) return fail(401, 'signed_out')
+  if (!user) return json(200, null, NO_STORE)
   return json(
     200,
     { id: user.id, name: user.name },

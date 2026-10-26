@@ -73,11 +73,13 @@ export function createCloudflareSessionProvider(
   return {
     async getSession() {
       try {
-        return accountSession(await api('GET', '/api/auth/session', userSchema))
+        const user = await api('GET', '/api/auth/session', userSchema.nullable())
+        if (user) return accountSession(user)
       } catch {
-        // Signed out (401), or the API can't be reached: the demo account if this device has one.
-        return local.getSession()
+        // The API can't be reached or answered oddly: treated as signed out, below.
       }
+      // Signed out of a passkey account: the demo account if this device has one.
+      return local.getSession()
     },
     practiceRegistration: false,
     signInMethods: () => [PASSKEY, ...local.signInMethods()],

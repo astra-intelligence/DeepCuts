@@ -1,5 +1,7 @@
 // The app's entry point: sets up data caching, the session and the router, then renders.
 // index.html loads this file.
+// First, so Zod is configured before any schema runs (see the file).
+import './zodConfig'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'

@@ -64,9 +64,7 @@ export function createFakeAccountsApi(now: () => string = () => new Date().toISO
   let lastRegisteringName = ''
 
   const handlers = [
-    http.get('/api/auth/session', () =>
-      state.signedIn ? HttpResponse.json(state.signedIn) : signedOut(),
-    ),
+    http.get('/api/auth/session', () => HttpResponse.json(state.signedIn)),
     http.post('/api/auth/register/options', async ({ request }) => {
       if (state.rejectInvite) return HttpResponse.json({ error: 'invalid_invite' }, { status: 400 })
       lastRegisteringName = ((await request.json()) as { name: string }).name
