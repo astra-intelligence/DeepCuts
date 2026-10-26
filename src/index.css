@@ -36,17 +36,26 @@
     outline: none;
     box-shadow: none;
   }
-  /* The ring fades in and settles out to its offset over the app's default transition (150ms,
-     the same as Tailwind's `transition` classes), instead of snapping on (owner, 2026-10-26). An
-     outline can only animate between two drawn states, so controls carry an invisible one at rest.
-     Only the outline's color and offset transition, so a control's own transitions are untouched;
-     reduced motion makes it instant (below). */
-  :where(a[href], button, select, textarea, summary, [tabindex]:not([tabindex='-1'])) {
-    outline: 3px solid transparent;
-    outline-offset: 0;
-    transition-property: outline-color, outline-offset;
+  /* Controls ease into their hover, pressed and focus looks over the app's default transition
+     (150ms, the same as Tailwind's `transition` classes) instead of snapping (owner, 2026-10-26).
+     Only colors change, never size or position, so it stays quiet.
+     - The focus ring fades in and settles out to its offset. An outline can only animate between
+       two drawn states, so controls carry an invisible one at rest.
+     - Parts inside a control that set their own hover color (a `group-hover:` icon) ease too;
+       parts that inherit the control's color follow it anyway.
+     A control's own `transition-*` classes or component CSS replace these. Reduced motion makes
+     them instant (below). */
+  :where(a[href], button, [tabindex]:not([tabindex='-1'])),
+  :where(a[href], button, [tabindex]:not([tabindex='-1'])) * {
+    transition-property:
+      color, background-color, border-color, text-decoration-color, fill, stroke, outline-color,
+      outline-offset;
     transition-duration: --theme(--default-transition-duration);
     transition-timing-function: --theme(--default-transition-timing-function);
+  }
+  :where(a[href], button, [tabindex]:not([tabindex='-1'])) {
+    outline: 3px solid transparent;
+    outline-offset: 0;
   }
   /* Headings receive focus only programmatically after navigation (useRouteFocus); they are not
      controls, so they get no ring (SC 2.4.7 covers operable components). */
@@ -57,7 +66,7 @@
   @media (forced-colors: active) {
     /* Forced colors repaint a transparent outline in a system color, which would ring every
        control at rest, so there the ring has no resting state and simply appears. */
-    :where(a[href], button, select, textarea, summary, [tabindex]:not([tabindex='-1'])) {
+    :where(a[href], button, [tabindex]:not([tabindex='-1'])) {
       outline-style: none;
     }
     :focus-visible {
@@ -87,10 +96,11 @@
 
 /* Applies the focus ring to a field container while its input has keyboard focus. */
 @utility focus-ring-within {
-  /* At rest: an invisible ring, so the focused one fades in like every other control's. */
+  /* At rest: an invisible ring, so the focused one fades in like every other control's, and the
+     field's border eases to its focus color. */
   outline: 3px solid transparent;
   outline-offset: 0;
-  transition-property: outline-color, outline-offset;
+  transition-property: border-color, outline-color, outline-offset;
   transition-duration: --theme(--default-transition-duration);
   transition-timing-function: --theme(--default-transition-timing-function);
   &:has(input:focus-visible) {
@@ -238,7 +248,8 @@
 }
 
 /* Gentle entrance for content as it arrives (`animate-enter`: onboarding steps, Home's film
-   tiles), a plain fade for images (`animate-fade-in`, the loader above), and the ticker's slow
+   tiles), a plain fade for images (`animate-fade-in`, the loader above), a quicker fade for what
+   a press opens or swaps in (`animate-pop-in` / `-out`: popovers, Undo, Save), and the ticker's slow
    loop (`animate-ticker`, Ticker.tsx: one half of its track per 50s). All are disabled by the
    reduced-motion rule above. */
 @theme {
@@ -256,6 +267,11 @@
   }
   @keyframes fade-in {
     from {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-out {
+    to {
       opacity: 0;
     }
   }

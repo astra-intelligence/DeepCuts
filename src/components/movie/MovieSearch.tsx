@@ -100,7 +100,7 @@ export function MovieSearch({ onPick }: { onPick?: (movie: MovieSummary) => void
         </Group>
         <Popover
           offset={6}
-          className="max-h-96 w-(--trigger-width) overflow-y-auto border-2 border-popover-border bg-popover-bg p-1 shadow-popover"
+          className="max-h-96 w-(--trigger-width) overflow-y-auto border-2 border-popover-border bg-popover-bg p-1 shadow-popover data-entering:animate-pop-in data-exiting:animate-pop-out"
         >
           <ListBox
             aria-label="Movie suggestions"
