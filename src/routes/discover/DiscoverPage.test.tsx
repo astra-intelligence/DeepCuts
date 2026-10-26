@@ -435,7 +435,9 @@ describe('home', () => {
       expect(Object.keys(entry?.parts ?? {})).toEqual([...SCORE_PARTS])
       expect(entry?.penalty).toBe(0)
 
-      await user.click(within(tile).getByRole('button', { name: 'Undo Less like this for The Fog' }))
+      await user.click(
+        within(tile).getByRole('button', { name: 'Undo Less like this for The Fog' }),
+      )
       await waitFor(() => expect(log.list()).toEqual([]))
     })
 

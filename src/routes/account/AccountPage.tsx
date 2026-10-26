@@ -72,7 +72,8 @@ function SignedIn({ account }: { account: Account }) {
             Your lists
           </h2>
           <p className="text-sm text-fg-muted">
-            {films} {films === 1 ? 'film' : 'films'} tagged across Want to see, More like this and Less like this.
+            {films} {films === 1 ? 'film' : 'films'} tagged across Want to see, More like this and
+            Less like this.
           </p>
           {/* Demo and practice accounts live on this device only (ADR-0025, ADR-0031). */}
           {(account.method === 'demo' || account.method === 'practice') && (
