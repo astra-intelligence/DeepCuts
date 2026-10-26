@@ -82,7 +82,9 @@ export function DetailTopTen({
   }
 
   // Until the list loads (or if it can't), show nothing rather than a control that might be wrong.
-  // The slot keeps its height either way, so the title below never jumps.
+  // The slot keeps its height either way, so the title below never jumps: 82px (`min-h-20.5`) is
+  // the height of both stickers (TopTenSticker.css; measured at 320, 390 and 1280px), the tallest
+  // thing it holds. The shorter "full" notice sits at the top of the slot.
   const content =
     shown === 'member' ? (
       <TopTenPick
@@ -98,7 +100,7 @@ export function DetailTopTen({
     ) : null
 
   return (
-    <div data-detail-top-ten="" className={`flex min-h-14 flex-col items-start ${className}`}>
+    <div data-detail-top-ten="" className={`flex min-h-20.5 flex-col items-start ${className}`}>
       {content}
     </div>
   )

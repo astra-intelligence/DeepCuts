@@ -264,7 +264,9 @@ function MovieDetail({ id, onDismiss }: { id: number; onDismiss: () => void }) {
           <h2 id="where-to-watch" className="mb-2.5 font-label text-sm tracking-widest text-accent">
             Where to watch ({REGION})
           </h2>
-          {/* Service logos (with the name as alt text), or a short message. */}
+          {/* Service logos (with the name as alt text), or a short message. The message is as
+              tall as a row of logos (32px): from `md` the details column is centred in the
+              window, so a few pixels' growth here would nudge the whole column, title and all. */}
           {watch.length > 0 ? (
             <ul className="flex flex-wrap items-center gap-3.5">
               {watch.map((p) => {
@@ -281,7 +283,7 @@ function MovieDetail({ id, onDismiss }: { id: number; onDismiss: () => void }) {
               })}
             </ul>
           ) : (
-            <p className="text-sm text-fg-muted">
+            <p className="flex min-h-8 items-center text-sm text-fg-muted">
               {providers.isPending
                 ? 'Checking providers…'
                 : 'Not streaming in your region right now.'}
