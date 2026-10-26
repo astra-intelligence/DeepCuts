@@ -4,7 +4,7 @@
 // Each shelf is a row of VHS boxes that wraps as its list grows: the whole Top Ten (ADR-0036)
 // with each box's rank on a tab and the next open slot, the first watchlist films, and
 // Discovery's picks. With likes, the picks come from the recommendation scorer (ADR-0026) with a
-// match stamp and the reason why. Without likes, they are a starter shelf of acclaimed,
+// match stamp and the reason why (PickReason). Without likes, they are a starter shelf of acclaimed,
 // lesser-known older films (ADR-0042, minus any you've tagged), with a hint to like a few films. Each pick has quick actions under it (issue #76):
 // Want to see, Seen it, Not for me, saved at once with Undo. On tuned picks a press is also saved
 // with the pick's scores, for the weights lab to learn from (ADR-0045). Every box names the film's director
@@ -31,6 +31,7 @@ import { ReorderStatus, ReorderToggle } from '@/components/ui/ReorderToggle'
 import { useReorderMode } from '@/hooks/useReorderMode'
 import { PANELS } from '@/config/panels'
 import { PickActions } from './PickActions'
+import { PickReason, type PickWhy } from './PickReason'
 import { quickAction, type QuickAction } from '@/components/movie/quickActions'
 import { SHELF_GRID, ShelfSection } from '@/components/movie/ShelfSection'
 import { Ticker } from '@/components/ui/Ticker'
@@ -235,6 +236,9 @@ function tickerItems(topTen: number, watchlist: number, discovery: DiscoveryPick
   ].filter((item): item is string => item !== false)
 }
 
+/** A Discovery tile: a cassette, plus why the scorer picked it (tuned picks only). */
+type ShelfPick = CassetteItem & { why?: PickWhy }
+
 /** How the scorer saw a pick: what's saved with a quick-action press (ADR-0045). */
 type Scores = Pick<FeedbackEntry, 'parts' | 'penalty'>
 
@@ -267,12 +271,12 @@ function useDiscoveryPicks() {
   const usePicks = tuned.hasLikes && (tuned.loading || tuned.recommendations.length > 0)
   // While the scorer is still loading (both passes, ADR-0028), show nothing rather than early
   // picks that would reshuffle when the re-rank arrives.
-  const shown: CassetteItem[] = (
+  const shown: ShelfPick[] = (
     usePicks
       ? (tuned.loading ? [] : tuned.recommendations).map((r) => ({
           movie: r.movie,
           match: r.match,
-          because: r.because,
+          why: { liked: r.because[0], reason: r.reason },
         }))
       : (starter.data?.results ?? [])
           .filter((m) => !excluded?.has(m.id))
@@ -320,6 +324,7 @@ function DiscoveryShelf({ discovery }: { discovery: DiscoveryPicks }) {
           {shelf.items.map((pick, i) => (
             <li key={pick.movie.id} className="flex flex-col">
               <CassetteCard item={pick} stagger={i} />
+              {pick.why && <PickReason why={pick.why} title={pick.movie.title} />}
               <PickActions
                 title={pick.movie.title}
                 stamped={pick.stamp}
@@ -378,10 +383,10 @@ function DiscoveryShelf({ discovery }: { discovery: DiscoveryPicks }) {
  * @param scores - How the scorer saw each tuned pick, by film id (none for starter picks).
  * @param ready - The picks are complete (not loading, not failed, not empty): hold them.
  */
-function useHeldPicks(picks: CassetteItem[], scores: ReadonlyMap<number, Scores>, ready: boolean) {
+function useHeldPicks(picks: ShelfPick[], scores: ReadonlyMap<number, Scores>, ready: boolean) {
   const quickTag = useQuickTag()
   const feedback = useFeedbackLog()
-  const [held, setHeld] = useState<CassetteItem[]>()
+  const [held, setHeld] = useState<ShelfPick[]>()
   // The scores as they were when the picks were held: a tagged pick leaves the live picks, but
   // its press should be saved with the scores it was shown with.
   const [heldScores, setHeldScores] = useState<ReadonlyMap<number, Scores>>(new Map())
