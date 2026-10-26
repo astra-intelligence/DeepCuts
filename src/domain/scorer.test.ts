@@ -320,6 +320,36 @@ describe('recommend (ADR-0026)', () => {
     expect(pickOf(picks, other.id).sameDirector).toBeUndefined()
   })
 
+  it('names the keywords a pick shares with the liked film that shares the most', () => {
+    const generic = [...GENERIC_KEYWORDS][0] ?? 0
+    const halloween = film({ title: 'Halloween', keywordIds: [1, 2, 3, generic] })
+    const alien = film({ title: 'Alien', keywordIds: [1] })
+    const disliked = film({ keywordIds: [4] })
+    const slasher = film()
+    const plain = film()
+    const picks = recommend(
+      input({
+        liked: [
+          { film: alien, recommendations: [slasher, plain] },
+          { film: halloween, recommendations: [] },
+        ],
+        disliked: [disliked],
+        details: new Map([
+          // Shares 1, 2 and 3 with Halloween (1 also with Alien); the generic keyword and the
+          // disliked one are never named.
+          [slasher.id, { keywordIds: [generic, 4, 3, 2, 1], directors: [] }],
+          [plain.id, { keywordIds: [4], directors: [] }],
+        ]),
+      }),
+    )
+    // Keyword 1 weighs most (two likes), then 2 and 3 tie and go by id; two at most.
+    expect(pickOf(picks, slasher.id).sameKeywords).toEqual({
+      keywordIds: [1, 2],
+      liked: 'Halloween',
+    })
+    expect(pickOf(picks, plain.id).sameKeywords).toBeUndefined()
+  })
+
   it('without details, ranks exactly as v1 did (the re-rank only adds to the top candidates)', () => {
     const recs = Array.from({ length: 8 }, (_, i) =>
       film({ popularity: 5 + i * 40, voteAverage: 6 + i * 0.3 }),
@@ -491,6 +521,7 @@ describe('scorer v2 (ADR-0032)', () => {
       keywords: 0,
     })
     expect(pickOf(picks, sequel.id).sameDirector).toBeUndefined()
+    expect(pickOf(picks, sequel.id).sameKeywords).toBeUndefined()
     // A film outside the series still gets credit for the same director, writer and keywords.
     expect(pickOf(picks, outsider.id).parts).toMatchObject({
       series: 0,

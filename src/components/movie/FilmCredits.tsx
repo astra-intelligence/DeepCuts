@@ -1,14 +1,10 @@
 // The small text lines under a film on Home and My Lists: why it was picked, and who made it.
 import type { Credits } from '@/api/tmdb'
 
-/** "Because you liked Alien and The Thing" (nothing without titles). */
-export function Because({ titles }: { titles: string[] | undefined }) {
-  if (!titles?.length) return null
-  return (
-    <span className="mt-1 block font-label text-sm text-accent">
-      Because you liked <cite className="not-italic">{titles.join(' and ')}</cite>
-    </span>
-  )
+/** Why a pick was picked: "Same director as The Thing" (nothing without a reason). */
+export function Reason({ text }: { text: string | undefined }) {
+  if (!text) return null
+  return <span className="mt-1 block font-label text-sm text-accent">{text}</span>
 }
 
 /**

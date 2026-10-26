@@ -272,7 +272,7 @@ function useDiscoveryPicks() {
       ? (tuned.loading ? [] : tuned.recommendations).map((r) => ({
           movie: r.movie,
           match: r.match,
-          because: r.because,
+          reason: r.reason,
         }))
       : (starter.data?.results ?? [])
           .filter((m) => !excluded?.has(m.id))
