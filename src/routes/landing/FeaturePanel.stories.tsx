@@ -8,7 +8,7 @@ import { PANELS, type PanelId } from '@/config/panels'
 const COPY: Record<PanelId, string> = {
   'top-ten': 'Rank the ten films you’d defend to anyone, in your order.',
   watchlist: 'Save a film the moment you hear about it. It waits for you on Home.',
-  discovery: 'Like a few films and get deep cuts picked for your taste, with the reason why.',
+  discovery: 'Mark a few films “More like this” and get deep cuts picked for your taste, with the reason why.',
 }
 
 // One feature as the landing page fills it: illustration, then its line of copy.

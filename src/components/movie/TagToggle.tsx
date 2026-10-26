@@ -37,7 +37,7 @@ export function TagToggle({
         className="size-5 shrink-0 text-(--tag) group-data-selected:text-fg-on-accent"
       />
       <span className="flex flex-col gap-0.5">
-        <strong className="font-bold">{tag.button}</strong>
+        <strong className="font-bold">{tag.label}</strong>
         {detailed && (
           <small className="text-sm font-normal text-fg-muted group-data-selected:text-fg-on-accent">
             {tag.hint}

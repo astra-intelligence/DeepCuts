@@ -8,7 +8,7 @@ import { LoadingImage } from '@/components/ui/LoadingImage'
  * Poster + text link for list rows (Search, My Lists). Expects `--tone` from `genreTone()` on a
  * parent, for the colored line under the poster.
  * @param meta - Short facts shown under the title, e.g. `['1982', 'Horror']`.
- * @param disliked - Adds a "Disliked" marker (disliked films stay findable in Search, design E4).
+ * @param disliked - Adds a "Less like this" marker (disliked films stay findable in Search, design E4).
  */
 export function MovieLink({
   movie,
@@ -46,7 +46,7 @@ export function MovieLink({
         </strong>
         <small className="text-sm text-fg-muted">
           {meta.join(' · ')}
-          {disliked && <span className="ml-2 text-tag-disliked">Disliked</span>}
+          {disliked && <span className="ml-2 text-tag-disliked">Less like this</span>}
         </small>
         {movie.overview && (
           <span className="line-clamp-2 text-sm leading-relaxed text-fg-soft">

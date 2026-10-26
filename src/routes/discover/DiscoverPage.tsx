@@ -316,7 +316,7 @@ function DiscoveryShelf({ discovery }: { discovery: DiscoveryPicks }) {
       {/* Only the untuned feed explains itself: it's the one line that tells you what to do. */}
       {listsKnown && !usePicks && !failed && (
         <p className="-mt-2 mb-6 text-base text-fg-soft">
-          Like a few films to tune these picks to you.
+          Mark a few films “More like this” to tune these picks to you.
         </p>
       )}
       {shelf.items ? (
@@ -354,8 +354,8 @@ function DiscoveryShelf({ discovery }: { discovery: DiscoveryPicks }) {
         <ul className={SHELF_GRID}>
           <li>
             <EmptySlot
-              title="Like a few films to get your first picks"
-              note="Films you dislike stay on the Disliked list in My Lists."
+              title="Mark a few films “More like this” to get your first picks"
+              note="Films marked “Less like this” stay on that list in My Lists."
             />
           </li>
         </ul>

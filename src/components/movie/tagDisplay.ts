@@ -1,14 +1,12 @@
-// Display details for the three tags: label, button text, icon, hint and color.
+// Display details for the three tags: label, icon, hint and color.
 import type { SystemTag } from '@/domain/tagRules'
 import type { IconName } from '@/components/ui/Icon'
 
 /** A tag's display details. */
 export interface TagDisplay {
   tag: SystemTag
-  /** The tag's name, as on My Lists and in toasts: "Like". */
+  /** The tag's name, the same on its button, its list and in toasts: "More like this". */
   label: string
-  /** The words on its toggle button on Detail and Tune, which say what the tag does to picks. */
-  button: string
   icon: IconName
   /** The line under the button where there's room: "Save for later". */
   hint: string
@@ -19,21 +17,18 @@ export const TAGS: TagDisplay[] = [
   {
     tag: 'watchlist',
     label: 'Want to see',
-    button: 'Want to see',
     icon: 'bookmark',
     hint: 'Save for later',
   },
   {
     tag: 'liked',
-    label: 'Like',
-    button: 'More like this',
+    label: 'More like this',
     icon: 'heart',
-    hint: 'Seen it, liked it',
+    hint: 'Steers your picks',
   },
   {
     tag: 'disliked',
-    label: 'Dislike',
-    button: 'Less like this',
+    label: 'Less like this',
     icon: 'ban',
     hint: 'Hide from feeds',
   },

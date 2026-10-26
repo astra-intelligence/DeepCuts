@@ -76,7 +76,7 @@ describe('movie detail', () => {
     // Save writes the tag, confirms it in a toast, then closes the Detail overlay.
     await user.click(btn('More like this'))
     await user.click(screen.getByRole('button', { name: 'Save' }))
-    expect(await findToast('Saved. The Thing: Like.')).toBeInTheDocument()
+    expect(await findToast('Saved. The Thing: More like this.')).toBeInTheDocument()
     // The action row stays in place for the fade and disappears only when Detail unmounts.
     expect(screen.getByRole('button', { name: 'Saving…' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
@@ -110,7 +110,7 @@ describe('movie detail', () => {
     await screen.findByText(/^Saved\./)
     await act(() => router.navigate('/search?q=thing'))
     const row = await screen.findByRole('link', { name: /The Thing/ })
-    expect(within(row).getByText('Disliked')).toBeInTheDocument()
+    expect(within(row).getByText('Less like this')).toBeInTheDocument()
   })
 
   it('back returns to the previous screen, or home (Discover) on a direct visit', async () => {

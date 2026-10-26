@@ -27,7 +27,7 @@ describe('my lists', () => {
     // The empty message waits for the list to load (a row of placeholders stands in until then).
     expect(await screen.findByText(/will appear here/)).toBeInTheDocument()
 
-    await user.click(await within(lists).findByRole('link', { name: /Like.*1 film/ }))
+    await user.click(await within(lists).findByRole('link', { name: /More like this.*1 film/ }))
     expect(
       await screen.findByRole('link', { name: /The Thing.*1982 · Horror/ }),
     ).toBeInTheDocument()
