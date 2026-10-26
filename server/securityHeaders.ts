@@ -19,6 +19,15 @@ export const baseHeaders: Record<string, string> = {
 }
 
 /**
+ * The one inline stylesheet the app needs, allowed by its exact hash rather than by opening
+ * `style-src` to every inline style. React Aria's usePress adds this `<style>` the first time a
+ * pressable control renders (`[data-react-aria-pressable] { touch-action: pan-x pan-y
+ * pinch-zoom }`, so a double tap doesn't wait for zoom). If a React Aria update changes its text,
+ * the hash stops matching, the browser blocks it again, and e2e/security.spec.ts fails.
+ */
+const REACT_ARIA_PRESS_STYLE = "'sha256-38RhXrc7EdReTKsOm23ZPOCUgniTUUcjky8QOOrQx6o='"
+
+/**
  * Content-Security-Policy: the browser may only load scripts, styles and fonts from this app,
  * images from this app or TMDB's image host, and may not be framed by other sites. Not sent by
  * the dev server, which needs inline scripts for React Fast Refresh.
@@ -26,7 +35,7 @@ export const baseHeaders: Record<string, string> = {
 export const contentSecurityPolicy = [
   "default-src 'self'",
   "script-src 'self'",
-  "style-src 'self'",
+  `style-src 'self' ${REACT_ARIA_PRESS_STYLE}`,
   "img-src 'self' data: https://image.tmdb.org",
   "connect-src 'self'",
   "font-src 'self'",
