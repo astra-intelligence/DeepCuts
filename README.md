@@ -67,6 +67,14 @@ The app is hosted on **Cloudflare Pages** (ADR-0029). This public repo doesn't n
 
 **Deploying** is a manual owner step (first go-live: 2026-10-08). For later deploys, follow the hosting checklist in the docs repo. The deploy command, `DEEP_CUTS_DEPLOY=1 npm run deploy`, refuses to run without that flag, and only deploys a clean `main` that matches GitHub. It builds fresh with accounts on, so what goes live is exactly what was merged.
 
+## Versions and releases
+
+Releases follow SemVer from 1.0.0 (ADR-0048), worked out from the Conventional Commit types: `feat` is a minor release, `fix`/`perf`/`design`/`style`/`copy` a patch, and `type!:` or a `BREAKING CHANGE:` footer a major (something a returning user loses or must redo). The footer shows the version the page was built from, and [CHANGELOG.md](CHANGELOG.md) lists what changed.
+
+1. `npm run release -- --dry-run` shows the next version and its changelog entry.
+2. `npm run release` opens a `release/vX.Y.Z` PR with the new version and changelog entry. Merge it once CI is green.
+3. `DEEP_CUTS_DEPLOY=1 npm run deploy` ships it and tags the deployed commit `vX.Y.Z`. The deploy refuses to run if commits landed since the release PR without a new release.
+
 ## Accounts (opt-in)
 
 Real accounts use **passkeys** and **invite-only** sign-up, with data in **Cloudflare D1** (ADR-0031). They're off by default: `npm run dev` and the demo keep the local practice provider, so nothing needs setting up. "Try the demo" always stays on the device, so reviewers never need an account.
