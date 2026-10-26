@@ -56,7 +56,7 @@ export function PickActions({
           data-undo=""
           onClick={() => !busy && onUndo()}
           aria-disabled={busy || undefined}
-          className="min-h-11 w-full border-2 border-dashed border-accent text-sm font-bold text-accent hover:bg-accent hover:text-fg-on-accent aria-disabled:cursor-wait"
+          className="min-h-11 w-full animate-pop-in border-2 border-dashed border-accent text-sm font-bold text-accent hover:bg-accent hover:text-fg-on-accent aria-disabled:cursor-wait"
         >
           Undo{' '}
           <span className="sr-only">
@@ -64,7 +64,7 @@ export function PickActions({
           </span>
         </button>
       ) : (
-        <div role="group" aria-label={`Quick actions for ${title}`} className="flex">
+        <div role="group" aria-label={`Quick actions for ${title}`} className="flex animate-pop-in">
           {QUICK_ACTIONS.map((action) => (
             <button
               key={action.tag}

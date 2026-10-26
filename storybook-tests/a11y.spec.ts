@@ -23,6 +23,21 @@ for (const story of stories) {
     // This gate is the check; the addon's panel still runs on demand in the Storybook UI.
     await page.goto(`/iframe.html?id=${story.id}&viewMode=story&globals=a11y.manual:!true`)
     await expect(page.locator('#storybook-root > *').first()).toBeVisible()
+    // Let fades finish first (a stamp or Undo fading in, ADR-0040 motion): mid-fade, text is
+    // partly transparent and axe reports it as low contrast. Endless and scroll-driven animations
+    // never finish, so only time-based ones are awaited (as in e2e/fixtures.ts).
+    await page.evaluate(() =>
+      Promise.all(
+        document
+          .getAnimations()
+          .filter(
+            (a) =>
+              a.timeline === document.timeline &&
+              a.effect?.getComputedTiming().endTime !== Infinity,
+          )
+          .map((a) => a.finished.catch(() => undefined)),
+      ),
+    )
     const results = await new AxeBuilder({ page })
       .include('#storybook-root')
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])

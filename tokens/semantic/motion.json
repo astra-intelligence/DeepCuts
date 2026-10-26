@@ -5,7 +5,7 @@
       "duration": {
         "$type": "duration",
         "$value": "{duration.150}",
-        "$description": "Default for hover and state changes"
+        "$description": "Default for hover, focus and state changes, and for popovers and controls that appear on a press"
       },
       "easing": {
         "$type": "cubicBezier",
@@ -23,11 +23,15 @@
         "$value": "{easing.ease}"
       }
     },
-    "zoom": {
+    "glow": {
       "duration": {
         "$type": "duration",
         "$value": "{duration.500}",
-        "$description": "Poster zoom on hover"
+        "$description": "A decoration slowly lighting up on hover: the Halloween logo"
+      },
+      "easing": {
+        "$type": "cubicBezier",
+        "$value": "{easing.ease}"
       }
     },
     "turn": {

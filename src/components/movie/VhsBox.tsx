@@ -205,7 +205,7 @@ function Badge({ badge }: { badge: VhsBadge }) {
       // pressed tag buttons' fills).
       return (
         <span
-          className="absolute inset-0 z-2 grid place-content-center bg-surface/60 p-3"
+          className="absolute inset-0 z-2 grid animate-pop-in place-content-center bg-surface/60 p-3"
           style={tagColor(badge.tag) as CSSProperties}
         >
           <span className="-rotate-8 border-2 border-shadow bg-(--tag) px-2 py-1 text-center font-display text-xl leading-none text-fg-on-accent uppercase shadow-stamp">

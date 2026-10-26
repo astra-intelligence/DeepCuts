@@ -70,7 +70,7 @@ function AccountMenu({ account, className }: { account: Account; className: stri
       <Popover
         placement="bottom end"
         offset={6}
-        className="w-72 border-2 border-popover-border bg-popover-bg p-1 shadow-popover"
+        className="w-72 border-2 border-popover-border bg-popover-bg p-1 shadow-popover data-entering:animate-pop-in data-exiting:animate-pop-out"
       >
         <AccountMenuItems account={account} />
       </Popover>

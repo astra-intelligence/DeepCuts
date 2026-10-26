@@ -39,17 +39,17 @@
       translate: -5% 0;
     }
 
+    /* Lights up slowly, on the glow motion role (tokens/semantic/motion.json). */
     & * {
-      transition:
-        fill 0.5s ease,
-        opacity 0.5s ease,
-        filter 0.5s ease;
+      transition-property: fill, opacity, filter;
+      transition-duration: --theme(--motion-glow-duration);
+      transition-timing-function: --theme(--motion-glow-easing);
     }
   }
 
   /* The tagline (Logo.tsx) fades to its lit color with the wordmark. */
   .halloween-logo + .logo-tagline {
-    transition: color 0.5s ease;
+    transition: color --theme(--motion-glow-duration) --theme(--motion-glow-easing);
   }
 
   /* The tagline under the logo (Logo.tsx; the main header shows it) drops 8px further,

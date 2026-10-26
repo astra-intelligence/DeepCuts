@@ -35,10 +35,10 @@
        follows the clipped outline. */
     filter: drop-shadow(3px 3px 0 var(--color-shadow));
     color: var(--color-top-ten-sticker-ink);
-    transition:
-      rotate var(--default-transition-duration) ease-out,
-      translate var(--default-transition-duration) ease-out,
-      scale var(--default-transition-duration) ease-out;
+    /* The app's default transition, like every control's hover (index.css). */
+    transition-property: rotate, translate, scale;
+    transition-duration: --theme(--default-transition-duration);
+    transition-timing-function: --theme(--default-transition-timing-function);
   }
 
   /* Only the button moves; the "in your Top 10" sticker is a label. */
