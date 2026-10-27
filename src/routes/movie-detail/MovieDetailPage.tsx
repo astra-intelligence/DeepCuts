@@ -218,13 +218,17 @@ function MovieDetail({ id, onDismiss }: { id: number; onDismiss: () => void }) {
   return (
     <article className="relative min-h-svh">
       <title>{`${m.title} · Deep Cuts`}</title>
-      {/* Phones: the backdrop sits at the top at a gentle 4:3 crop and fades into the page.
-          From md it fills the whole viewport at its natural shape, and an overlay darkens the
-          right side where the text sits. Scrims keep text readable over any image (ADR-0009). */}
-      <div className="relative aspect-4/3 w-full md:fixed md:inset-0 md:aspect-auto">
-        {backdrop && (
-          <LoadingImage src={backdrop} alt="" className="size-full object-cover object-top" />
-        )}
+      {/* The backdrop spans the full width at its own 16:9 shape (TMDB backdrops are 16:9), so
+          no screen shape crops its sides. On phones it sits at the top and fades into the page.
+          From md the layer is fixed behind the page: the image sits at the top and fades out at
+          its foot, and an overlay darkens the right side where the text sits. Scrims keep text
+          readable over any image (ADR-0009). */}
+      <div className="relative w-full md:fixed md:inset-0">
+        <div className="relative aspect-video w-full">
+          {backdrop && <LoadingImage src={backdrop} alt="" className="size-full object-cover" />}
+          {/* On screens taller than 16:9 the image ends above the bottom, so blend its edge. */}
+          <div className="absolute inset-0 hidden bg-linear-to-b from-transparent from-60% to-surface md:block" />
+        </div>
         <div className="absolute inset-0 bg-linear-to-b from-surface/70 via-transparent via-35% to-surface md:hidden" />
         <div className="absolute inset-0 hidden bg-linear-to-r from-transparent from-25% via-surface/85 via-55% to-surface to-75% md:block" />
         <div className="absolute inset-0 hidden bg-linear-to-b from-surface/60 via-transparent via-20% md:block" />
