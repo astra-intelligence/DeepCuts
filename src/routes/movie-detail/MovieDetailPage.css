@@ -1,15 +1,17 @@
-/* Detail route motion: its 400ms fade uses the shared enter timing token (ADR-0009). */
+/* Detail route motion: its 400ms fade uses the shared fade-in timing token (ADR-0009). */
 @reference "../../index.css";
 
 @layer components {
   /* Detail is a route rather than a portal, so this wrapper stays mounted until its exit fade
-     finishes. The matching keyframes make opening and closing feel like one overlay gesture. */
+     finishes. The matching keyframes make opening and closing feel like one overlay gesture.
+     A plain fade, not `animate-enter`: a transform on this wrapper would make it the box the
+     fixed backdrop sizes to, trapping the image in the page column instead of the viewport. */
   .detail-page {
-    @apply animate-enter;
+    @apply animate-fade-in;
   }
 
   .detail-page[data-closing] {
-    /* Keep the `animate-enter` duration and easing; only swap the matching keyframes. */
+    /* Keep the `animate-fade-in` duration and easing; only swap the matching keyframes. */
     animation-name: detail-page-exit;
   }
 
